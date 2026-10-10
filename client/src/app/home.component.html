@@ -1,0 +1,46 @@
+<main class="home-shell">
+  <header class="hero">
+    <p class="eyebrow">EUROLEAGUE QUIZ</p>
+    <h1>How well do you know the players behind the clubs?</h1>
+    <p class="intro">Choose a game and test your EuroLeague memory across generations of players and teams.</p>
+  </header>
+  <section class="games-grid">
+  <article class="game-card">
+    <div class="game-copy">
+      <p class="eyebrow">GAME 01</p>
+      <h2>Player Grid</h2>
+      <p>Find players who connect the clubs in a 3×3 grid.</p>
+      <div class="level-links"><a *ngFor="let level of levels" [href]="'/grid/' + level.name.toLowerCase()">{{ level.name }}</a></div>
+    </div>
+  </article>
+  <article class="game-card">
+    <div class="game-copy">
+      <p class="eyebrow">GAME 02</p>
+      <h2>Team History</h2>
+      <p>Guess the player from four clubs in their EuroLeague career. Start with one club and reveal another when you miss or skip.</p>
+      <a class="single-link" routerLink="/team-history">Play Team History</a>
+    </div>
+  </article>
+  <article class="game-card">
+    <div class="game-copy">
+      <p class="eyebrow">GAME 03</p><h2>Which Club Is Missing?</h2>
+      <p>See three clubs from a player’s history and choose the fourth club from multiple options.</p>
+      <a class="single-link" routerLink="/game/missing-club">Play Missing Club</a>
+    </div>
+  </article>
+  <article class="game-card">
+    <div class="game-copy">
+      <p class="eyebrow">GAME 04</p><h2>Career Order</h2>
+      <p>Arrange four clubs in the order the player represented them.</p>
+      <a class="single-link" routerLink="/game/career-order">Play Career Order</a>
+    </div>
+  </article>
+  <article class="game-card">
+    <div class="game-copy">
+      <p class="eyebrow">GAME 05</p><h2>Mystery Player</h2>
+      <p>Reveal career clues one by one and guess the player as early as possible.</p>
+      <a class="single-link" routerLink="/game/mystery-player">Play Mystery Player</a>
+    </div>
+  </article>
+  </section>
+</main>

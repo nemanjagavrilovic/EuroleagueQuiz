@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EuroleagueQuiz.Api", "EuroleagueQuiz.Api\EuroleagueQuiz.Api.csproj", "{C9AD93C2-06E6-42BD-9CD3-0FC381652CD5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EuroleagueQuiz.Application", "EuroleagueQuiz.Application\EuroleagueQuiz.Application.csproj", "{BB887D69-9CC5-4CDC-BD12-5563BF5B48AB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EuroleagueQuiz.Domain", "EuroleagueQuiz.Domain\EuroleagueQuiz.Domain.csproj", "{42F9DC1A-B636-4633-AC2D-7DAD6160DBF5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EuroleagueQuiz.Infrastructure", "EuroleagueQuiz.Infrastructure\EuroleagueQuiz.Infrastructure.csproj", "{39490154-6C5E-4930-A52B-75CC5158B0BF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EuroleagueQuiz.Tests", "EuroleagueQuiz.Tests\EuroleagueQuiz.Tests.csproj", "{D888A613-9431-4BED-9F45-27148E0DB6E6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C9AD93C2-06E6-42BD-9CD3-0FC381652CD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9AD93C2-06E6-42BD-9CD3-0FC381652CD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9AD93C2-06E6-42BD-9CD3-0FC381652CD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9AD93C2-06E6-42BD-9CD3-0FC381652CD5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB887D69-9CC5-4CDC-BD12-5563BF5B48AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BB887D69-9CC5-4CDC-BD12-5563BF5B48AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BB887D69-9CC5-4CDC-BD12-5563BF5B48AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BB887D69-9CC5-4CDC-BD12-5563BF5B48AB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42F9DC1A-B636-4633-AC2D-7DAD6160DBF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42F9DC1A-B636-4633-AC2D-7DAD6160DBF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42F9DC1A-B636-4633-AC2D-7DAD6160DBF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42F9DC1A-B636-4633-AC2D-7DAD6160DBF5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{39490154-6C5E-4930-A52B-75CC5158B0BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39490154-6C5E-4930-A52B-75CC5158B0BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39490154-6C5E-4930-A52B-75CC5158B0BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39490154-6C5E-4930-A52B-75CC5158B0BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D888A613-9431-4BED-9F45-27148E0DB6E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D888A613-9431-4BED-9F45-27148E0DB6E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D888A613-9431-4BED-9F45-27148E0DB6E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D888A613-9431-4BED-9F45-27148E0DB6E6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,43 @@
+<main class="shell">
+  <header class="game-header">
+    <a routerLink="/" class="back-link">← All games</a>
+    <p class="eyebrow">EUROLEAGUE PLAYER GRID</p>
+    <h1>{{ selectedDifficulty }} challenge</h1>
+    <p class="intro">Find players who played for both clubs shown in each cell.</p>
+  </header>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <h2>Grid</h2>
+      <div class="grid-actions">
+        <button type="button" (click)="revealGrid()">Surrender / reveal</button>
+      </div>
+    </div>
+    <p class="muted" *ngIf="gridLoading">Loading clubs…</p>
+    <p class="error" *ngIf="gridError">{{ gridError }}</p>
+
+    <ng-container *ngIf="grid as currentGrid">
+      <p class="hint" *ngIf="pendingCells.length > 1">{{ selectedPlayer?.displayName }} matches multiple cells. Click one of the highlighted cells.</p>
+      <div class="grid-layout">
+        <div class="grid-corner">Club intersection</div>
+        <div class="axis-header" *ngFor="let team of currentGrid.columnTeams"><img *ngIf="team.imageUrl" [src]="team.imageUrl" [alt]="team.name">{{ team.name }}</div>
+        <ng-container *ngFor="let team of currentGrid.rowTeams; let row = index">
+          <div class="axis-header axis-side"><img *ngIf="team.imageUrl" [src]="team.imageUrl" [alt]="team.name">{{ team.name }}</div>
+          <button type="button" class="grid-cell" *ngFor="let column of [0, 1, 2]" [class.selectable]="isPendingCell(row, column)" [class.filled]="isCellFilled(row, column)" [disabled]="isCellFilled(row, column) || (pendingCells.length > 0 && !isPendingCell(row, column))" (click)="selectCell(row, column)">
+            <span class="cell-player" *ngIf="cellAnswer(row, column) as answer"><img *ngIf="answer.imageUrl" [src]="answer.imageUrl" [alt]="answer.displayName">{{ answer.displayName }}</span>
+            <span *ngIf="!cellAnswer(row, column)" class="empty-cell"></span>
+          </button>
+        </ng-container>
+      </div>
+
+      <div class="answer-entry">
+        <label for="player-search">Find a player</label>
+        <input id="player-search" #playerInput type="search" placeholder="Type first or last name…" (input)="onSearch(playerInput.value)" autocomplete="off">
+        <ul class="suggestions" *ngIf="playerResults.length > 0">
+          <li *ngFor="let player of playerResults" (click)="selectPlayer(player)"><span>{{ player.displayName }} <small>{{ player.nationality || 'Unknown nationality' }}</small></span><img class="flag" *ngIf="player.countryFlagUrl" [src]="player.countryFlagUrl" [alt]="player.nationality || ''"></li>
+        </ul>
+      </div>
+      <p class="error" *ngIf="searchError">{{ searchError }}</p>
+    </ng-container>
+  </section>
+</main>

@@ -1,0 +1,31 @@
+<main class="game-shell">
+  <a class="back-link" routerLink="/">← All games</a>
+  <section class="game-card">
+    <p class="eyebrow">EUROLEAGUE CAREER GAME</p>
+    <h1>{{ title }}</h1>
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+    <div *ngIf="loading && !missing && !order && !mystery" class="status">Loading game…</div>
+
+    <ng-container *ngIf="game === 'missing-club' && missing">
+      <h2>{{ missing.player.displayName }}</h2>
+      <p>Three clubs from this player’s history are shown. Select the missing one.</p>
+      <div class="chips"><span class="chip" *ngFor="let team of missing.knownTeams">{{ team.name }}</span></div>
+      <div class="options" *ngIf="!missing.completed"><button *ngFor="let team of missing.options" type="button" [class.selected]="selectedTeamId === team.id" (click)="chooseTeam(team.id)">{{ team.name }}</button></div>
+      <div class="actions" *ngIf="!missing.completed"><button class="primary" (click)="submitMissing()" [disabled]="selectedTeamId === null || loading">Submit answer</button><button class="secondary" (click)="submitMissing(true)" [disabled]="loading">Skip</button></div>
+      <div class="result" *ngIf="missing.completed" [class.success]="missing.correct"><h2>{{ missing.correct ? 'Correct!' : 'Round over' }}</h2><p>The missing club was <strong>{{ missing.correctTeam?.name }}</strong>.</p><button class="primary" (click)="start()">Play again</button></div>
+    </ng-container>
+
+    <ng-container *ngIf="game === 'career-order' && order">
+      <h2>{{ order.player.displayName }}</h2><p>Arrange the clubs from earliest to latest in the player’s EuroLeague history.</p>
+      <div class="order-list"><div class="order-item" *ngFor="let club of orderClubs; let i = index"><span>{{ i + 1 }}. {{ club.name }}</span><span><button class="move" (click)="moveClub(i, -1)" [disabled]="order.completed || i === 0">↑</button><button class="move" (click)="moveClub(i, 1)" [disabled]="order.completed || i === orderClubs.length - 1">↓</button></span></div></div>
+      <div class="actions" *ngIf="!order.completed"><button class="primary" (click)="submitOrder()" [disabled]="loading">Submit order</button></div>
+      <div class="result" *ngIf="order.completed" [class.success]="order.correct"><h2>{{ order.correct ? 'Correct order!' : 'Not quite' }}</h2><div *ngIf="order.correctOrder"><p>Correct order:</p><ol><li *ngFor="let club of order.correctOrder">{{ club.name }}</li></ol></div><button class="primary" (click)="start()">Play again</button></div>
+    </ng-container>
+
+    <ng-container *ngIf="game === 'mystery-player' && mystery">
+      <p>Reveal clues one at a time and guess the player as early as possible.</p><div class="clues"><div *ngFor="let clue of mystery.revealedClues; let i = index"><strong>Clue {{ i + 1 }}</strong><span>{{ clue }}</span></div></div>
+      <div class="answer-area" *ngIf="!mystery.completed"><input type="search" [value]="searchTerm" (input)="onSearch($any($event.target).value)" placeholder="Type first or last name…" autocomplete="off"><div class="suggestions" *ngIf="suggestions.length"><button *ngFor="let player of suggestions" type="button" (click)="selectPlayer(player)">{{ player.displayName }}</button></div><div class="actions"><button class="primary" (click)="submitMystery()" [disabled]="!selectedPlayer || loading">Guess player</button><button class="secondary" (click)="submitMystery(true)" [disabled]="loading">Skip / reveal clue</button></div></div>
+      <div class="result" *ngIf="mystery.completed" [class.success]="mystery.correct"><h2>{{ mystery.correct ? 'Correct!' : 'Round over' }}</h2><p>The player was <strong>{{ mystery.correctPlayer?.displayName }}</strong>.</p><button class="primary" (click)="start()">Play again</button></div>
+    </ng-container>
+  </section>
+</main>

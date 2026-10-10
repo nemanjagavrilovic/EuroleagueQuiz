@@ -1,0 +1,88 @@
+# Visual Studio / .NET
+.vs/
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+*.nupkg
+*.snupkg
+
+# Build and publish output
+artifacts/
+publish/
+**/publish/
+**/TestResults/
+*.publishsettings
+
+# Test results and coverage
+TestResults/
+*.trx
+coverage/
+coverage-report/
+*.coverage
+*.coveragexml
+
+# Local configuration and secrets
+appsettings.Development.json
+appsettings.Local.json
+appsettings.Production.json
+appsettings.Staging.json
+**/secrets.json
+secrets.json
+*.pfx
+*.cer
+*.pem
+*.key
+*.userprefs
+
+# Angular / Node
+client/node_modules/
+**/node_modules/
+client/.angular/
+client/dist/
+**/dist/
+client/.cache/
+client/npm-debug.log*
+client/yarn-debug.log*
+client/yarn-error.log*
+client/pnpm-debug.log*
+*.log
+
+# Environment files
+client/.env
+client/.env.*
+!client/.env.example
+
+# Local databases and database tools
+*.mdf
+*.ndf
+*.ldf
+*.db
+*.sqlite
+*.sqlite3
+
+# Local tooling and editor configuration
+.vscode/
+.history/
+.fleet/
+.terraform/
+.azure/
+
+# Local API inspection output
+api-samples/*.json
+api-samples/summary.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# JetBrains Rider / ReSharper
+.idea/
+_ReSharper*/
+*.DotSettings.user
+

@@ -1,0 +1,43 @@
+<main class="history-shell">
+  <a class="back-link" routerLink="/">← All games</a>
+  <section class="history-card">
+    <p class="eyebrow">GAME 02 · TEAM HISTORY</p>
+    <h1>Who played for these clubs?</h1>
+    <p class="intro">Use the revealed EuroLeague clubs to identify one player from their career history.</p>
+
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+    <div *ngIf="loading && !round" class="status">Loading round…</div>
+
+    <ng-container *ngIf="round">
+      <div class="team-list">
+        <div class="team-chip" *ngFor="let team of round.revealedTeams">
+          <img *ngIf="team.imageUrl" [src]="team.imageUrl" [alt]="team.name">
+          <span>{{ team.name }}</span>
+        </div>
+      </div>
+      <p class="progress">{{ round.revealedTeamCount }} of {{ round.totalTeams }} clubs revealed</p>
+
+      <div *ngIf="!round.completed" class="answer-area">
+        <label for="history-search">Guess the player</label>
+        <input id="history-search" type="search" [value]="searchTerm" (input)="onSearch($any($event.target).value)" placeholder="Type first or last name…" autocomplete="off">
+        <div *ngIf="suggestions.length" class="suggestions">
+          <button type="button" *ngFor="let player of suggestions" (click)="selectPlayer(player)">{{ player.displayName }}</button>
+        </div>
+        <div class="actions">
+          <button class="primary" type="button" (click)="guess()" [disabled]="!selectedPlayer || loading">Guess player</button>
+          <button class="secondary" type="button" (click)="skip()" [disabled]="loading">Skip / reveal next club</button>
+        </div>
+      </div>
+
+      <div *ngIf="round.completed" class="result" [class.success]="round.correct">
+        <h2>{{ round.correct ? 'Correct!' : 'Round over' }}</h2>
+        <p>{{ round.correct ? 'Great memory.' : 'Try another round and reveal the clues more carefully.' }}</p>
+        <div *ngIf="round.correctPlayer" class="correct-player">
+          <img *ngIf="round.correctPlayer.imageUrl" [src]="round.correctPlayer.imageUrl" [alt]="round.correctPlayer.displayName">
+          <strong>{{ round.correctPlayer.displayName }}</strong>
+        </div>
+        <button class="primary" type="button" (click)="start()">Play another round</button>
+      </div>
+    </ng-container>
+  </section>
+</main>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 470" role="img" aria-labelledby="title desc">
+  <title id="title">Example EuroLeague player grid</title>
+  <desc id="desc">A 3 by 3 grid with club headers and player answer cells.</desc>
+  <rect width="640" height="470" rx="22" fill="#f1f4f8"/>
+  <g font-family="Arial, sans-serif" font-weight="700" text-anchor="middle">
+    <rect x="24" y="24" width="142" height="66" rx="12" fill="#172033"/><text x="95" y="63" fill="white" font-size="14">CLUBS</text>
+    <g fill="#172033"><rect x="176" y="24" width="142" height="66" rx="12"/><rect x="328" y="24" width="142" height="66" rx="12"/><rect x="480" y="24" width="136" height="66" rx="12"/></g>
+    <g fill="white" font-size="13"><text x="247" y="63">EFES</text><text x="399" y="63">MONACO</text><text x="548" y="63">PAO</text></g>
+    <g fill="#ef8354"><rect x="24" y="98" width="142" height="104" rx="12"/><rect x="24" y="210" width="142" height="104" rx="12"/><rect x="24" y="322" width="142" height="104" rx="12"/></g>
+    <g fill="white" font-size="13"><text x="95" y="157">REAL MADRID</text><text x="95" y="269">FENERBAHCE</text><text x="95" y="381">OLYMPIACOS</text></g>
+    <g fill="white" stroke="#dce2ea" stroke-width="2"><rect x="176" y="98" width="142" height="104" rx="12"/><rect x="328" y="98" width="142" height="104" rx="12"/><rect x="480" y="98" width="136" height="104" rx="12"/><rect x="176" y="210" width="142" height="104" rx="12"/><rect x="328" y="210" width="142" height="104" rx="12"/><rect x="480" y="210" width="136" height="104" rx="12"/><rect x="176" y="322" width="142" height="104" rx="12"/><rect x="328" y="322" width="142" height="104" rx="12"/><rect x="480" y="322" width="136" height="104" rx="12"/></g>
+    <g fill="#172033" font-size="12"><text x="247" y="153">PLAYER</text><text x="399" y="265">PLAYER</text><text x="548" y="377">PLAYER</text></g>
+  </g>
+</svg>
