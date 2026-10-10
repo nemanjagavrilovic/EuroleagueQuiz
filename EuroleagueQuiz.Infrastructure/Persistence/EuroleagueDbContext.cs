@@ -57,6 +57,9 @@ public sealed class EuroleagueDbContext : DbContext
         {
             entity.HasKey(x => x.Id);
             entity.HasIndex(x => new { x.PlayerId, x.TeamId, x.SeasonId }).IsUnique();
+            // Game queries start from a club and then find its players. The unique
+            // player-first index above cannot efficiently seek by TeamId.
+            entity.HasIndex(x => new { x.TeamId, x.PlayerId, x.SeasonId });
             entity.Property(x => x.Source).HasMaxLength(100).IsRequired();
             entity.Property(x => x.ProviderExternalId).HasMaxLength(100);
             entity.Property(x => x.JerseyNumber).HasMaxLength(20);

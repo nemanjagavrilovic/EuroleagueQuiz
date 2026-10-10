@@ -187,10 +187,10 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("SeasonId");
 
-                    b.HasIndex("TeamId");
-
                     b.HasIndex("PlayerId", "TeamId", "SeasonId")
                         .IsUnique();
+
+                    b.HasIndex("TeamId", "PlayerId", "SeasonId");
 
                     b.ToTable("PlayerTeamSeasons");
                 });

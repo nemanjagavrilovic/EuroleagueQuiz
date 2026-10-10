@@ -9,6 +9,9 @@ public sealed class GridService : IGridService
 {
     private readonly ITeamRepository _teams;
     private readonly IPlayerTeamSeasonRepository _relationships;
+    private static readonly SemaphoreSlim CatalogLock = new(1, 1);
+    private static GridCatalog? Catalog;
+    private static readonly TimeSpan CatalogLifetime = TimeSpan.FromMinutes(10);
 
     public GridService(ITeamRepository teams, IPlayerTeamSeasonRepository relationships)
     {
@@ -21,8 +24,9 @@ public sealed class GridService : IGridService
         bool forceNew = false,
         GridDifficulty difficulty = GridDifficulty.Normal)
     {
-        var teams = (await _teams.GetAllAsync(cancellationToken)).ToList();
-        var relationships = await _relationships.GetAllAsync(cancellationToken);
+        var catalog = await GetCatalogAsync(cancellationToken);
+        var teams = catalog.Teams;
+        var relationships = catalog.Relationships;
         var playersByTeam = relationships
             .GroupBy(x => x.TeamId)
             .ToDictionary(x => x.Key, x => x.Select(relationship => relationship.PlayerId).ToHashSet());
@@ -77,6 +81,28 @@ public sealed class GridService : IGridService
             best.Rows.Select(TeamDto.FromEntity).ToList(),
             best.Columns.Select(TeamDto.FromEntity).ToList(),
             difficulty.ToString());
+    }
+
+    private async Task<GridCatalog> GetCatalogAsync(CancellationToken cancellationToken)
+    {
+        if (Catalog is not null && DateTime.UtcNow - Catalog.CreatedAtUtc < CatalogLifetime)
+            return Catalog;
+
+        await CatalogLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (Catalog is not null && DateTime.UtcNow - Catalog.CreatedAtUtc < CatalogLifetime)
+                return Catalog;
+
+            var teams = (await _teams.GetAllAsync(cancellationToken)).ToList();
+            var relationships = await _relationships.GetAllAsync(cancellationToken);
+            Catalog = new GridCatalog(teams, relationships, DateTime.UtcNow);
+            return Catalog;
+        }
+        finally
+        {
+            CatalogLock.Release();
+        }
     }
 
     public async Task<GridRevealResponse> RevealAsync(GridRevealRequest request, CancellationToken cancellationToken)
@@ -154,6 +180,10 @@ public sealed class GridService : IGridService
     }
 
     private sealed record GridCandidate(IReadOnlyList<Domain.Entities.Team> Rows, IReadOnlyList<Domain.Entities.Team> Columns, double Score);
+    private sealed record GridCatalog(
+        IReadOnlyList<Domain.Entities.Team> Teams,
+        IReadOnlyList<Domain.Entities.PlayerTeamSeason> Relationships,
+        DateTime CreatedAtUtc);
     private sealed record RevealCandidateCell(int Row, int Column, IReadOnlyList<Domain.Entities.Player> Players)
     {
         public int Index => Row * 3 + Column;
