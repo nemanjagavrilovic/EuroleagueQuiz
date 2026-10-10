@@ -25,6 +25,7 @@ export class CareerGamesComponent implements OnInit {
   selectedPlayer: Player | null = null;
   suggestions: Player[] = [];
   searchTerm = '';
+  answerFeedback = '';
   loading = false;
   errorMessage = '';
 
@@ -42,7 +43,8 @@ export class CareerGamesComponent implements OnInit {
   }
 
   start(): void {
-    this.loading = true; this.errorMessage = ''; this.missing = null; this.order = null; this.mystery = null;
+    this.loading = true; this.errorMessage = ''; this.answerFeedback = ''; this.missing = null; this.order = null; this.mystery = null;
+    this.clearSearch();
     if (this.game === 'missing-club') {
       this.loadRound(this.api.startMissingClub(), value => this.missing = value);
     } else if (this.game === 'career-order') {
@@ -78,6 +80,24 @@ export class CareerGamesComponent implements OnInit {
   selectPlayer(player: Player): void { this.selectedPlayer = player; this.searchTerm = player.displayName; this.suggestions = []; }
   submitMystery(skip = false): void {
     if (!this.mystery || (!skip && !this.selectedPlayer)) return;
-    this.loading = true; this.api.guessMysteryPlayer(this.mystery.roundId, this.selectedPlayer?.id, skip).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe(round => { this.mystery = round; this.selectedPlayer = null; this.searchTerm = ''; this.suggestions = []; });
+    this.clearSearch();
+    this.loading = true;
+    this.api.guessMysteryPlayer(this.mystery.roundId, this.selectedPlayer?.id, skip).pipe(
+      finalize(() => { this.loading = false; this.detector.markForCheck(); })
+    ).subscribe(round => {
+      this.mystery = round;
+      this.answerFeedback = skip
+        ? 'Another clue was revealed.'
+        : round.completed
+          ? ''
+          : 'Not this player — another clue was revealed.';
+    });
+  }
+
+  private clearSearch(): void {
+    this.selectedPlayer = null;
+    this.searchTerm = '';
+    this.suggestions = [];
+    this.searchTerms.next('');
   }
 }

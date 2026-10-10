@@ -32,12 +32,12 @@
 
       <div class="answer-entry">
         <label for="player-search">Find a player</label>
-        <input id="player-search" #playerInput type="search" placeholder="Type first or last name…" (input)="onSearch(playerInput.value)" autocomplete="off">
+        <input id="player-search" type="search" [value]="searchTerm" placeholder="Type first or last name…" (input)="onSearch($any($event.target).value)" autocomplete="off">
         <ul class="suggestions" *ngIf="playerResults.length > 0">
-          <li *ngFor="let player of playerResults" (click)="selectPlayer(player)"><span>{{ player.displayName }} <small>{{ player.nationality || 'Unknown nationality' }}</small></span><img class="flag" *ngIf="player.countryFlagUrl" [src]="player.countryFlagUrl" [alt]="player.nationality || ''"></li>
+          <li *ngFor="let player of playerResults" (click)="selectPlayer(player)"><span>{{ player.displayName }} <small>{{ player.nationality || 'Unknown nationality' }}</small></span></li>
         </ul>
       </div>
-      <p class="error" *ngIf="searchError">{{ searchError }}</p>
+      <p class="search-feedback" *ngIf="searchError" role="status">{{ searchError }}</p>
     </ng-container>
   </section>
 </main>

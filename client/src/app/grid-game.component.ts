@@ -25,6 +25,7 @@ export class GridGameComponent {
   playerResults: Player[] = [];
   answers: (Player | null)[] = Array(9).fill(null);
   selectedPlayer: Player | null = null;
+  searchTerm = '';
   pendingCells: GridCell[] = [];
   revealedAnswers: (Player | null)[] = Array(9).fill(null);
   searchError = '';
@@ -54,7 +55,11 @@ export class GridGameComponent {
     });
   }
 
-  onSearch(term: string): void { this.searchError = ''; this.playerSearch$.next(term); }
+  onSearch(term: string): void {
+    this.searchTerm = term;
+    this.searchError = '';
+    this.playerSearch$.next(term);
+  }
 
   selectPlayer(player: Player): void {
     if (this.isPlayerUsed(player.id)) {
@@ -76,7 +81,7 @@ export class GridGameComponent {
         } else if (this.pendingCells.length === 1 || this.pendingCells.some(cell => cell.playerCount === 1)) {
           for (const cell of this.pendingCells) this.answers[cell.row * 3 + cell.column] = player;
           this.pendingCells = [];
-          this.selectedPlayer = null;
+          this.clearSearch();
         }
         this.changeDetector.markForCheck();
       },
@@ -119,14 +124,21 @@ export class GridGameComponent {
     if (!this.selectedPlayer || this.isCellFilled(cell.row, cell.column)) return;
     this.answers[cell.row * 3 + cell.column] = this.selectedPlayer;
     this.pendingCells = [];
-    this.selectedPlayer = null;
+    this.clearSearch();
   }
 
   private resetAnswers(): void {
     this.answers = Array(9).fill(null);
     this.revealedAnswers = Array(9).fill(null);
     this.pendingCells = [];
+    this.clearSearch();
+  }
+
+  private clearSearch(): void {
     this.selectedPlayer = null;
+    this.searchTerm = '';
+    this.playerResults = [];
+    this.playerSearch$.next('');
   }
 
   private isPlayerUsed(playerId: number): boolean { return [...this.answers, ...this.revealedAnswers].some(player => player?.id === playerId); }

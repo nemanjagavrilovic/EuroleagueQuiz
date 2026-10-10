@@ -27,6 +27,7 @@
           <button class="primary" type="button" (click)="guess()" [disabled]="!selectedPlayer || loading">Guess player</button>
           <button class="secondary" type="button" (click)="skip()" [disabled]="loading">Skip / reveal next club</button>
         </div>
+        <p class="answer-feedback" *ngIf="answerFeedback" role="status">{{ answerFeedback }}</p>
       </div>
 
       <div *ngIf="round.completed" class="result" [class.success]="round.correct">

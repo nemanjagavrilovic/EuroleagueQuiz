@@ -21,6 +21,7 @@ export class TeamHistoryComponent implements OnInit {
   suggestions: Player[] = [];
   selectedPlayer: Player | null = null;
   searchTerm = '';
+  answerFeedback = '';
   loading = false;
   errorMessage = '';
 
@@ -50,6 +51,7 @@ export class TeamHistoryComponent implements OnInit {
   start(): void {
     this.loading = true;
     this.errorMessage = '';
+    this.answerFeedback = '';
     this.selectedPlayer = null;
     this.searchTerm = '';
     this.suggestions = [];
@@ -86,6 +88,10 @@ export class TeamHistoryComponent implements OnInit {
 
   private submitGuess(playerId: number | undefined, skip: boolean): void {
     if (!this.round) return;
+    this.selectedPlayer = null;
+    this.searchTerm = '';
+    this.suggestions = [];
+    this.searchTerms.next('');
     this.loading = true;
     this.api.guessTeamHistory(this.round.roundId, playerId, skip).pipe(finalize(() => {
       this.loading = false;
@@ -93,9 +99,11 @@ export class TeamHistoryComponent implements OnInit {
     })).subscribe({
       next: round => {
         this.round = round;
-        this.selectedPlayer = null;
-        this.searchTerm = '';
-        this.suggestions = [];
+        this.answerFeedback = skip
+          ? 'Another club was revealed.'
+          : round.completed
+            ? ''
+            : 'Not this player — another club was revealed.';
       },
       error: () => this.errorMessage = 'Your answer could not be submitted.'
     });

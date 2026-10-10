@@ -1,7 +1,7 @@
 :host { display: block; min-height: 100vh; }
 .game-shell { max-width: 820px; margin: 0 auto; padding: 48px 24px; }
 .back-link { color: #596273; text-decoration: none; font-weight: 700; }
-.game-card { margin-top: 28px; padding: 32px; border: 1px solid #e5e7eb; border-radius: 22px; background: #fff; box-shadow: 0 18px 50px rgba(15, 23, 42, .08); }
+.game-card { margin-top: 28px; padding: 32px; border: 1px solid #e5e7eb; border-radius: 22px; background: #fff; box-shadow: 0 18px 50px rgba(15, 23, 42, .08); overflow: hidden; }
 .eyebrow { color: #ef8354; font-size: 12px; font-weight: 800; letter-spacing: .16em; }
 h1 { font-size: clamp(32px, 5vw, 50px); line-height: 1; letter-spacing: -.05em; margin: 10px 0; }
 h2 { margin-top: 28px; }
@@ -18,7 +18,7 @@ h2 { margin-top: 28px; }
 .move { padding: 7px 10px; margin-left: 5px; background: #eef1f5; }
 .result { margin-top: 24px; padding: 22px; border-radius: 14px; background: #fff1eb; }
 .result.success { background: #e9f8ef; }
-.clues { display: grid; gap: 10px; margin-top: 22px; }
+.clues { display: grid; gap: 10px; max-height: 260px; overflow-y: auto; margin-top: 22px; padding-right: 3px; }
 .clues div { display: flex; flex-direction: column; gap: 5px; padding: 14px; border-radius: 10px; background: #f1f4f8; }
 .answer-area { position: relative; margin-top: 24px; }
 .answer-area input { box-sizing: border-box; width: 100%; padding: 14px 16px; border: 1px solid #cbd5e1; border-radius: 10px; font: inherit; }
@@ -27,6 +27,7 @@ h2 { margin-top: 28px; }
 .suggestions button:hover { background: #f1f4f8; }
 .error { color: #be123c; }
 .status { color: #596273; }
+.answer-feedback { margin: 12px 0 0; padding: 10px 12px; border-radius: 9px; background: #fff7ed; color: #9a3412; font-size: 14px; font-weight: 700; }
 @media (max-width: 600px) {
   .game-shell { padding: 28px 12px; }
   .game-card { margin-top: 20px; padding: 18px; border-radius: 16px; }
@@ -36,5 +37,6 @@ h2 { margin-top: 28px; }
   .chip { flex: 1 1 calc(50% - 8px); padding: 12px 8px; text-align: center; overflow-wrap: anywhere; }
   .order-item { padding: 12px; }
   .result { padding: 16px; }
+  .clues { max-height: 220px; }
   .answer-area input { min-height: 46px; }
 }

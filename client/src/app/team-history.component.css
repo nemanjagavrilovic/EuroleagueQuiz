@@ -1,7 +1,7 @@
 :host { display: block; min-height: 100vh; }
 .history-shell { max-width: 820px; margin: 0 auto; padding: 48px 24px; }
 .back-link { color: #596273; text-decoration: none; font-weight: 700; }
-.history-card { margin-top: 28px; padding: 32px; border: 1px solid #e5e7eb; border-radius: 22px; background: #fff; box-shadow: 0 18px 50px rgba(15, 23, 42, .08); }
+.history-card { margin-top: 28px; padding: 32px; border: 1px solid #e5e7eb; border-radius: 22px; background: #fff; box-shadow: 0 18px 50px rgba(15, 23, 42, .08); overflow: hidden; }
 .eyebrow { color: #ef8354; font-size: 12px; font-weight: 800; letter-spacing: .16em; }
 h1 { margin: 10px 0; font-size: clamp(32px, 5vw, 50px); line-height: 1; letter-spacing: -.05em; }
 .intro, .progress, .status { color: #596273; line-height: 1.5; }
@@ -26,4 +26,5 @@ button:disabled { cursor: not-allowed; opacity: .5; }
 .correct-player img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
 .result h2 { margin-top: 0; }
 .error { padding: 12px; border-radius: 9px; background: #fff1f2; color: #be123c; }
+.answer-feedback { margin: 12px 0 0; padding: 10px 12px; border-radius: 9px; background: #fff7ed; color: #9a3412; font-size: 14px; font-weight: 700; }
 @media (max-width: 600px) { .history-shell { padding: 28px 12px; } .history-card { margin-top: 20px; padding: 18px; border-radius: 16px; } .team-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 22px; } .team-chip { min-height: 86px; padding: 10px 5px; font-size: 13px; overflow-wrap: anywhere; } .team-chip img { width: 34px; height: 34px; } .actions { flex-direction: column; } .actions button { width: 100%; min-height: 46px; } input { min-height: 46px; } .result { padding: 16px; } }
