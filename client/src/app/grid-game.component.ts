@@ -78,6 +78,7 @@ export class GridGameComponent {
         this.pendingCells = result.availableCells.filter(cell => !this.cellAnswer(cell.row, cell.column));
         if (this.pendingCells.length === 0) {
           this.searchError = 'This player does not match any empty grid cell.';
+          this.clearSearch();
         } else if (this.pendingCells.length === 1 || this.pendingCells.some(cell => cell.playerCount === 1)) {
           for (const cell of this.pendingCells) this.answers[cell.row * 3 + cell.column] = player;
           this.pendingCells = [];
