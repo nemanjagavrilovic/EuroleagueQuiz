@@ -100,7 +100,7 @@ export interface MysteryPlayerRound {
 @Injectable({ providedIn: 'root' })
 export class DataApiService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = environment.apiUrl;
+  private readonly baseUrl = environment.apiUrl.replace(/\/+$/, '');
 
   getTeams(): Observable<Team[]> {
     return this.http.get<Team[]>(`${this.baseUrl}/teams`);
