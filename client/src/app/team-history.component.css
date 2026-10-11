@@ -16,10 +16,10 @@ input { width: 100%; box-sizing: border-box; padding: 14px 16px; border: 1px sol
 .suggestions button { display: block; width: 100%; padding: 12px 14px; border: 0; background: #fff; text-align: left; font: inherit; cursor: pointer; }
 .suggestions button:hover { background: #f1f4f8; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-button { border: 0; border-radius: 9px; padding: 12px 16px; font: inherit; font-weight: 800; cursor: pointer; }
+button { border: 1px solid transparent; border-radius: 9px; padding: 12px 16px; font: inherit; font-weight: 800; cursor: pointer; box-shadow: 0 2px 5px rgba(15, 23, 42, .08); }
 button:disabled { cursor: not-allowed; opacity: .5; }
 .primary { background: #172033; color: #fff; }
-.secondary { background: #eef1f5; color: #172033; }
+.secondary { border-color: #d7dee8; background: #fff; color: #172033; }
 .result { margin-top: 24px; padding: 22px; border-radius: 14px; background: #fff1eb; }
 .result.success { background: #e9f8ef; }
 .correct-player { display: flex; align-items: center; gap: 12px; margin: 16px 0; font-size: 20px; }

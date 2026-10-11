@@ -4,3 +4,19 @@
 html, body { overflow-x: hidden; }
 body { margin: 0; color: #172033; background: #f7f8fb; font-family: 'DM Sans', sans-serif; }
 .game-shell h1 { font-size: clamp(32px, 5vw, 50px) !important; line-height: 1 !important; }
+
+button, .level-links a, .single-link {
+  transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease, border-color .16s ease;
+}
+
+button:not(:disabled):not(.grid-cell):not(.suggestions button):hover,
+.level-links a:hover,
+.single-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(15, 23, 42, .14);
+}
+
+button:focus-visible, .level-links a:focus-visible, .single-link:focus-visible {
+  outline: 3px solid rgba(239, 131, 84, .4);
+  outline-offset: 2px;
+}

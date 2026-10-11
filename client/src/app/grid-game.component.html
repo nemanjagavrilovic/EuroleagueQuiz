@@ -10,7 +10,7 @@
     <div class="panel-heading">
       <h2>Grid</h2>
       <div class="grid-actions">
-        <button type="button" (click)="revealGrid()">Surrender / reveal</button>
+        <button type="button" (click)="revealGrid()">Reveal</button>
       </div>
     </div>
     <p class="muted" *ngIf="gridLoading">Loading clubs…</p>
@@ -28,6 +28,11 @@
             <span *ngIf="!cellAnswer(row, column)" class="empty-cell"></span>
           </button>
         </ng-container>
+      </div>
+
+      <div class="completion-message" *ngIf="isGridComplete()" role="status">
+        <strong>Congratulations!</strong>
+        <span>You completed the grid.</span>
       </div>
 
       <div class="answer-entry">

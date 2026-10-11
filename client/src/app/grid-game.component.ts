@@ -119,6 +119,7 @@ export class GridGameComponent {
 
   isPendingCell(row: number, column: number): boolean { return this.pendingCells.some(cell => cell.row === row && cell.column === column); }
   isCellFilled(row: number, column: number): boolean { return this.cellAnswer(row, column) !== null; }
+  isGridComplete(): boolean { return this.answers.every(player => player !== null); }
   cellAnswer(row: number, column: number): Player | null { return this.answers[row * 3 + column] ?? this.revealedAnswers[row * 3 + column]; }
 
   placePlayer(cell: GridCell): void {
