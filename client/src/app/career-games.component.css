@@ -25,6 +25,7 @@ h2 { margin-top: 28px; }
 .suggestions { position: absolute; z-index: 2; left: 0; right: 0; max-height: 230px; overflow-y: auto; background: #fff; border: 1px solid #dbe2ea; border-radius: 10px; box-shadow: 0 12px 30px rgba(15, 23, 42, .12); }
 .suggestions button { display: block; width: 100%; padding: 12px 14px; border: 0; background: #fff; text-align: left; font: inherit; cursor: pointer; }
 .suggestions button:hover { background: #f1f4f8; }
+.suggestions button.active { background: #ffe0cf; color: #9a3412; }
 .error { color: #be123c; }
 .status { color: #596273; }
 .answer-feedback { margin: 12px 0 0; padding: 10px 12px; border-radius: 9px; background: #fff7ed; color: #9a3412; font-size: 14px; font-weight: 700; }

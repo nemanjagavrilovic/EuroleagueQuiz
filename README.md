@@ -7,7 +7,7 @@ Initial data-foundation implementation for a EuroLeague player grid application.
 - ASP.NET Core Web API / .NET 8
 - Angular 17
 - Entity Framework Core
-- Microsoft SQL Server
+- PostgreSQL
 - Repository pattern: Controller → Service → Repository
 
 ## Solution structure
@@ -16,26 +16,26 @@ Initial data-foundation implementation for a EuroLeague player grid application.
 EuroleagueQuiz.Api             HTTP controllers and application startup
 EuroleagueQuiz.Application     DTOs, services, and application interfaces
 EuroleagueQuiz.Domain          Entities and repository interfaces
-EuroleagueQuiz.Infrastructure  EF Core, SQL Server, and repository implementations
+EuroleagueQuiz.Infrastructure  EF Core, PostgreSQL, and repository implementations
 EuroleagueQuiz.Tests            Automated tests
 client                         Angular application
 ```
 
 ## Database setup
 
-The application uses SQL Server with Windows Authentication. Create the database in SQL Server or let the EF Core migration create it, then configure `ConnectionStrings:SqlServer` in `EuroleagueQuiz.Api/appsettings.json` or through user-secrets/environment configuration.
+The application uses PostgreSQL. Create the database in PostgreSQL or let the EF Core migration create it, then configure `ConnectionStrings:Postgres` in `EuroleagueQuiz.Api/appsettings.json` or through user-secrets/environment configuration.
 
 Example connection string:
 
 ```text
-Server=localhost;Database=EuroleagueQuiz;Trusted_Connection=True;TrustServerCertificate=True;
+Host=localhost;Port=5432;Database=EuroleagueQuiz;Username=postgres;Password=postgres;
 ```
 
 After NuGet restore succeeds, create the first migration:
 
 ```powershell
 dotnet tool install --global dotnet-ef
-dotnet ef migrations add InitialCreate --project EuroleagueQuiz.Infrastructure --startup-project EuroleagueQuiz.Api
+dotnet ef migrations add InitialCreate --project EuroleagueQuiz.Infrastructure --startup-project EuroleagueQuiz.Api --output-dir Persistence/Migrations
 dotnet ef database update --project EuroleagueQuiz.Infrastructure --startup-project EuroleagueQuiz.Api
 ```
 

@@ -4,7 +4,7 @@ This guide deploys the application for testing with:
 
 - Angular frontend on Azure Static Web Apps Free
 - ASP.NET Core .NET 8 API on Azure App Service
-- SQL Server database on Azure SQL Database
+- PostgreSQL database (for example, Azure Database for PostgreSQL Flexible Server)
 
 The free Azure-generated URLs are enough for testing. A custom domain requires a domain that you own.
 
@@ -26,19 +26,18 @@ dotnet tool install --global dotnet-ef
 
 Push the project to a GitHub repository. Do not commit production passwords or connection strings.
 
-## 2. Create the Azure SQL database
+## 2. Create the PostgreSQL database
 
-1. Open the Azure Portal and create **SQL databases**.
-2. Create a new logical SQL server if you do not already have one.
-3. Select the **Free offer** when available.
-4. Use SQL authentication for the server administrator.
-5. In the SQL server networking/firewall settings, enable **Allow Azure services and resources to access this server**.
-6. Copy the ADO.NET connection string and replace the password placeholder.
+1. Open your cloud provider and create a PostgreSQL server and database.
+2. Create the `EuroleagueQuiz` database.
+3. Create a database user with permission to create tables and indexes.
+4. Configure the firewall/network rules to allow the Azure App Service to connect.
+5. Copy the PostgreSQL connection string and replace the password placeholder.
 
-The connection string should resemble:
+The PostgreSQL connection string should resemble:
 
 ```text
-Server=tcp:your-server.database.windows.net,1433;Initial Catalog=EuroleagueQuiz;Persist Security Info=False;User ID=your-admin;Password=your-password;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;
+Host=your-postgres-host;Port=5432;Database=EuroleagueQuiz;Username=your-user;Password=your-password;SSL Mode=Require;Trust Server Certificate=true;
 ```
 
 ## 3. Apply EF Core migrations
@@ -46,16 +45,16 @@ Server=tcp:your-server.database.windows.net,1433;Initial Catalog=EuroleagueQuiz;
 From the solution directory, temporarily set the Azure connection string in the current PowerShell session:
 
 ```powershell
-$env:ConnectionStrings__SqlServer = "Server=tcp:your-server.database.windows.net,1433;Initial Catalog=EuroleagueQuiz;User ID=your-admin;Password=your-password;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+$env:ConnectionStrings__Postgres = "Host=your-postgres-host;Port=5432;Database=EuroleagueQuiz;Username=your-user;Password=your-password;SSL Mode=Require;Trust Server Certificate=true;"
 
 dotnet ef database update `
   --project EuroleagueQuiz.Infrastructure `
   --startup-project EuroleagueQuiz.Api
 ```
 
-The double underscore maps to the ASP.NET Core configuration key `ConnectionStrings:SqlServer`.
+The double underscore maps to the ASP.NET Core configuration key `ConnectionStrings:Postgres`.
 
-Verify the tables in the Azure SQL Query Editor. The repository already contains the existing migrations under:
+Verify the tables in your PostgreSQL client. The PostgreSQL migration will be created under:
 
 ```text
 EuroleagueQuiz.Infrastructure/Persistence/Migrations
@@ -79,7 +78,7 @@ https://your-api-name.azurewebsites.net
 
 ```text
 ASPNETCORE_ENVIRONMENT=Production
-ConnectionStrings__SqlServer=<Azure SQL connection string>
+ConnectionStrings__Postgres=<PostgreSQL connection string>
 Cors__AllowedOrigins__0=https://your-site-name.azurestaticapps.net
 ```
 
@@ -202,7 +201,7 @@ If you later add a custom frontend domain, add another indexed setting such as `
 ## 9. Important testing limitations
 
 - Free services can have quotas and may be slower than paid services.
-- The deployed API must use Azure SQL, not the local Windows-authenticated SQL Server.
+- The deployed API must use the hosted PostgreSQL connection string, not the local development connection string.
 - The game round caches are in memory. Restarting the API clears active rounds and rebuilds the career catalog.
 - The current import endpoints are not authenticated.
 - Do not place SQL credentials inside Angular files; Angular code is public.
@@ -215,3 +214,118 @@ Frontend: https://your-site-name.azurestaticapps.net
 API:      https://your-api-name.azurewebsites.net
 Swagger:  https://your-api-name.azurewebsites.net/swagger
 ```
+
+## 11. Deploy to a DigitalOcean Linux Droplet with Docker
+
+The repository includes a multi-stage `Dockerfile`, `docker-compose.yml`, and an Nginx configuration. Nginx serves the Angular application and proxies `/api` to the ASP.NET Core container. PostgreSQL runs externally on Supabase.
+
+### Prepare the droplet
+
+Create an Ubuntu Linux Droplet, connect through SSH, and install Docker:
+
+```bash
+sudo apt update
+sudo apt install -y ca-certificates curl git
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker "$USER"
+exit
+```
+
+Reconnect through SSH so the Docker group membership is applied.
+
+### Download and configure the application
+
+```bash
+git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git EuroleagueQuiz
+cd EuroleagueQuiz
+```
+
+Create a `.env` file on the droplet. Do not commit this file:
+
+```bash
+POSTGRES_CONNECTION_STRING='Host=YOUR_SUPABASE_HOST;Port=5432;Database=postgres;Username=postgres;Password=YOUR_PASSWORD;SSL Mode=Require;Trust Server Certificate=true'
+PUBLIC_ORIGIN=https://your-domain.com
+```
+
+Use the connection string supplied by Supabase. If the direct Supabase connection is not reachable from the Droplet, use Supabase's transaction/session pooler connection string instead.
+
+### Build and start the containers
+
+```bash
+docker compose up -d --build
+docker compose ps
+docker compose logs -f --tail=100
+```
+
+The application will be available at `http://YOUR_DROPLET_IP`. The Docker host exposes only Nginx on port 80; the API is reachable only inside the Docker network.
+
+### Run database migrations
+
+The API image contains the application but does not automatically run migrations. Run migrations from a temporary SDK container using the same Supabase connection string, or apply the existing PostgreSQL migration through your normal migration workflow before starting the application. Do not expose the migration endpoint publicly.
+
+### Open the firewall
+
+Allow SSH and HTTP initially:
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw enable
+```
+
+For HTTPS, put a domain in front of the Droplet and add a reverse proxy such as Caddy or Certbot/Nginx. Do not expose port 8080 publicly.
+
+### Update the application
+
+```bash
+git pull
+docker compose up -d --build
+docker image prune -f
+```
+
+The production Angular build uses `/api` as its API URL, so no Azure API URL needs to be changed in the client.
+
+## 12. Applying EF Core migrations to Supabase
+
+The Docker runtime does not automatically change the database schema. Apply migrations explicitly when the model changes.
+
+### Create a migration locally
+
+After changing an entity or the EF Core configuration, create a migration from the repository root:
+
+```powershell
+dotnet ef migrations add DescribeTheChange `
+  --project .\EuroleagueQuiz.Infrastructure `
+  --startup-project .\EuroleagueQuiz.Api `
+  --output-dir Persistence/Migrations
+```
+
+Commit the generated files in `EuroleagueQuiz.Infrastructure/Persistence/Migrations`.
+
+### Apply the migration to Supabase
+
+Use a Supabase direct connection or Session Pooler connection. Avoid the Transaction Pooler for EF migration commands.
+
+On the development computer, set the connection string temporarily:
+
+```powershell
+$env:ConnectionStrings__Postgres = "Host=YOUR_SUPABASE_HOST;Port=5432;Database=postgres;Username=postgres;Password=YOUR_PASSWORD;SSL Mode=Require;Trust Server Certificate=true"
+dotnet ef database update `
+  --project .\EuroleagueQuiz.Infrastructure `
+  --startup-project .\EuroleagueQuiz.Api
+Remove-Item Env:ConnectionStrings__Postgres
+```
+
+The command updates the Supabase database using the migrations already committed to the project. Take a Supabase backup before applying a migration that changes or removes data.
+
+### Recommended release order
+
+For normal additive changes:
+
+1. Create and commit the migration.
+2. Push the code to GitHub.
+3. Apply `dotnet ef database update` to Supabase.
+4. SSH into the Droplet and run `git pull`.
+5. Run `docker compose up -d --build`.
+
+For a breaking schema change, first deploy code that supports both the old and new schema, migrate the database, and only then remove the old schema usage.

@@ -24,6 +24,7 @@ export class CareerGamesComponent implements OnInit {
   selectedTeamId: number | null = null;
   selectedPlayer: Player | null = null;
   suggestions: Player[] = [];
+  activeSuggestionIndex = -1;
   searchTerm = '';
   answerFeedback = '';
   loading = false;
@@ -34,7 +35,7 @@ export class CareerGamesComponent implements OnInit {
     this.searchTerms.pipe(debounceTime(180), distinctUntilChanged(), switchMap(term => {
       const value = term.trim();
       return value.length < 2 ? of([] as Player[]) : this.api.searchPlayers(value).pipe(catchError(() => of([] as Player[])));
-    })).subscribe(players => { this.suggestions = players.slice(0, 10); this.detector.markForCheck(); });
+    })).subscribe(players => { this.suggestions = players.slice(0, 10); this.activeSuggestionIndex = -1; this.detector.markForCheck(); });
     this.start();
   }
 
@@ -76,8 +77,46 @@ export class CareerGamesComponent implements OnInit {
     this.loading = true; this.api.guessCareerOrder(this.order.roundId, this.orderClubs.map(x => x.id)).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe(round => { this.order = round; });
   }
 
-  onSearch(value: string): void { this.searchTerm = value; this.selectedPlayer = null; this.searchTerms.next(value); }
-  selectPlayer(player: Player): void { this.selectedPlayer = player; this.searchTerm = player.displayName; this.suggestions = []; }
+  onSearch(value: string): void {
+    this.searchTerm = value;
+    this.selectedPlayer = null;
+    this.activeSuggestionIndex = -1;
+    this.searchTerms.next(value);
+  }
+
+  onSearchKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.suggestions = [];
+      this.activeSuggestionIndex = -1;
+      this.detector.markForCheck();
+      return;
+    }
+
+    if (this.suggestions.length === 0) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.activeSuggestionIndex = (this.activeSuggestionIndex + 1) % this.suggestions.length;
+      this.detector.markForCheck();
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.activeSuggestionIndex = this.activeSuggestionIndex <= 0
+        ? this.suggestions.length - 1
+        : this.activeSuggestionIndex - 1;
+      this.detector.markForCheck();
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      this.selectPlayer(this.suggestions[this.activeSuggestionIndex >= 0 ? this.activeSuggestionIndex : 0]);
+      this.submitMystery();
+    }
+  }
+
+  selectPlayer(player: Player): void {
+    this.selectedPlayer = player;
+    this.searchTerm = player.displayName;
+    this.suggestions = [];
+    this.activeSuggestionIndex = -1;
+  }
   submitMystery(skip = false): void {
     if (!this.mystery || (!skip && !this.selectedPlayer)) return;
     this.clearSearch();
@@ -98,6 +137,7 @@ export class CareerGamesComponent implements OnInit {
     this.selectedPlayer = null;
     this.searchTerm = '';
     this.suggestions = [];
+    this.activeSuggestionIndex = -1;
     this.searchTerms.next('');
   }
 }

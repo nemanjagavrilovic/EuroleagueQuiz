@@ -19,6 +19,7 @@ export class TeamHistoryComponent implements OnInit {
 
   round: TeamHistoryRound | null = null;
   suggestions: Player[] = [];
+  activeSuggestionIndex = -1;
   selectedPlayer: Player | null = null;
   searchTerm = '';
   answerFeedback = '';
@@ -37,10 +38,12 @@ export class TeamHistoryComponent implements OnInit {
     ).subscribe({
       next: players => {
         this.suggestions = players.slice(0, 12);
+        this.activeSuggestionIndex = -1;
         this.changeDetector.markForCheck();
       },
       error: () => {
         this.suggestions = [];
+        this.activeSuggestionIndex = -1;
         this.changeDetector.markForCheck();
       }
     });
@@ -55,6 +58,7 @@ export class TeamHistoryComponent implements OnInit {
     this.selectedPlayer = null;
     this.searchTerm = '';
     this.suggestions = [];
+    this.activeSuggestionIndex = -1;
     this.api.startTeamHistoryGame().pipe(finalize(() => {
       this.loading = false;
       this.changeDetector.markForCheck();
@@ -67,6 +71,7 @@ export class TeamHistoryComponent implements OnInit {
   onSearch(value: string): void {
     this.searchTerm = value;
     this.selectedPlayer = null;
+    this.activeSuggestionIndex = -1;
     this.searchTerms.next(value);
   }
 
@@ -74,6 +79,34 @@ export class TeamHistoryComponent implements OnInit {
     this.selectedPlayer = player;
     this.searchTerm = player.displayName;
     this.suggestions = [];
+    this.activeSuggestionIndex = -1;
+  }
+
+  onSearchKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.suggestions = [];
+      this.activeSuggestionIndex = -1;
+      this.changeDetector.markForCheck();
+      return;
+    }
+
+    if (this.suggestions.length === 0) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.activeSuggestionIndex = (this.activeSuggestionIndex + 1) % this.suggestions.length;
+      this.changeDetector.markForCheck();
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.activeSuggestionIndex = this.activeSuggestionIndex <= 0
+        ? this.suggestions.length - 1
+        : this.activeSuggestionIndex - 1;
+      this.changeDetector.markForCheck();
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      this.selectPlayer(this.suggestions[this.activeSuggestionIndex >= 0 ? this.activeSuggestionIndex : 0]);
+      this.guess();
+    }
   }
 
   guess(): void {
@@ -91,6 +124,7 @@ export class TeamHistoryComponent implements OnInit {
     this.selectedPlayer = null;
     this.searchTerm = '';
     this.suggestions = [];
+    this.activeSuggestionIndex = -1;
     this.searchTerms.next('');
     this.loading = true;
     this.api.guessTeamHistory(this.round.roundId, playerId, skip).pipe(finalize(() => {

@@ -13,15 +13,15 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("SqlServer")
-            ?? throw new InvalidOperationException("ConnectionStrings:SqlServer is not configured.");
+        var connectionString = configuration.GetConnectionString("Postgres")
+            ?? throw new InvalidOperationException("ConnectionStrings:Postgres is not configured.");
 
         services.AddDbContext<EuroleagueDbContext>(options =>
-            options.UseSqlServer(connectionString, sqlOptions =>
-                sqlOptions.EnableRetryOnFailure(
+            options.UseNpgsql(connectionString, npgsqlOptions =>
+                npgsqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 5,
                     maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorNumbersToAdd: null)));
+                    errorCodesToAdd: null)));
 
         services.AddScoped<IPlayerRepository, PlayerRepository>();
         services.AddScoped<ITeamRepository, TeamRepository>();

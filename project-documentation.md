@@ -39,8 +39,8 @@ The system must also support future-season updates without duplicating existing 
 
 ### Database
 
-- Microsoft SQL Server
-- Entity Framework Core SQL Server provider
+- PostgreSQL
+- Entity Framework Core PostgreSQL provider
 
 ### Architecture
 
@@ -127,7 +127,7 @@ The domain layer must not depend on Entity Framework Core or ASP.NET Core.
 The infrastructure layer contains:
 
 - the EF Core `DbContext`;
-- SQL Server configuration;
+- PostgreSQL configuration;
 - repository implementations;
 - database migrations; and
 - external basketball-data provider integrations.

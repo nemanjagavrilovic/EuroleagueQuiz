@@ -19,9 +19,9 @@
 
       <div *ngIf="!round.completed" class="answer-area">
         <label for="history-search">Guess the player</label>
-        <input id="history-search" type="search" [value]="searchTerm" (input)="onSearch($any($event.target).value)" placeholder="Type first or last name…" autocomplete="off">
-        <div *ngIf="suggestions.length" class="suggestions">
-          <button type="button" *ngFor="let player of suggestions" (click)="selectPlayer(player)">{{ player.displayName }}</button>
+        <input id="history-search" type="search" [value]="searchTerm" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" placeholder="Type first or last name…" autocomplete="off" aria-autocomplete="list" aria-controls="history-player-suggestions">
+        <div id="history-player-suggestions" *ngIf="suggestions.length" class="suggestions" role="listbox">
+          <button type="button" *ngFor="let player of suggestions; let i = index" [class.active]="i === activeSuggestionIndex" [attr.aria-selected]="i === activeSuggestionIndex" role="option" (click)="selectPlayer(player)">{{ player.displayName }}</button>
         </div>
         <div class="actions">
           <button class="primary" type="button" (click)="guess()" [disabled]="!selectedPlayer || loading">Guess player</button>

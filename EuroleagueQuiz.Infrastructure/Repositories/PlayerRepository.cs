@@ -26,11 +26,11 @@ public sealed class PlayerRepository : IPlayerRepository
 
         foreach (var searchTerm in terms)
         {
-            var pattern = $"%{searchTerm}%";
+            var pattern = $"%{searchTerm.ToLowerInvariant()}%";
             query = query.Where(x =>
-                (x.FirstName != null && EF.Functions.Like(EF.Functions.Collate(x.FirstName, "Latin1_General_100_CI_AI"), pattern)) ||
-                (x.LastName != null && EF.Functions.Like(EF.Functions.Collate(x.LastName, "Latin1_General_100_CI_AI"), pattern)) ||
-                EF.Functions.Like(EF.Functions.Collate(x.DisplayName, "Latin1_General_100_CI_AI"), pattern));
+                (x.FirstName != null && EF.Functions.Like(x.FirstName.ToLower(), pattern)) ||
+                (x.LastName != null && EF.Functions.Like(x.LastName.ToLower(), pattern)) ||
+                EF.Functions.Like(x.DisplayName.ToLower(), pattern));
         }
 
         return await query

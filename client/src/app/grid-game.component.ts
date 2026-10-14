@@ -23,6 +23,7 @@ export class GridGameComponent {
   gridError = '';
   selectedDifficulty = this.toTitleCase(this.route.snapshot.paramMap.get('difficulty') ?? 'normal');
   playerResults: Player[] = [];
+  activeResultIndex = -1;
   answers: (Player | null)[] = Array(9).fill(null);
   selectedPlayer: Player | null = null;
   searchTerm = '';
@@ -44,6 +45,7 @@ export class GridGameComponent {
           })))
     ).subscribe(players => {
       this.playerResults = players.filter(player => !this.isPlayerUsed(player.id));
+      this.activeResultIndex = -1;
       this.changeDetector.markForCheck();
     });
   }
@@ -58,7 +60,34 @@ export class GridGameComponent {
   onSearch(term: string): void {
     this.searchTerm = term;
     this.searchError = '';
+    this.activeResultIndex = -1;
     this.playerSearch$.next(term);
+  }
+
+  onSearchKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.playerResults = [];
+      this.activeResultIndex = -1;
+      this.changeDetector.markForCheck();
+      return;
+    }
+
+    if (this.playerResults.length === 0) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.activeResultIndex = (this.activeResultIndex + 1) % this.playerResults.length;
+      this.changeDetector.markForCheck();
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.activeResultIndex = this.activeResultIndex <= 0
+        ? this.playerResults.length - 1
+        : this.activeResultIndex - 1;
+      this.changeDetector.markForCheck();
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      this.selectPlayer(this.playerResults[this.activeResultIndex >= 0 ? this.activeResultIndex : 0]);
+    }
   }
 
   selectPlayer(player: Player): void {
@@ -70,6 +99,7 @@ export class GridGameComponent {
     }
     this.selectedPlayer = player;
     this.playerResults = [];
+    this.activeResultIndex = -1;
     this.pendingCells = [];
     if (!this.grid) { this.searchError = 'The grid is not ready yet.'; return; }
 
@@ -140,6 +170,7 @@ export class GridGameComponent {
     this.selectedPlayer = null;
     this.searchTerm = '';
     this.playerResults = [];
+    this.activeResultIndex = -1;
     this.playerSearch$.next('');
   }
 

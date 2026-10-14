@@ -37,9 +37,9 @@
 
       <div class="answer-entry">
         <label for="player-search">Find a player</label>
-        <input id="player-search" type="search" [value]="searchTerm" placeholder="Type first or last name…" (input)="onSearch($any($event.target).value)" autocomplete="off">
-        <ul class="suggestions" *ngIf="playerResults.length > 0">
-          <li *ngFor="let player of playerResults" (click)="selectPlayer(player)"><span>{{ player.displayName }} <small>{{ player.nationality || 'Unknown nationality' }}</small></span></li>
+        <input id="player-search" type="search" [value]="searchTerm" placeholder="Type first or last name…" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" autocomplete="off" aria-autocomplete="list" aria-controls="player-suggestions">
+        <ul id="player-suggestions" class="suggestions" *ngIf="playerResults.length > 0" role="listbox">
+          <li *ngFor="let player of playerResults; let i = index" [class.active]="i === activeResultIndex" role="option" [attr.aria-selected]="i === activeResultIndex" (click)="selectPlayer(player)"><span>{{ player.displayName }} <small>{{ player.nationality || 'Unknown nationality' }}</small></span></li>
         </ul>
       </div>
       <p class="search-feedback" *ngIf="searchError" role="status">{{ searchError }}</p>

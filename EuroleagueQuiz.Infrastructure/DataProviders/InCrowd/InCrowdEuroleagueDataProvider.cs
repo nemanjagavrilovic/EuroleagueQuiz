@@ -151,5 +151,11 @@ public sealed class InCrowdEuroleagueDataProvider : IBasketballDataProvider
         DateOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) ? date : null;
 
     private static DateTime? ParseDateTime(string? value) =>
-        DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) ? date : null;
+        DateTime.TryParse(
+            value,
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+            out var date)
+            ? DateTime.SpecifyKind(date, DateTimeKind.Utc)
+            : null;
 }
