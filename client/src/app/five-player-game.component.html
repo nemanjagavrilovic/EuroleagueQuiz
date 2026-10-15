@@ -1,0 +1,47 @@
+<main class="game-shell">
+  <a class="back-link" routerLink="/">← All games</a>
+  <section class="game-card">
+    <p class="eyebrow">EUROLEAGUE STARTING FIVE</p>
+    <h1>Starting Five</h1>
+    <p>Type five player names who played for the club. Position does not matter. You have 24 seconds for every club and five rounds in total.</p>
+
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+    <div *ngIf="loading && !round" class="status">Loading game…</div>
+
+    <ng-container *ngIf="round">
+      <div class="round-header">
+        <div><span class="label">Round</span><strong>{{ round.roundNumber }} / {{ round.totalRounds }}</strong></div>
+        <div><span class="label">Club</span><strong>{{ round.team.name }}</strong></div>
+        <div class="timer" [class.warning]="secondsRemaining <= 8"><span class="label">Time</span><strong>{{ secondsRemaining }}s</strong></div>
+      </div>
+
+      <div class="positions" aria-label="Five player answers">
+        <div class="position" *ngFor="let slot of answerSlots; let i = index" [class.filled]="round.players[i]">
+          <span>Player {{ i + 1 }}</span>
+          <strong *ngIf="round.players[i]; else emptyAnswer">{{ round.players[i].displayName }}</strong>
+          <ng-template #emptyAnswer><strong class="empty-answer">Empty</strong></ng-template>
+        </div>
+      </div>
+
+      <div class="answer-area" *ngIf="!round.completed">
+        <label for="five-player-search">Find a player</label>
+        <input id="five-player-search" type="search" [value]="searchTerm" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" placeholder="Type first or last name…" autocomplete="off" aria-autocomplete="list" aria-controls="five-player-suggestions">
+        <div id="five-player-suggestions" class="suggestions" *ngIf="suggestions.length" role="listbox">
+          <button *ngFor="let player of suggestions; let i = index" type="button" [class.active]="i === activeSuggestionIndex" (click)="selectPlayer(player)" role="option">{{ player.displayName }}</button>
+        </div>
+        <div class="actions">
+          <button class="primary" (click)="submitGuess()" [disabled]="!selectedPlayer || loading">Guess player</button>
+          <button class="secondary" (click)="submitGuess(true)" [disabled]="loading">Reveal round</button>
+        </div>
+        <p class="feedback" *ngIf="feedback" role="status">{{ feedback }}</p>
+      </div>
+
+      <div class="result" *ngIf="round.completed" [class.success]="round.roundCorrect">
+        <h2>{{ round.gameCompleted ? 'Game complete!' : (round.roundCorrect ? 'Perfect round!' : 'Round complete') }}</h2>
+        <p>Players guessed in this game: <strong>{{ round.score }}</strong></p>
+        <button *ngIf="!round.gameCompleted" class="primary" (click)="nextRound()" [disabled]="loading">Next round</button>
+        <button *ngIf="round.gameCompleted" class="primary" (click)="start()" [disabled]="loading">Play again</button>
+      </div>
+    </ng-container>
+  </section>
+</main>

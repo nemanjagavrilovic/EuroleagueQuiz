@@ -97,6 +97,21 @@ export interface MysteryPlayerRound {
   correctPlayer: Player | null;
 }
 
+export interface FivePlayerGameRound {
+  roundId: string;
+  roundNumber: number;
+  totalRounds: number;
+  secondsPerRound: number;
+  secondsRemaining: number;
+  team: Team;
+  players: Player[];
+  completed: boolean;
+  roundCorrect: boolean | null;
+  gameCompleted: boolean;
+  score: number;
+  lastGuessCorrect: boolean | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DataApiService {
   private readonly http = inject(HttpClient);
@@ -148,4 +163,7 @@ export class DataApiService {
   guessCareerOrder(roundId: string, teamIds: number[]): Observable<CareerOrderRound> { return this.http.post<CareerOrderRound>(`${this.baseUrl}/career-games/career-order/guess`, { roundId, teamIds }); }
   startMysteryPlayer(): Observable<MysteryPlayerRound> { return this.http.post<MysteryPlayerRound>(`${this.baseUrl}/career-games/mystery-player/start`, {}); }
   guessMysteryPlayer(roundId: string, playerId?: number, skip = false): Observable<MysteryPlayerRound> { return this.http.post<MysteryPlayerRound>(`${this.baseUrl}/career-games/mystery-player/guess`, { roundId, playerId, skip }); }
+  startFivePlayerGame(): Observable<FivePlayerGameRound> { return this.http.post<FivePlayerGameRound>(`${this.baseUrl}/five-player/start`, {}); }
+  guessFivePlayer(roundId: string, playerId?: number, skip = false): Observable<FivePlayerGameRound> { return this.http.post<FivePlayerGameRound>(`${this.baseUrl}/five-player/guess`, { roundId, playerId, skip }); }
+  nextFivePlayerRound(roundId: string): Observable<FivePlayerGameRound> { return this.http.post<FivePlayerGameRound>(`${this.baseUrl}/five-player/next`, {}, { params: { roundId } }); }
 }

@@ -1,0 +1,41 @@
+:host { display: block; min-height: 100vh; }
+.game-shell { max-width: 820px; margin: 0 auto; padding: 48px 24px; }
+.back-link { color: #596273; text-decoration: none; font-weight: 700; }
+.game-card { margin-top: 28px; padding: 32px; border: 1px solid #e5e7eb; border-radius: 22px; background: #fff; box-shadow: 0 18px 50px rgba(15, 23, 42, .08); overflow: hidden; }
+.eyebrow { color: #ef8354; font-size: 12px; font-weight: 800; letter-spacing: .16em; }
+h1 { font-size: clamp(32px, 5vw, 50px); line-height: 1; letter-spacing: -.05em; margin: 10px 0; }
+.round-header { display: grid; grid-template-columns: .7fr 1.5fr .7fr; gap: 10px; margin-top: 28px; }
+.round-header > div { display: flex; flex-direction: column; gap: 5px; padding: 14px; border-radius: 12px; background: #f1f4f8; }
+.label { color: #596273; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.timer.warning { background: #fff1eb; color: #9a3412; }
+.positions { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 22px; }
+.position { min-height: 92px; padding: 12px 8px; border: 1px solid #dbe2ea; border-radius: 12px; background: #fff; }
+.position span, .position strong { display: block; }
+.position span { color: #596273; font-size: 12px; }
+.position strong { margin-top: 10px; font-size: 13px; }
+.position.filled { border-color: #9dd9b0; background: #e9f8ef; color: #166534; }
+.answer-area { position: relative; margin-top: 24px; }
+.answer-area label { display: block; margin-bottom: 8px; color: #596273; font-size: 14px; font-weight: 700; }
+.answer-area input { box-sizing: border-box; width: 100%; padding: 14px 16px; border: 1px solid #cbd5e1; border-radius: 10px; font: inherit; }
+.suggestions { position: absolute; z-index: 2; left: 0; right: 0; max-height: 230px; overflow-y: auto; background: #fff; border: 1px solid #dbe2ea; border-radius: 10px; box-shadow: 0 12px 30px rgba(15, 23, 42, .12); }
+.suggestions button { display: block; width: 100%; padding: 12px 14px; border: 0; background: #fff; text-align: left; font: inherit; cursor: pointer; }
+.suggestions button:hover, .suggestions button.active { background: #ffe0cf; color: #9a3412; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.primary, .secondary { border: 1px solid transparent; border-radius: 9px; padding: 12px 16px; font: inherit; font-weight: 800; cursor: pointer; box-shadow: 0 2px 5px rgba(15, 23, 42, .08); }
+.primary { border-color: #172033; background: #172033; color: #fff; }
+.secondary { border-color: #d7dee8; background: #fff; color: #172033; }
+.primary:disabled, .secondary:disabled { opacity: .5; cursor: not-allowed; }
+.feedback { margin: 12px 0 0; padding: 10px 12px; border-radius: 9px; background: #fff7ed; color: #9a3412; font-size: 14px; font-weight: 700; }
+.result { margin-top: 24px; padding: 22px; border-radius: 14px; background: #fff1eb; }
+.result.success { background: #e9f8ef; }
+.error { color: #be123c; }
+.status { color: #596273; }
+@media (max-width: 600px) {
+  .game-shell { padding: 28px 12px; }
+  .game-card { margin-top: 20px; padding: 18px; border-radius: 16px; }
+  .round-header { grid-template-columns: 1fr 1fr; }
+  .round-header > div:last-child { grid-column: span 2; }
+  .positions { grid-template-columns: repeat(2, 1fr); }
+  .position:last-child { grid-column: span 2; }
+  .actions button { width: 100%; min-height: 46px; }
+}

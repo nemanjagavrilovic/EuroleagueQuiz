@@ -16,6 +16,30 @@ public sealed class PlayerTeamSeasonRepository : IPlayerTeamSeasonRepository
     public async Task<IReadOnlyList<PlayerTeamSeason>> GetAllAsync(CancellationToken cancellationToken) =>
         await _db.PlayerTeamSeasons.AsNoTracking().Include(x => x.Player).Include(x => x.Team).Include(x => x.Season).ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<long>> GetTeamIdsWithAtLeastPlayersAsync(int minimumPlayers, CancellationToken cancellationToken) =>
+        await _db.PlayerTeamSeasons.AsNoTracking()
+            .GroupBy(x => x.TeamId)
+            .Where(x => x.Select(y => y.PlayerId).Distinct().Count() >= minimumPlayers)
+            .Select(x => x.Key)
+            .ToListAsync(cancellationToken);
+
+    public Task<PlayerTeamSeason?> FindForPlayerAndTeamAsync(long playerId, long teamId, CancellationToken cancellationToken) =>
+        _db.PlayerTeamSeasons.AsNoTracking()
+            .Include(x => x.Player)
+            .Include(x => x.Team)
+            .Include(x => x.Season)
+            .Where(x => x.PlayerId == playerId && x.TeamId == teamId)
+            .OrderByDescending(x => x.Season.StartYear)
+            .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<PlayerTeamSeason>> GetForTeamAsync(long teamId, CancellationToken cancellationToken) =>
+        await _db.PlayerTeamSeasons.AsNoTracking()
+            .Include(x => x.Player)
+            .Include(x => x.Team)
+            .Include(x => x.Season)
+            .Where(x => x.TeamId == teamId)
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<PlayerTeamSeason>> GetPlayersForTeamsAsync(long firstTeamId, long secondTeamId, CancellationToken cancellationToken)
     {
         var first = _db.PlayerTeamSeasons.Where(x => x.TeamId == firstTeamId).Select(x => x.PlayerId);
