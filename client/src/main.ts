@@ -1,14 +1,18 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { authInterceptor } from './app/auth/auth.interceptor';
 import { provideRouter, Routes } from '@angular/router';
-import { AppComponent } from './app/app.component';
-import { GridGameComponent } from './app/grid-game.component';
-import { HomeComponent } from './app/home.component';
-import { TeamHistoryComponent } from './app/team-history.component';
-import { CareerGamesComponent } from './app/career-games.component';
-import { FivePlayerGameComponent } from './app/five-player-game.component';
+import { AppComponent } from './app/app/app.component';
+import { GridGameComponent } from './app/grid-game/grid-game.component';
+import { HomeComponent } from './app/home/home.component';
+import { TeamHistoryComponent } from './app/team-history/team-history.component';
+import { CareerGamesComponent } from './app/career-games/career-games.component';
+import { FivePlayerGameComponent } from './app/five-player-game/five-player-game.component';
+import { AuthComponent } from './app/auth/auth.component';
 
 const routes: Routes = [
+  { path: 'login', component: AuthComponent },
+  { path: 'register', component: AuthComponent },
   { path: '', component: HomeComponent },
   { path: 'grid/:difficulty', component: GridGameComponent },
   { path: 'team-history', component: TeamHistoryComponent },
@@ -18,5 +22,5 @@ const routes: Routes = [
 ];
 
 bootstrapApplication(AppComponent, {
-  providers: [provideHttpClient(), provideRouter(routes)]
+  providers: [provideHttpClient(withInterceptors([authInterceptor])), provideRouter(routes)]
 }).catch((error: unknown) => console.error(error));

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject }
 import { NgFor, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subject, catchError, debounceTime, distinctUntilChanged, finalize, of, switchMap } from 'rxjs';
-import { DataApiService, Player, Team, TeamHistoryRound } from './data-api.service';
+import { DataApiService, Player, Team, TeamHistoryRound } from '../services/data-api.service';
 
 @Component({
   selector: 'app-team-history',

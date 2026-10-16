@@ -3,7 +3,7 @@ import { NgFor, NgIf } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
-import { DataApiService, GridCell, GridDefinition, Player } from './data-api.service';
+import { DataApiService, GridCell, GridDefinition, Player } from '../services/data-api.service';
 
 @Component({
   selector: 'app-grid-game',

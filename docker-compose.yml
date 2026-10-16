@@ -8,6 +8,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Postgres: ${POSTGRES_CONNECTION_STRING}
+      Auth__SigningKey: ${AUTH_SIGNING_KEY}
+      Google__ClientId: ${GOOGLE_CLIENT_ID:-}
       Cors__AllowedOrigins__0: ${PUBLIC_ORIGIN:-http://localhost}
     expose:
       - "8080"

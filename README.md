@@ -87,3 +87,21 @@ Before changing the database model, inspect real provider responses without writ
 ```
 
 The script saves raw responses and a shape summary under `api-samples`. It calls only the read-only season, clubs, and club-people endpoints.
+
+## Authentication
+
+The client includes email/password registration and login at `/register` and `/login`. The API stores accounts in the `AppUsers` table, hashes passwords with PBKDF2-SHA256, and returns a seven-day bearer token.
+
+Apply the new migration before using registration against an existing database:
+
+```powershell
+dotnet ef database update `
+  --project EuroleagueQuiz.Infrastructure `
+  --startup-project EuroleagueQuiz.Api
+```
+
+In Development, the API uses a development-only signing key. For Production, configure `Auth__SigningKey` as a random secret of at least 32 characters, for example with a secret manager or environment variable. Do not commit a production key. The auth endpoints are `POST /api/auth/register`, `POST /api/auth/login`, and authenticated `GET /api/auth/me`.
+
+Google sign-in uses Google Identity Services in the client and verifies the ID token in the API. Create a Web application OAuth client in Google Cloud Console and add the local and deployed frontend origins. Set the same public client ID in `googleClientId` in the Angular environment file and in the API setting `Google__ClientId`. Without this configuration, the Google button displays setup guidance and cannot authenticate users.
+
+The `AddGoogleSignIn` migration adds the Google account identifier and allows Google-only accounts to omit a password hash. Apply all migrations again after adding it.

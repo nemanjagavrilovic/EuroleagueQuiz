@@ -1,0 +1,44 @@
+<main class="auth-page">
+  <a class="back-link" routerLink="/" aria-label="Back to the home page">← <span>Pick & Roll</span></a>
+  <section class="auth-card" [class.register-card]="isRegister">
+    <div class="card-mark" aria-hidden="true">P<span>&</span>R</div>
+    <p class="eyebrow">EUROLEAGUE QUIZ</p>
+    <h1>{{ isRegister ? 'Create your account' : 'Welcome back' }}</h1>
+    <p class="intro">{{ isRegister ? 'Save your progress and keep the game going.' : 'Sign in and get back to your next challenge.' }}</p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label *ngIf="isRegister" for="displayName">Display name</label>
+      <input *ngIf="isRegister" id="displayName" type="text" formControlName="displayName" autocomplete="name" placeholder="e.g. Nikola" [attr.aria-invalid]="form.controls.displayName.touched && form.controls.displayName.invalid" />
+      <small *ngIf="isRegister && form.controls.displayName.touched && form.controls.displayName.invalid">Enter a name between 2 and 100 characters.</small>
+
+      <label for="email">Email address</label>
+      <input id="email" type="email" formControlName="email" autocomplete="email" placeholder="you@example.com" [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid" />
+      <small *ngIf="form.controls.email.touched && form.controls.email.invalid">Enter a valid email address.</small>
+
+      <label for="password">Password</label>
+      <input id="password" type="password" formControlName="password" [autocomplete]="isRegister ? 'new-password' : 'current-password'" placeholder="At least 8 characters" [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid" />
+      <small *ngIf="form.controls.password.touched && form.controls.password.invalid">Your password must be at least 8 characters.</small>
+
+      <label *ngIf="isRegister" for="confirmPassword">Confirm password</label>
+      <input *ngIf="isRegister" id="confirmPassword" type="password" formControlName="confirmPassword" autocomplete="new-password" placeholder="Enter your password again" />
+
+      <p class="error-message" *ngIf="errorMessage" role="alert">{{ errorMessage }}</p>
+      <button class="submit-button" type="submit" [disabled]="loading">
+        {{ loading ? 'Please wait…' : (isRegister ? 'Create account' : 'Sign in') }}
+      </button>
+    </form>
+
+    <div class="divider"><span>OR</span></div>
+    <div *ngIf="googleClientIdConfigured; else googleNotConfigured" #googleButton class="google-button-host"></div>
+    <ng-template #googleNotConfigured>
+      <button class="google-placeholder" type="button" (click)="showGoogleSetupMessage()"><span class="google-g">G</span>Continue with Google</button>
+      <p class="google-note">Google sign-in will be available after OAuth setup.</p>
+    </ng-template>
+
+    <p class="switch-copy" *ngIf="isRegister; else loginLink">
+      Already have an account? <a routerLink="/login">Sign in</a>
+    </p>
+    <ng-template #loginLink><p class="switch-copy">Don't have an account? <a routerLink="/register">Sign up</a></p></ng-template>
+  </section>
+  <p class="court-note">YOUR NEXT CHALLENGE STARTS HERE <span>✦</span></p>
+</main>

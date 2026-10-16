@@ -1,9 +1,14 @@
 using EuroleagueQuiz.Application;
+using EuroleagueQuiz.Api.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using EuroleagueQuiz.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddSingleton<AuthTokenService>();
+builder.Services.AddAuthentication("Bearer").AddScheme<AuthenticationSchemeOptions, JwtAuthHandler>("Bearer", _ => { });
+builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddApplication();
@@ -29,5 +34,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("Angular");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 app.Run();

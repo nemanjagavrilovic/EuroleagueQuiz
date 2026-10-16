@@ -16,3 +16,14 @@ h1 { margin: 10px 0; font-size: clamp(32px, 4vw, 48px); line-height: 1; letter-s
 .history-game-card { margin-top: 0; }
 @media (max-width: 1000px) { .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .home-shell { padding: 28px 14px; } .hero { margin-bottom: 24px; } .games-grid { grid-template-columns: 1fr; gap: 12px; } .game-card { min-height: 0; padding: 18px; } .game-copy h2 { font-size: 22px; } .single-link { min-height: 44px; display: inline-flex; align-items: center; } }
+
+.top-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 42px; padding: 3px 0 18px; border-bottom: 1px solid #e8eaf0; }
+.brand { color: #172033; font-size: 19px; font-weight: 800; letter-spacing: -.08em; text-decoration: none; }
+.brand span { color: #ef8354; }
+.account-actions { display: flex; align-items: center; gap: 16px; }
+.welcome-user { color: #596273; font-size: 13px; font-weight: 700; }
+.login-link, .logout-link { border: 0; background: transparent; color: #172033; cursor: pointer; text-decoration: none; font: inherit; font-size: 13px; font-weight: 800; }
+.register-link { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 8px 13px; border-radius: 8px; background: #172033; color: #fff; text-decoration: none; font-size: 12px; font-weight: 800; }
+.register-link:hover { background: #ef8354; }
+.logout-link:hover, .login-link:hover { color: #ef8354; }
+@media (max-width: 520px) { .top-nav { margin-bottom: 28px; } .account-actions { gap: 10px; } .welcome-user { max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .register-link { min-height: 36px; padding: 7px 10px; } }

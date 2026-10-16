@@ -1,4 +1,17 @@
 <main class="home-shell">
+  <nav class="top-nav" aria-label="Main navigation">
+    <a class="brand" routerLink="/" aria-label="Pick and Roll home"><span>P</span>& R</a>
+    <div class="account-actions" *ngIf="auth.currentUser() as user; else guestLinks">
+      <span class="welcome-user">Welcome, {{ user.displayName }}</span>
+      <button type="button" class="logout-link" (click)="logout()">Sign out</button>
+    </div>
+    <ng-template #guestLinks>
+      <div class="account-actions">
+        <a class="login-link" routerLink="/login">Sign in</a>
+        <a class="register-link" routerLink="/register">Sign up</a>
+      </div>
+    </ng-template>
+  </nav>
   <header class="hero">
     <p class="eyebrow">EUROLEAGUE QUIZ</p>
     <h1>How well do you know the players behind the clubs?</h1>

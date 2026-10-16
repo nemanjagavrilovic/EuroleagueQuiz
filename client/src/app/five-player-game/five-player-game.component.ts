@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { NgFor, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subject, Subscription, catchError, debounceTime, distinctUntilChanged, finalize, interval, of, switchMap } from 'rxjs';
-import { DataApiService, FivePlayerGameRound, Player } from './data-api.service';
+import { DataApiService, FivePlayerGameRound, Player } from '../services/data-api.service';
 
 @Component({
   selector: 'app-five-player-game',

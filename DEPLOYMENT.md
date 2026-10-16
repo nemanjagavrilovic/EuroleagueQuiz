@@ -80,6 +80,8 @@ https://your-api-name.azurewebsites.net
 ASPNETCORE_ENVIRONMENT=Production
 ConnectionStrings__Postgres=<PostgreSQL connection string>
 Cors__AllowedOrigins__0=https://your-site-name.azurestaticapps.net
+Auth__SigningKey=<random secret of at least 32 characters>
+Google__ClientId=<Google OAuth web client ID>
 ```
 
 5. Deploy the `EuroleagueQuiz.Api` project from GitHub or from a published package.
@@ -194,6 +196,8 @@ Set it to the exact Static Web Apps URL:
 
 ```text
 Cors__AllowedOrigins__0=https://your-site-name.azurestaticapps.net
+Auth__SigningKey=<random secret of at least 32 characters>
+Google__ClientId=<Google OAuth web client ID>
 ```
 
 If you later add a custom frontend domain, add another indexed setting such as `Cors__AllowedOrigins__1`.
@@ -245,6 +249,8 @@ Create a `.env` file on the droplet. Do not commit this file:
 ```bash
 POSTGRES_CONNECTION_STRING='Host=YOUR_SUPABASE_HOST;Port=5432;Database=postgres;Username=postgres;Password=YOUR_PASSWORD;SSL Mode=Require;Trust Server Certificate=true'
 PUBLIC_ORIGIN=https://your-domain.com
+AUTH_SIGNING_KEY='generate-a-random-secret-of-at-least-32-characters'
+GOOGLE_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
 ```
 
 Use the connection string supplied by Supabase. If the direct Supabase connection is not reachable from the Droplet, use Supabase's transaction/session pooler connection string instead.
