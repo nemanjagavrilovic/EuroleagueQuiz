@@ -1,0 +1,12 @@
+[
+  { "path": "/", "title": "Pick & Roll | EuroLeague Basketball Quizzes", "description": "Test your EuroLeague knowledge with six free basketball quiz games. Connect clubs in Player Grid, guess careers, solve clues, and beat the Starting Five clock." },
+  { "path": "/grid/easy", "title": "Easy EuroLeague Player Grid | Pick & Roll", "description": "Play an easy 3×3 EuroLeague basketball grid. Find players who represented both clubs at each intersection and test your basketball memory." },
+  { "path": "/grid/normal", "title": "EuroLeague Player Grid | Pick & Roll", "description": "Connect EuroLeague clubs in a 3×3 basketball quiz grid. Guess players who played for both teams, with a fresh challenge every time you play." },
+  { "path": "/grid/hard", "title": "Hard EuroLeague Player Grid | Pick & Roll", "description": "Take on a hard EuroLeague basketball grid. Solve challenging club intersections by naming players who represented both teams." },
+  { "path": "/grid/legend", "title": "Legend EuroLeague Player Grid | Pick & Roll", "description": "Try the toughest EuroLeague Player Grid. Test your knowledge of rare player and club connections in this challenging 3×3 basketball quiz." },
+  { "path": "/team-history", "title": "Guess the Player by Their Clubs | Pick & Roll", "description": "Guess a EuroLeague basketball player from four club clues. Start with one team and reveal another club with each miss or skip in Team History." },
+  { "path": "/game/missing-club", "title": "Missing Club Basketball Quiz | Pick & Roll", "description": "Which club is missing from this player's career? Study three EuroLeague club clues and choose the fourth in this free basketball quiz." },
+  { "path": "/game/career-order", "title": "EuroLeague Career Order Quiz | Pick & Roll", "description": "Put a basketball player's EuroLeague clubs in chronological order. Trace the career, arrange the teams, and check your answer in Career Order." },
+  { "path": "/game/mystery-player", "title": "Mystery Player Basketball Quiz | Pick & Roll", "description": "Identify the mystery EuroLeague player from career clues. Reveal details one at a time and see how early you can guess the basketball player." },
+  { "path": "/game/five-player", "title": "Starting Five Basketball Quiz | Pick & Roll", "description": "Name five players for each EuroLeague club before the shot clock runs out. Play five rounds with 24 seconds per club in Starting Five." }
+]

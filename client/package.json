@@ -5,6 +5,7 @@
   "scripts": {
     "start": "ng serve",
     "build": "ng build",
+    "postbuild": "node scripts/generate-seo.mjs",
     "test": "ng test"
   },
   "dependencies": {
