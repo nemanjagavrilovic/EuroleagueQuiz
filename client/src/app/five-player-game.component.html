@@ -1,46 +1,23 @@
-<main class="game-shell">
-  <a class="back-link" routerLink="/">← All games</a>
-  <section class="game-card">
-    <p class="eyebrow">EUROLEAGUE STARTING FIVE</p>
-    <h1>Starting Five</h1>
-    <p>Type five player names who played for the club. Position does not matter. You have 24 seconds for every club and five rounds in total.</p>
-
-    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
-    <div *ngIf="loading && !round" class="status">Loading game…</div>
-
-    <ng-container *ngIf="round">
-      <div class="round-header">
-        <div><span class="label">Round</span><strong>{{ round.roundNumber }} / {{ round.totalRounds }}</strong></div>
-        <div><span class="label">Club</span><strong>{{ round.team.name }}</strong></div>
-        <div class="timer" [class.warning]="secondsRemaining <= 8"><span class="label">Time</span><strong>{{ secondsRemaining }}s</strong></div>
-      </div>
-
-      <div class="positions" aria-label="Five player answers">
-        <div class="position" *ngFor="let slot of answerSlots; let i = index" [class.filled]="round.players[i]" [class.revealed]="isRevealed(round.players[i])">
-          <span>Player {{ i + 1 }}</span>
-          <strong *ngIf="round.players[i]; else emptyAnswer">{{ round.players[i].displayName }}</strong>
-          <ng-template #emptyAnswer><strong class="empty-answer">Empty</strong></ng-template>
-        </div>
-      </div>
-
+<main class="game-shell five-page">
+  <header class="five-header"><a class="back-link" routerLink="/">← All games</a><p class="eyebrow">BEAT THE CLOCK</p><h1>Starting Five</h1><p class="intro">One club. Five names. Make every second count.</p></header>
+  <app-basketball-loader *ngIf="loading && !round" message="Loading ..." [overlay]="true"></app-basketball-loader>
+  <p *ngIf="errorMessage && !round" class="error" role="alert">{{ errorMessage }}</p>
+  <div class="five-layout" *ngIf="round">
+    <section class="game-card five-card" aria-label="Starting Five game">
+      <div class="scoreboard"><div><span>ROUND</span><strong>{{ round.roundNumber }} <small>/ {{ round.totalRounds }}</small></strong></div><div><span>TOTAL SCORE</span><strong>{{ round.score }}</strong></div><div class="timer" [class.warning]="secondsRemaining <= 8 && !round.completed"><span>TIME LEFT</span><app-shot-clock [seconds]="secondsRemaining"></app-shot-clock></div></div>
+      <div class="time-track" [class.warning]="secondsRemaining <= 8 && !round.completed" aria-hidden="true"><span [style.width.%]="timePercent"></span></div>
+      <div class="club-heading"><img *ngIf="round.team.imageUrl" [src]="round.team.imageUrl" alt=""><div><p class="eyebrow">NAME FIVE PLAYERS FOR</p><h2>{{ round.team.name }}</h2></div></div>
+      <div class="answers-heading"><h3>Your five</h3><span>{{ roundGuesses }} / 5 guessed</span></div>
+      <ol class="player-slots" aria-label="Five player answers"><li *ngFor="let slot of answerSlots; let i = index" [class.filled]="round.players[i]" [class.revealed]="isRevealed(round.players[i])"><span class="slot-number">{{ i + 1 }}</span><strong *ngIf="round.players[i]; else emptyAnswer">{{ round.players[i].displayName }}</strong><ng-template #emptyAnswer><span class="empty-answer">Player {{ i + 1 }}</span></ng-template><span class="revealed-label" *ngIf="isRevealed(round.players[i])">Revealed</span></li></ol>
       <div class="answer-area" *ngIf="!round.completed">
-        <label for="five-player-search">Find a player</label>
-        <input id="five-player-search" type="search" [value]="searchTerm" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" placeholder="Type first or last name…" autocomplete="off" aria-autocomplete="list" aria-controls="five-player-suggestions">
-        <div id="five-player-suggestions" class="suggestions" *ngIf="suggestions.length" role="listbox">
-          <button *ngFor="let player of suggestions; let i = index" type="button" [class.active]="i === activeSuggestionIndex" (click)="selectPlayer(player)" role="option">{{ player.displayName }}</button>
+        <div class="five-search-wrap"><label for="five-player-search">Who played for this club?</label><input #playerSearch id="five-player-search" type="search" role="combobox" [value]="searchTerm" [attr.aria-busy]="loading" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" placeholder="Search first or last name…" autocomplete="off" aria-autocomplete="list" aria-controls="five-player-suggestions" [attr.aria-expanded]="suggestions.length > 0" [attr.aria-activedescendant]="activeSuggestionIndex >= 0 ? 'five-option-' + activeSuggestionIndex : null" aria-describedby="five-feedback">
+          <div id="five-player-suggestions" class="suggestions" *ngIf="suggestions.length" role="listbox"><button *ngFor="let player of suggestions; let i = index" [id]="'five-option-' + i" type="button" tabindex="-1" [class.active]="i === activeSuggestionIndex" [attr.aria-selected]="i === activeSuggestionIndex" (mousedown)="$event.preventDefault()" (click)="selectPlayer(player)" role="option">{{ player.displayName }}</button></div>
         </div>
-        <div class="actions">
-          <button class="secondary" (click)="submitGuess(true)" [disabled]="loading">Reveal round</button>
-        </div>
-        <p class="feedback" *ngIf="feedback" role="status">{{ feedback }}</p>
+        <div id="five-feedback" class="feedback-slot" aria-live="polite"><p>{{ errorMessage || (loading ? 'Checking your answer…' : feedback || 'Select a player from the suggestions to submit.') }}</p></div>
+        <div class="round-actions"><span>Need an assist?</span><button class="secondary" type="button" (click)="submitGuess(true)" [disabled]="loading">Reveal round</button></div>
       </div>
-
-      <div class="result" *ngIf="round.completed" [class.success]="round.roundCorrect">
-        <h2>{{ round.gameCompleted ? 'Game complete!' : (round.roundCorrect ? 'Perfect round!' : 'Round complete') }}</h2>
-        <p>Players guessed in this game: <strong>{{ round.score }}</strong></p>
-        <button *ngIf="!round.gameCompleted" class="primary" (click)="nextRound()" [disabled]="loading">Next round</button>
-        <button *ngIf="round.gameCompleted" class="primary" (click)="start()" [disabled]="loading">Play again</button>
-      </div>
-    </ng-container>
-  </section>
+      <div class="result" *ngIf="round.completed" [class.success]="round.roundCorrect" role="status"><p class="result-label">{{ round.gameCompleted ? 'FINAL SCORE' : 'ROUND COMPLETE' }}</p><h2>{{ round.gameCompleted ? 'That’s the game.' : (round.roundCorrect ? 'A perfect five.' : 'On to the next club.') }}</h2><p>You guessed <strong>{{ round.score }}</strong> players{{ round.gameCompleted ? ' across ' + round.totalRounds + ' rounds.' : ' so far.' }}</p><p class="result-error" *ngIf="errorMessage">{{ errorMessage }}</p><div class="result-actions"><button *ngIf="!round.gameCompleted" class="primary" type="button" (click)="nextRound()" [disabled]="loading">{{ loading ? 'Loading…' : 'Next round' }}</button><button *ngIf="round.gameCompleted" class="primary" type="button" (click)="start()" [disabled]="loading">Play again</button><a routerLink="/">All games →</a></div></div>
+    </section>
+    <aside class="five-guide" aria-label="How to play Starting Five"><p class="eyebrow">THE GAME PLAN</p><h2>Five names.<br>No hesitation.</h2><ol><li><strong>Study the club</strong><span>Each round gives you a club and {{ round.secondsPerRound }} seconds to name five of its players.</span></li><li><strong>Build your five</strong><span>Search and select any player who represented the club in the available seasons. Any position counts.</span></li><li><strong>Keep the run going</strong><span>Play {{ round.totalRounds }} rounds. Correct guesses add to your total score.</span></li></ol><div class="guide-tip"><strong>Every season counts.</strong><p>Think beyond the current roster. Your guesses stay green; revealed players appear in red.</p></div></aside>
+  </div>
 </main>

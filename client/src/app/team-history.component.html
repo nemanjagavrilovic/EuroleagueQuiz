@@ -1,43 +1,33 @@
-<main class="history-shell">
-  <a class="back-link" routerLink="/">← All games</a>
-  <section class="history-card">
-    <p class="eyebrow">GAME 02 · TEAM HISTORY</p>
-    <h1>Who played for these clubs?</h1>
-    <p class="intro">Use the revealed EuroLeague clubs to identify one player from their career history.</p>
-
-    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
-    <div *ngIf="loading && !round" class="status">Loading round…</div>
-
-    <ng-container *ngIf="round">
-      <div class="team-list">
-        <div class="team-chip" *ngFor="let team of round.revealedTeams">
-          <img *ngIf="team.imageUrl" [src]="team.imageUrl" [alt]="team.name">
-          <span>{{ team.name }}</span>
+<main class="history-shell history-page">
+  <header class="game-header"><a class="back-link" routerLink="/">← All games</a><p class="eyebrow">FOLLOW THE JOURNEY</p><h1>Team History</h1><p class="intro">Four clubs. One player. How soon can you make the connection?</p></header>
+  <app-basketball-loader *ngIf="loading && !round" message="Loading ..." [overlay]="true"></app-basketball-loader>
+  <p *ngIf="errorMessage && !round" class="error" role="alert">{{ errorMessage }}</p>
+  <div class="history-layout" *ngIf="round">
+    <section class="history-card" aria-label="Team History game">
+      <div class="round-heading"><div><strong>{{ round.revealedTeamCount }} <span>/ {{ round.totalTeams }}</span></strong><span>clubs revealed</span></div><span class="round-label">{{ round.completed ? 'Round complete' : 'Who played here?' }}</span></div>
+      <div class="clue-progress" aria-hidden="true"><span *ngFor="let slot of clueSlots" [class.shown]="slot < round.revealedTeamCount"></span></div>
+      <div class="team-list" aria-label="Club clues">
+        <div class="team-chip" *ngFor="let slot of clueSlots" [class.locked]="!round.revealedTeams[slot]">
+          <span class="clue-number">CLUB {{ slot + 1 }}</span>
+          <ng-container *ngIf="round.revealedTeams[slot] as team; else hiddenClub"><img *ngIf="team.imageUrl" [src]="team.imageUrl" alt=""><strong>{{ team.name }}</strong></ng-container>
+          <ng-template #hiddenClub><span class="hidden-club" aria-hidden="true">?</span><span class="hidden-label">Not revealed</span></ng-template>
         </div>
       </div>
-      <p class="progress">{{ round.revealedTeamCount }} of {{ round.totalTeams }} clubs revealed</p>
-
       <div *ngIf="!round.completed" class="answer-area">
-        <label for="history-search">Guess the player</label>
-        <input id="history-search" type="search" [value]="searchTerm" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" placeholder="Type first or last name…" autocomplete="off" aria-autocomplete="list" aria-controls="history-player-suggestions">
-        <div id="history-player-suggestions" *ngIf="suggestions.length" class="suggestions" role="listbox">
-          <button type="button" *ngFor="let player of suggestions; let i = index" [class.active]="i === activeSuggestionIndex" [attr.aria-selected]="i === activeSuggestionIndex" role="option" (click)="selectPlayer(player)">{{ player.displayName }}</button>
+        <div class="search-wrap"><label for="history-search">Who’s the player?</label>
+          <input #playerSearch id="history-search" type="search" role="combobox" [value]="searchTerm" [attr.aria-busy]="loading" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" placeholder="Search first or last name…" autocomplete="off" aria-autocomplete="list" aria-controls="history-player-suggestions" [attr.aria-expanded]="suggestions.length > 0" [attr.aria-activedescendant]="activeSuggestionIndex >= 0 ? 'history-option-' + activeSuggestionIndex : null" aria-describedby="history-feedback">
+          <div id="history-player-suggestions" *ngIf="suggestions.length" class="suggestions" role="listbox"><button type="button" *ngFor="let player of suggestions; let i = index" [id]="'history-option-' + i" [class.active]="i === activeSuggestionIndex" [attr.aria-selected]="i === activeSuggestionIndex" role="option" tabindex="-1" (mousedown)="$event.preventDefault()" (click)="selectPlayer(player)">{{ player.displayName }}</button></div>
         </div>
-        <div class="actions">
-          <button class="secondary" type="button" (click)="skip()" [disabled]="loading">Skip / reveal next club</button>
-        </div>
-        <p class="answer-feedback" *ngIf="answerFeedback" role="status">{{ answerFeedback }}</p>
+        <div class="feedback-slot" id="history-feedback" aria-live="polite" aria-atomic="true"><p *ngIf="loading">Checking your answer…</p><p *ngIf="!loading && errorMessage" class="answer-feedback">{{ errorMessage }}</p><p *ngIf="!loading && !errorMessage">{{ answerFeedback || 'Select a player from the suggestions to submit.' }}</p></div>
+        <div class="actions"><span>No guess yet?</span><button class="secondary" type="button" (click)="skip()" [disabled]="loading">{{ round.revealedTeamCount < round.totalTeams ? 'Reveal next club' : 'Reveal player' }}</button></div>
       </div>
-
-      <div *ngIf="round.completed" class="result" [class.success]="round.correct">
-        <h2>{{ round.correct ? 'Correct!' : 'Round over' }}</h2>
-        <p>{{ round.correct ? 'Great memory.' : 'Try another round and reveal the clues more carefully.' }}</p>
-        <div *ngIf="round.correctPlayer" class="correct-player">
-          <img *ngIf="round.correctPlayer.imageUrl" [src]="round.correctPlayer.imageUrl" [alt]="round.correctPlayer.displayName">
-          <strong>{{ round.correctPlayer.displayName }}</strong>
-        </div>
-        <button class="primary" type="button" (click)="start()">Play another round</button>
+      <div *ngIf="round.completed" class="result" [class.success]="round.correct" role="status">
+        <p class="result-label">{{ round.correct ? 'YOU FOUND THE CONNECTION' : 'THE PLAYER BEHIND THE CLUBS' }}</p><h2>{{ round.correct ? 'That’s the one.' : 'Meet the answer.' }}</h2>
+        <div *ngIf="round.correctPlayer" class="correct-player"><img *ngIf="round.correctPlayer.imageUrl" [src]="round.correctPlayer.imageUrl" alt=""><strong>{{ round.correctPlayer.displayName }}</strong></div>
+        <p>{{ round.correct ? 'Ready for another career to decode?' : 'Another career to remember for your next game.' }}</p>
+        <div class="result-actions"><button class="primary" type="button" (click)="start()" [disabled]="loading">Play again</button><a routerLink="/">All games →</a></div>
       </div>
-    </ng-container>
-  </section>
+    </section>
+    <aside class="history-guide" aria-label="How to play Team History"><p class="eyebrow">THE GAME PLAN</p><h2>One career.<br>Four connections.</h2><ol><li><strong>Start with one club</strong><span>Your first clue is a club from the player’s EuroLeague history.</span></li><li><strong>Name the player</strong><span>Search for a name and select a suggestion to submit your guess.</span></li><li><strong>Use another clue</strong><span>A miss or a skip reveals another club. If you run out of clues, the player is revealed.</span></li></ol><div class="guide-tip"><strong>Less is more.</strong><p>See how early you can recognise the career. You can skip a clue whenever you need an assist.</p></div></aside>
+  </div>
 </main>

@@ -1,48 +1,66 @@
-<main class="shell">
+<main class="shell grid-page">
   <header class="game-header">
     <a routerLink="/" class="back-link">← All games</a>
-    <p class="eyebrow">EUROLEAGUE PLAYER GRID</p>
-    <h1>{{ selectedDifficulty }} challenge</h1>
-    <p class="intro">Find players who played for both clubs shown in each cell.</p>
+    <div class="title-row"><div><p class="eyebrow">CONNECT THE CLUBS</p><h1>Player Grid</h1></div><span class="difficulty-badge">{{ selectedDifficulty }}</span></div>
+    <p class="intro">Two clubs. One player. Find the connection in every square.</p>
   </header>
 
-  <section class="panel">
-    <div class="panel-heading">
-      <h2>Grid</h2>
-      <div class="grid-actions">
-        <button type="button" (click)="revealGrid()">Reveal</button>
-      </div>
-    </div>
-    <p class="muted" *ngIf="gridLoading">Loading clubs…</p>
-    <p class="error" *ngIf="gridError">{{ gridError }}</p>
+  <app-basketball-loader *ngIf="gridLoading" message="Loading ..." [overlay]="true"></app-basketball-loader>
+  <p class="error" *ngIf="gridError" role="alert">{{ gridError }}</p>
 
-    <ng-container *ngIf="grid as currentGrid">
-      <p class="hint" *ngIf="pendingCells.length > 1">{{ selectedPlayer?.displayName }} matches multiple cells. Click one of the highlighted cells.</p>
-      <div class="grid-layout">
-        <div class="grid-corner">Club intersection</div>
-        <div class="axis-header" *ngFor="let team of currentGrid.columnTeams"><img *ngIf="team.imageUrl" [src]="team.imageUrl" [alt]="team.name">{{ team.name }}</div>
+  <div class="play-layout" *ngIf="grid as currentGrid">
+    <section class="panel grid-panel" aria-label="Player Grid game">
+      <div class="panel-heading">
+        <div class="progress-copy"><strong>{{ guessedCount }} <span>/ 9</span></strong><span>connections found</span></div>
+        <button class="reveal-button" type="button" (click)="revealGrid()" [disabled]="revealing || checkingPlayer || gridRevealed || isGridComplete()">{{ revealing ? 'Revealing…' : 'Reveal' }}</button>
+      </div>
+      <div class="progress-track" role="progressbar" [attr.aria-valuenow]="guessedCount" aria-valuemin="0" aria-valuemax="9" aria-label="Players guessed"><span [style.width.%]="guessedCount / 9 * 100"></span></div>
+
+      <div class="grid-layout" aria-label="Club intersections">
+        <div class="grid-corner"><span aria-hidden="true">×</span><small>Find the link</small></div>
+        <div class="axis-header" *ngFor="let team of currentGrid.columnTeams" tabindex="0" [attr.title]="team.name" [attr.aria-label]="team.name">
+          <img *ngIf="team.imageUrl" [src]="team.imageUrl" alt=""><span [class.logo-fallback]="!team.imageUrl">{{ team.name }}</span>
+        </div>
         <ng-container *ngFor="let team of currentGrid.rowTeams; let row = index">
-          <div class="axis-header axis-side"><img *ngIf="team.imageUrl" [src]="team.imageUrl" [alt]="team.name">{{ team.name }}</div>
-          <button type="button" class="grid-cell" *ngFor="let column of [0, 1, 2]" [class.selectable]="isPendingCell(row, column)" [class.filled]="isCellFilled(row, column)" [disabled]="isCellFilled(row, column) || (pendingCells.length > 0 && !isPendingCell(row, column))" (click)="selectCell(row, column)">
-            <span class="cell-player" *ngIf="cellAnswer(row, column) as answer"><img *ngIf="answer.imageUrl" [src]="answer.imageUrl" [alt]="answer.displayName">{{ answer.displayName }}</span>
-            <span *ngIf="!cellAnswer(row, column)" class="empty-cell"></span>
+          <div class="axis-header axis-side" tabindex="0" [attr.title]="team.name" [attr.aria-label]="team.name"><img *ngIf="team.imageUrl" [src]="team.imageUrl" alt=""><span [class.logo-fallback]="!team.imageUrl">{{ team.name }}</span></div>
+          <button type="button" class="grid-cell" *ngFor="let column of [0, 1, 2]"
+            [class.selectable]="isPendingCell(row, column)" [class.filled]="isCellFilled(row, column)" [class.revealed]="isCellRevealed(row, column)"
+            [disabled]="!isPendingCell(row, column) || isCellFilled(row, column) || checkingPlayer || revealing"
+            [attr.aria-label]="team.name + ' and ' + currentGrid.columnTeams[column].name + ': ' + (cellAnswer(row, column)?.displayName || 'empty')"
+            (click)="selectCell(row, column)">
+            <span class="cell-player" *ngIf="cellAnswer(row, column) as answer">{{ answer.displayName }}</span>
+            <span *ngIf="isPendingCell(row, column)" class="place-label">Place here <span aria-hidden="true">+</span></span>
           </button>
         </ng-container>
       </div>
 
-      <div class="completion-message" *ngIf="isGridComplete()" role="status">
-        <strong>Congratulations!</strong>
-        <span>You completed the grid.</span>
-      </div>
+      <div class="completion-message" *ngIf="isGridComplete()" role="status"><div><strong>Nothing but net.</strong><span>You found all nine connections!</span></div><a routerLink="/">Explore games →</a></div>
+      <div class="revealed-message" *ngIf="gridRevealed && !isGridComplete()" role="status"><strong>Grid revealed</strong><span>{{ guessedCount }} of 9 guessed. Your answers stay green; revealed answers are red.</span><a routerLink="/">Explore games →</a></div>
 
-      <div class="answer-entry">
-        <label for="player-search">Find a player</label>
-        <input id="player-search" type="search" [value]="searchTerm" placeholder="Type first or last name…" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" autocomplete="off" aria-autocomplete="list" aria-controls="player-suggestions">
-        <ul id="player-suggestions" class="suggestions" *ngIf="playerResults.length > 0" role="listbox">
-          <li *ngFor="let player of playerResults; let i = index" [class.active]="i === activeResultIndex" role="option" [attr.aria-selected]="i === activeResultIndex" (click)="selectPlayer(player)"><span>{{ player.displayName }} <small>{{ player.nationality || 'Unknown nationality' }}</small></span></li>
-        </ul>
+      <div class="answer-section" *ngIf="!isGridComplete() && !gridRevealed">
+        <div class="answer-entry">
+          <label for="player-search">Who’s the connection?</label>
+          <div class="search-control"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+            <input #playerSearch id="player-search" type="search" role="combobox" [value]="searchTerm" [attr.aria-busy]="checkingPlayer || revealing" placeholder="Search first or last name…" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" autocomplete="off" aria-autocomplete="list" aria-controls="player-suggestions" [attr.aria-expanded]="playerResults.length > 0" [attr.aria-activedescendant]="activeResultIndex >= 0 ? 'player-option-' + activeResultIndex : null" aria-describedby="grid-feedback">
+          </div>
+          <ul id="player-suggestions" class="suggestions" *ngIf="playerResults.length > 0" role="listbox">
+            <li *ngFor="let player of playerResults; let i = index" [id]="'player-option-' + i" [class.active]="i === activeResultIndex" role="option" [attr.aria-selected]="i === activeResultIndex" (mousedown)="$event.preventDefault()" (click)="selectPlayer(player)"><strong>{{ player.displayName }}</strong><small>{{ player.nationality || 'Unknown nationality' }}</small></li>
+          </ul>
+        </div>
+        <div class="feedback-slot" id="grid-feedback" aria-live="polite" aria-atomic="true">
+          <p *ngIf="checkingPlayer">Checking club history…</p>
+          <p *ngIf="!checkingPlayer && searchError" class="search-feedback">{{ searchError }}</p>
+          <p *ngIf="!checkingPlayer && !searchError && pendingCells.length > 1" class="hint">{{ selectedPlayer?.displayName }} fits multiple squares. Tap a highlighted square.</p>
+          <p *ngIf="!checkingPlayer && !searchError && pendingCells.length === 0">Select a player from the suggestions to submit.</p>
+        </div>
       </div>
-      <p class="search-feedback" *ngIf="searchError" role="status">{{ searchError }}</p>
-    </ng-container>
-  </section>
+    </section>
+
+    <aside class="grid-guide" aria-label="How to play Player Grid">
+      <p class="eyebrow">THE GAME PLAN</p><h2>Nine squares.<br>All your knowledge.</h2>
+      <ol><li><strong>Read the clubs</strong><span>Match a club across the top with one down the side.</span></li><li><strong>Find their connection</strong><span>Search for a player who represented both clubs in the available EuroLeague seasons.</span></li><li><strong>Fill the grid</strong><span>Some players fit more than one square. Choose a highlighted square when prompted.</span></li></ol>
+      <div class="guide-tip"><strong>Need an assist?</strong><p>Reveal fills the remaining squares. Your correct guesses stay green.</p></div>
+      <div class="colour-key"><span><i></i>Your answer</span><span><i></i>Revealed</span></div>
+    </aside>
+  </div>
 </main>

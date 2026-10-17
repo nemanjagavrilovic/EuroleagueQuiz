@@ -1,53 +1,40 @@
 <main class="home-shell">
   <header class="hero">
-    <p class="eyebrow">EUROLEAGUE QUIZ</p>
-    <h1>How well do you know the players behind the clubs?</h1>
-    <p class="intro">Choose a game and test your EuroLeague memory across generations of players and teams.</p>
+    <p class="eyebrow">FOR THE FANS WHO KNOW THE GAME</p>
+    <h1>Your basketball knowledge.<br><span>Put it to the test.</span></h1>
+    <p class="intro">Connect clubs. Trace careers. Name the players.<br>Pick your challenge and prove your EuroLeague knowledge.</p>
+    <div class="hero-tags"><span>6 ways to play</span><span>No sign-up needed</span></div>
+    <div class="court-art" aria-hidden="true"><div></div><span>LET’S PLAY.</span></div>
   </header>
-  <section class="games-grid">
-  <article class="game-card">
-    <div class="game-copy">
-      <p class="eyebrow">GAME 01</p>
-      <h2>Player Grid</h2>
-      <p>Find players who connect the clubs in a 3×3 grid.</p>
-      <div class="level-links"><a *ngFor="let level of levels" [href]="'/grid/' + level.name.toLowerCase()">{{ level.name }}</a></div>
-    </div>
-  </article>
-  <article class="game-card">
-    <div class="game-copy">
-      <p class="eyebrow">GAME 02</p>
-      <h2>Team History</h2>
-      <p>Guess the player from four clubs in their EuroLeague career. Start with one club and reveal another when you miss or skip.</p>
-      <a class="single-link" routerLink="/team-history">Play Team History</a>
-    </div>
-  </article>
-  <article class="game-card">
-    <div class="game-copy">
-      <p class="eyebrow">GAME 03</p><h2>Which Club Is Missing?</h2>
-      <p>See three clubs from a player’s history and choose the fourth club from multiple options.</p>
-      <a class="single-link" routerLink="/game/missing-club">Play Missing Club</a>
-    </div>
-  </article>
-  <article class="game-card">
-    <div class="game-copy">
-      <p class="eyebrow">GAME 04</p><h2>Career Order</h2>
-      <p>Arrange four clubs in the order the player represented them.</p>
-      <a class="single-link" routerLink="/game/career-order">Play Career Order</a>
-    </div>
-  </article>
-  <article class="game-card">
-    <div class="game-copy">
-      <p class="eyebrow">GAME 05</p><h2>Mystery Player</h2>
-      <p>Reveal career clues one by one and guess the player as early as possible.</p>
-      <a class="single-link" routerLink="/game/mystery-player">Play Mystery Player</a>
-    </div>
-  </article>
-  <article class="game-card">
-    <div class="game-copy">
-      <p class="eyebrow">GAME 06</p><h2>Starting Five</h2>
-      <p>Guess five players for five EuroLeague clubs. You have 24 seconds for each club.</p>
-      <a class="single-link" routerLink="/game/five-player">Play Starting Five</a>
-    </div>
-  </article>
+  <div class="section-heading"><h2>Choose your game</h2><span>A new challenge every time</span></div>
+  <section class="games-grid" aria-label="Basketball games">
+    <article class="game-card">
+      <div class="game-visual visual-grid" aria-hidden="true"><span>×</span><div>▦</div><span>01 / CONNECT</span></div>
+      <div class="game-copy"><p class="eyebrow">CONNECT THE CLUBS</p><h2>Player Grid</h2><p>Nine intersections. Find the players who connect both clubs.</p><span class="level-label">Choose your difficulty</span><div class="level-links"><a *ngFor="let level of levels" [routerLink]="['/grid', level.name.toLowerCase()]" [title]="level.description">{{ level.name }}</a></div></div>
+    </article>
+    <article class="game-card">
+      <div class="game-visual visual-history" aria-hidden="true"><span>↗</span><div>01 — 02 — ?</div><span>02 / FOLLOW THE JOURNEY</span></div>
+      <div class="game-copy"><p class="eyebrow">FOUR CLUBS. ONE PLAYER.</p><h2>Team History</h2><p>Follow a player’s career. Each miss reveals another club.</p><a class="single-link" routerLink="/team-history">Play now <span aria-hidden="true">↗</span></a></div>
+    </article>
+    <article class="game-card">
+      <div class="game-visual visual-missing" aria-hidden="true"><span>?</span><div>■ ■ ■ □</div><span>03 / FILL THE GAP</span></div>
+      <div class="game-copy"><p class="eyebrow">THE MISSING PIECE</p><h2>Missing Club</h2><p>Three clubs are given. Can you name the fourth?</p><a class="single-link" routerLink="/game/missing-club">Play now <span aria-hidden="true">↗</span></a></div>
+    </article>
+    <article class="game-card">
+      <div class="game-visual visual-order" aria-hidden="true"><span>⇄</span><div>1 → 2 → 3 → 4</div><span>04 / GET IT IN ORDER</span></div>
+      <div class="game-copy"><p class="eyebrow">EVERY CAREER HAS A STORY</p><h2>Career Order</h2><p>Put the clubs in order, from first chapter to last.</p><a class="single-link" routerLink="/game/career-order">Play now <span aria-hidden="true">↗</span></a></div>
+    </article>
+    <article class="game-card">
+      <div class="game-visual visual-mystery" aria-hidden="true"><span>◎</span><div>WHO AM I?</div><span>05 / SOLVE THE CLUES</span></div>
+      <div class="game-copy"><p class="eyebrow">LESS CLUES. MORE BRAGGING RIGHTS.</p><h2>Mystery Player</h2><p>Uncover the player one career clue at a time.</p><a class="single-link" routerLink="/game/mystery-player">Play now <span aria-hidden="true">↗</span></a></div>
+    </article>
+    <article class="game-card">
+      <div class="game-visual visual-five" aria-hidden="true"><span>24s</span><div>● ● ● ● ●</div><span>06 / BEAT THE CLOCK</span></div>
+      <div class="game-copy"><p class="eyebrow">FIVE PLAYERS. NO HESITATION.</p><h2>Starting Five</h2><p>Name five players for each club. Five rounds, 24 seconds each.</p><a class="single-link" routerLink="/game/five-player">Play now <span aria-hidden="true">↗</span></a></div>
+    </article>
+  </section>
+  <section id="how-to-play" class="how-to-play" aria-labelledby="how-title">
+    <div><p class="eyebrow">YOUR NEXT CHALLENGE STARTS HERE</p><h2 id="how-title">Simple to play.<br>Hard to put down.</h2></div>
+    <ol><li><strong>Pick a game</strong><span>Choose a challenge above. For Player Grid, choose a difficulty.</span></li><li><strong>Trust your memory</strong><span>Read the clues, then select a player from search or follow the game’s instructions.</span></li><li><strong>Keep playing</strong><span>Stuck? Reveal the answer and discover a career you might have forgotten.</span></li></ol>
   </section>
 </main>

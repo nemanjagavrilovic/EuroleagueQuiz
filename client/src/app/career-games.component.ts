@@ -1,16 +1,19 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Injector, OnInit, ViewChild, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Observable, Subject, catchError, debounceTime, distinctUntilChanged, finalize, of, switchMap } from 'rxjs';
 import { CareerOrderClub, CareerOrderRound, DataApiService, MissingClubRound, MysteryPlayerRound, Player } from './data-api.service';
+import { BasketballLoaderComponent } from './basketball-loader.component';
 
 type GameType = 'missing-club' | 'career-order' | 'mystery-player';
 
 @Component({
-  selector: 'app-career-games', standalone: true, imports: [NgFor, NgIf, RouterLink],
+  selector: 'app-career-games', standalone: true, imports: [NgFor, NgIf, RouterLink, BasketballLoaderComponent],
   templateUrl: './career-games.component.html', styleUrl: './career-games.component.css', changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CareerGamesComponent implements OnInit {
+  @ViewChild('mysterySearch') private mysterySearch?: ElementRef<HTMLInputElement>;
+  private readonly injector = inject(Injector);
   private readonly api = inject(DataApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly detector = inject(ChangeDetectorRef);
@@ -30,6 +33,8 @@ export class CareerGamesComponent implements OnInit {
   loading = false;
   errorMessage = '';
 
+  get mysterySlots(): number[] { return Array.from({ length: this.mystery?.totalClues ?? 0 }, (_, index) => index); }
+
   ngOnInit(): void {
     this.game = (this.route.snapshot.paramMap.get('game') as GameType) || 'missing-club';
     this.searchTerms.pipe(debounceTime(180), distinctUntilChanged(), switchMap(term => {
@@ -44,6 +49,8 @@ export class CareerGamesComponent implements OnInit {
   }
 
   start(): void {
+    if (this.loading) return;
+    this.selectedTeamId = null;
     this.loading = true; this.errorMessage = ''; this.answerFeedback = ''; this.missing = null; this.order = null; this.mystery = null;
     this.clearSearch();
     if (this.game === 'missing-club') {
@@ -62,24 +69,42 @@ export class CareerGamesComponent implements OnInit {
     });
   }
 
-  chooseTeam(id: number): void { if (!this.missing?.completed) this.selectedTeamId = id; }
+  chooseTeam(id: number): void { if (this.missing && !this.missing.completed && !this.loading) this.selectedTeamId = id; }
   submitMissing(skip = false): void {
-    if (!this.missing || (!skip && this.selectedTeamId === null)) return;
-    this.loading = true; this.api.guessMissingClub(this.missing.roundId, this.selectedTeamId ?? undefined, skip).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe(round => { this.missing = round; });
+    if (!this.missing || this.missing.completed || this.loading || (!skip && this.selectedTeamId === null)) return;
+    this.errorMessage = '';
+    this.loading = true;
+    this.api.guessMissingClub(this.missing.roundId, this.selectedTeamId ?? undefined, skip).pipe(
+      finalize(() => { this.loading = false; this.detector.markForCheck(); })
+    ).subscribe({
+      next: round => this.missing = round,
+      error: () => this.errorMessage = 'Your answer could not be submitted. Please try again.'
+    });
   }
 
   moveClub(index: number, direction: -1 | 1): void {
+    if (!this.order || this.order.completed || this.loading) return;
     const target = index + direction; if (target < 0 || target >= this.orderClubs.length) return;
     [this.orderClubs[index], this.orderClubs[target]] = [this.orderClubs[target], this.orderClubs[index]];
   }
   submitOrder(): void {
-    if (!this.order) return;
-    this.loading = true; this.api.guessCareerOrder(this.order.roundId, this.orderClubs.map(x => x.id)).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe(round => { this.order = round; });
+    if (!this.order || this.order.completed || this.loading) return;
+    this.loading = true;
+    this.errorMessage = '';
+    this.api.guessCareerOrder(this.order.roundId, this.orderClubs.map(x => x.id)).pipe(
+      finalize(() => { this.loading = false; this.detector.markForCheck(); })
+    ).subscribe({
+      next: round => this.order = round,
+      error: () => this.errorMessage = 'Your order could not be submitted. Please try again.'
+    });
   }
+
+  trackClub(_index: number, club: CareerOrderClub): number { return club.id; }
 
   onSearch(value: string): void {
     this.searchTerm = value;
     this.selectedPlayer = null;
+    this.suggestions = [];
     this.activeSuggestionIndex = -1;
     this.searchTerms.next(value);
   }
@@ -111,6 +136,8 @@ export class CareerGamesComponent implements OnInit {
   }
 
   selectPlayer(player: Player): void {
+    if (this.loading || !this.mystery || this.mystery.completed) return;
+    this.focusMysterySearch();
     this.selectedPlayer = player;
     this.searchTerm = player.displayName;
     this.suggestions = [];
@@ -118,19 +145,29 @@ export class CareerGamesComponent implements OnInit {
     this.submitMystery();
   }
   submitMystery(skip = false): void {
-    if (!this.mystery || (!skip && !this.selectedPlayer)) return;
+    if (!this.mystery || this.mystery.completed || this.loading || (!skip && !this.selectedPlayer)) return;
+    const playerId = this.selectedPlayer?.id;
+    this.errorMessage = '';
+    this.answerFeedback = '';
     this.clearSearch();
     this.loading = true;
-    this.api.guessMysteryPlayer(this.mystery.roundId, this.selectedPlayer?.id, skip).pipe(
-      finalize(() => { this.loading = false; this.detector.markForCheck(); })
-    ).subscribe(round => {
-      this.mystery = round;
-      this.answerFeedback = skip
-        ? 'Another clue was revealed.'
-        : round.completed
-          ? ''
-          : 'Not this player — another clue was revealed.';
+    this.api.guessMysteryPlayer(this.mystery.roundId, playerId, skip).pipe(
+      finalize(() => { this.loading = false; this.focusMysterySearch(); this.detector.markForCheck(); })
+    ).subscribe({
+      next: round => {
+        this.mystery = round;
+        this.answerFeedback = round.completed ? '' : skip ? 'Another clue was revealed.' : 'Not this player — another clue was revealed.';
+      },
+      error: () => this.errorMessage = 'Your answer could not be submitted. Please try again.'
     });
+  }
+
+  private focusMysterySearch(): void {
+    if (!this.mystery || this.mystery.completed) return;
+    this.mysterySearch?.nativeElement.focus({ preventScroll: true });
+    afterNextRender(() => {
+      if (this.mystery && !this.mystery.completed) this.mysterySearch?.nativeElement.focus({ preventScroll: true });
+    }, { injector: this.injector });
   }
 
   private clearSearch(): void {

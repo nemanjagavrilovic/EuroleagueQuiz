@@ -324,6 +324,12 @@ docker image prune -f
 
 The production Angular build uses `/api` as its API URL, so no Azure API URL needs to be changed in the client.
 
+### Enable Cloudflare Web Analytics
+
+If `pickandroll.io` is proxied through Cloudflare (orange cloud), enable Web Analytics for the hostname in the Cloudflare dashboard. Cloudflare can inject the analytics beacon automatically, so no JavaScript token or Angular code is required.
+
+If the hostname is not proxied, use Cloudflare's **Manage site** page to obtain the manual JavaScript snippet and add that snippet to `client/src/index.html`. Do not add a Cloudflare API token or database credential to the application.
+
 ## 12. Applying EF Core migrations to Supabase
 
 The Docker runtime does not automatically change the database schema. Apply migrations explicitly when the model changes.

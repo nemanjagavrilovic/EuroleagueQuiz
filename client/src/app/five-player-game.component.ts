@@ -1,18 +1,22 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Injector, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subject, Subscription, catchError, debounceTime, distinctUntilChanged, finalize, interval, of, switchMap } from 'rxjs';
 import { DataApiService, FivePlayerGameRound, Player } from './data-api.service';
+import { BasketballLoaderComponent } from './basketball-loader.component';
+import { ShotClockComponent } from './shot-clock.component';
 
 @Component({
   selector: 'app-five-player-game',
   standalone: true,
-  imports: [NgFor, NgIf, RouterLink],
+  imports: [NgFor, NgIf, RouterLink, BasketballLoaderComponent, ShotClockComponent],
   templateUrl: './five-player-game.component.html',
   styleUrl: './five-player-game.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class FivePlayerGameComponent implements OnInit, OnDestroy {
+  @ViewChild('playerSearch') private searchInput?: ElementRef<HTMLInputElement>;
+  private readonly injector = inject(Injector);
   private readonly api = inject(DataApiService);
   private readonly detector = inject(ChangeDetectorRef);
   private readonly searchTerms = new Subject<string>();
@@ -30,6 +34,9 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   readonly answerSlots = [0, 1, 2, 3, 4];
   readonly revealedPlayerIds = new Set<number>();
   private timeoutSubmitted = false;
+
+  get roundGuesses(): number { return this.round?.players.filter(player => !this.revealedPlayerIds.has(player.id)).length ?? 0; }
+  get timePercent(): number { return Math.min(100, Math.max(0, this.secondsRemaining / (this.round?.secondsPerRound || 24) * 100)); }
 
   ngOnInit(): void {
     this.searchTerms.pipe(
@@ -49,6 +56,7 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   }
 
   start(): void {
+    if (this.loading) return;
     this.loading = true;
     this.errorMessage = '';
     this.feedback = '';
@@ -65,6 +73,7 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   onSearch(value: string): void {
     this.searchTerm = value;
     this.selectedPlayer = null;
+    this.suggestions = [];
     this.activeSuggestionIndex = -1;
     this.searchTerms.next(value);
   }
@@ -91,6 +100,8 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   }
 
   selectPlayer(player: Player): void {
+    if (this.loading || !this.round || this.round.completed || this.secondsRemaining <= 0) return;
+    this.focusSearch();
     this.selectedPlayer = player;
     this.searchTerm = player.displayName;
     this.suggestions = [];
@@ -99,12 +110,14 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   }
 
   submitGuess(skip = false): void {
-    if (!this.round || this.round.completed || (!skip && !this.selectedPlayer)) return;
+    if (!this.round || this.round.completed || this.loading || (!skip && (!this.selectedPlayer || this.secondsRemaining <= 0))) return;
+    this.errorMessage = '';
+    this.feedback = '';
     this.loading = true;
     const previousPlayerIds = new Set(this.round.players.map(player => player.id));
     const playerId = this.selectedPlayer?.id;
     this.clearSearch();
-    this.api.guessFivePlayer(this.round.roundId, playerId, skip).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
+    this.api.guessFivePlayer(this.round.roundId, playerId, skip).pipe(finalize(() => { this.loading = false; this.focusSearch(); this.detector.markForCheck(); })).subscribe({
       next: round => {
         if (skip) {
           round.players
@@ -116,15 +129,18 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
         this.feedback = skip ? 'Round revealed.' : round.lastGuessCorrect ? 'Correct player!' : 'This player did not play for this club, or was already guessed.';
         if (round.completed) this.timer?.unsubscribe();
       },
-      error: () => this.errorMessage = 'The answer could not be submitted.'
+      error: () => { this.errorMessage = 'The answer could not be submitted. Please try again.'; }
     });
   }
 
   nextRound(): void {
-    if (!this.round || !this.round.completed || this.round.gameCompleted) return;
+    if (!this.round || !this.round.completed || this.round.gameCompleted || this.loading) return;
     this.loading = true;
-    this.revealedPlayerIds.clear();
-    this.api.nextFivePlayerRound(this.round.roundId).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe(round => this.setRound(round));
+    this.errorMessage = '';
+    this.api.nextFivePlayerRound(this.round.roundId).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
+      next: round => { this.revealedPlayerIds.clear(); this.setRound(round); },
+      error: () => this.errorMessage = 'The next round could not be loaded. Please try again.'
+    });
   }
 
   isRevealed(player: Player | undefined): boolean {
@@ -141,7 +157,7 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
     if (!round.completed) {
       this.timer = interval(1000).subscribe(() => {
         this.secondsRemaining = Math.max(0, this.secondsRemaining - 1);
-        if (this.secondsRemaining === 0 && !this.timeoutSubmitted) {
+        if (this.secondsRemaining === 0 && !this.timeoutSubmitted && !this.loading) {
           this.timeoutSubmitted = true;
           this.submitGuess(true);
         }
@@ -156,5 +172,14 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
     this.suggestions = [];
     this.activeSuggestionIndex = -1;
     this.searchTerms.next('');
+    this.focusSearch();
+  }
+
+  private focusSearch(): void {
+    if (!this.round || this.round.completed) return;
+    this.searchInput?.nativeElement.focus({ preventScroll: true });
+    afterNextRender(() => {
+      if (this.round && !this.round.completed) this.searchInput?.nativeElement.focus({ preventScroll: true });
+    }, { injector: this.injector });
   }
 }

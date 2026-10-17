@@ -1,19 +1,22 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Injector, ViewChild, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, of } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs/operators';
 import { DataApiService, GridCell, GridDefinition, Player } from './data-api.service';
+import { BasketballLoaderComponent } from './basketball-loader.component';
 
 @Component({
   selector: 'app-grid-game',
   standalone: true,
-  imports: [NgFor, NgIf, RouterLink],
+  imports: [NgFor, NgIf, RouterLink, BasketballLoaderComponent],
   templateUrl: './grid-game.component.html',
   styleUrl: './grid-game.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GridGameComponent {
+  @ViewChild('playerSearch') private searchInput?: ElementRef<HTMLInputElement>;
+  private readonly injector = inject(Injector);
   private readonly api = inject(DataApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly changeDetector = inject(ChangeDetectorRef);
@@ -30,6 +33,11 @@ export class GridGameComponent {
   pendingCells: GridCell[] = [];
   revealedAnswers: (Player | null)[] = Array(9).fill(null);
   searchError = '';
+  checkingPlayer = false;
+  revealing = false;
+  gridRevealed = false;
+
+  get guessedCount(): number { return this.answers.filter(player => player !== null).length; }
 
   constructor() {
     this.loadGrid();
@@ -60,6 +68,7 @@ export class GridGameComponent {
   onSearch(term: string): void {
     this.searchTerm = term;
     this.searchError = '';
+    this.playerResults = [];
     this.activeResultIndex = -1;
     this.playerSearch$.next(term);
   }
@@ -91,6 +100,8 @@ export class GridGameComponent {
   }
 
   selectPlayer(player: Player): void {
+    if (this.checkingPlayer || this.revealing || this.gridRevealed || this.isGridComplete()) return;
+    this.focusSearch();
     if (this.isPlayerUsed(player.id)) {
       this.searchError = 'This player has already been used in the grid.';
       this.playerResults = [];
@@ -102,8 +113,16 @@ export class GridGameComponent {
     this.activeResultIndex = -1;
     this.pendingCells = [];
     if (!this.grid) { this.searchError = 'The grid is not ready yet.'; return; }
-
-    this.api.getGridPlayerMatch(player.id, this.grid.rowTeams.map(team => team.id), this.grid.columnTeams.map(team => team.id)).subscribe({
+    this.checkingPlayer = true;
+    this.searchError = '';
+    this.playerSearch$.next('');
+    this.api.getGridPlayerMatch(player.id, this.grid.rowTeams.map(team => team.id), this.grid.columnTeams.map(team => team.id)).pipe(
+      finalize(() => {
+        this.checkingPlayer = false;
+        this.focusSearch();
+        this.changeDetector.markForCheck();
+      })
+    ).subscribe({
       next: result => {
         this.pendingCells = result.availableCells.filter(cell => !this.cellAnswer(cell.row, cell.column));
         if (this.pendingCells.length === 0) {
@@ -131,11 +150,18 @@ export class GridGameComponent {
   }
 
   revealGrid(): void {
-    if (!this.grid) return;
-    this.api.revealGrid(this.grid.rowTeams.map(team => team.id), this.grid.columnTeams.map(team => team.id)).subscribe({
+    if (!this.grid || this.checkingPlayer || this.revealing || this.gridRevealed || this.isGridComplete()) return;
+    this.revealing = true;
+    this.searchError = '';
+    this.api.revealGrid(this.grid.rowTeams.map(team => team.id), this.grid.columnTeams.map(team => team.id)).pipe(
+      finalize(() => { this.revealing = false; this.changeDetector.markForCheck(); })
+    ).subscribe({
       next: result => {
         this.revealedAnswers = Array(9).fill(null);
         for (const cell of result.cells) this.revealedAnswers[cell.row * 3 + cell.column] = cell.player;
+        this.gridRevealed = true;
+        this.pendingCells = [];
+        this.clearSearch();
         this.changeDetector.markForCheck();
       },
       error: () => { this.gridError = 'The grid answers could not be revealed.'; this.changeDetector.markForCheck(); }
@@ -149,6 +175,7 @@ export class GridGameComponent {
 
   isPendingCell(row: number, column: number): boolean { return this.pendingCells.some(cell => cell.row === row && cell.column === column); }
   isCellFilled(row: number, column: number): boolean { return this.cellAnswer(row, column) !== null; }
+  isCellRevealed(row: number, column: number): boolean { return !this.answers[row * 3 + column] && !!this.revealedAnswers[row * 3 + column]; }
   isGridComplete(): boolean { return this.answers.every(player => player !== null); }
   cellAnswer(row: number, column: number): Player | null { return this.answers[row * 3 + column] ?? this.revealedAnswers[row * 3 + column]; }
 
@@ -160,6 +187,7 @@ export class GridGameComponent {
   }
 
   private resetAnswers(): void {
+    this.gridRevealed = false;
     this.answers = Array(9).fill(null);
     this.revealedAnswers = Array(9).fill(null);
     this.pendingCells = [];
@@ -172,6 +200,18 @@ export class GridGameComponent {
     this.playerResults = [];
     this.activeResultIndex = -1;
     this.playerSearch$.next('');
+    this.focusSearch();
+  }
+
+  private focusSearch(): void {
+    if (this.gridRevealed || this.isGridComplete()) return;
+    this.searchInput?.nativeElement.focus({ preventScroll: true });
+    // Reapply focus after Angular finishes updating the result list and grid cells.
+    afterNextRender(() => {
+      if (!this.gridRevealed && !this.isGridComplete()) {
+        this.searchInput?.nativeElement.focus({ preventScroll: true });
+      }
+    }, { injector: this.injector });
   }
 
   private isPlayerUsed(playerId: number): boolean { return [...this.answers, ...this.revealedAnswers].some(player => player?.id === playerId); }

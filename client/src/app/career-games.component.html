@@ -1,31 +1,68 @@
-<main class="game-shell">
+<main class="game-shell" [class.missing-page]="game === 'missing-club'" [class.order-page]="game === 'career-order'" [class.mystery-page]="game === 'mystery-player'">
   <a class="back-link" routerLink="/">← All games</a>
-  <section class="game-card">
-    <p class="eyebrow">EUROLEAGUE CAREER GAME</p>
-    <h1>{{ title }}</h1>
-    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
-    <div *ngIf="loading && !missing && !order && !mystery" class="status">Loading game…</div>
-
-    <ng-container *ngIf="game === 'missing-club' && missing">
-      <h2>{{ missing.player.displayName }}</h2>
-      <p>Three clubs from this player’s history are shown. Select the missing one.</p>
-      <div class="chips"><span class="chip" *ngFor="let team of missing.knownTeams">{{ team.name }}</span></div>
-      <div class="options" *ngIf="!missing.completed"><button *ngFor="let team of missing.options" type="button" [class.selected]="selectedTeamId === team.id" (click)="chooseTeam(team.id)">{{ team.name }}</button></div>
-      <div class="actions" *ngIf="!missing.completed"><button class="primary" (click)="submitMissing()" [disabled]="selectedTeamId === null || loading">Submit answer</button><button class="secondary" (click)="submitMissing(true)" [disabled]="loading">Skip</button></div>
-      <div class="result" *ngIf="missing.completed" [class.success]="missing.correct"><h2>{{ missing.correct ? 'Correct!' : 'Round over' }}</h2><p>The missing club was <strong>{{ missing.correctTeam?.name }}</strong>.</p><button class="primary" (click)="start()">Play again</button></div>
-    </ng-container>
-
-    <ng-container *ngIf="game === 'career-order' && order">
-      <h2>{{ order.player.displayName }}</h2><p>Arrange the clubs from earliest to latest in the player’s EuroLeague history.</p>
-      <div class="order-list"><div class="order-item" *ngFor="let club of orderClubs; let i = index"><span>{{ i + 1 }}. {{ club.name }}</span><span><button class="move" (click)="moveClub(i, -1)" [disabled]="order.completed || i === 0">↑</button><button class="move" (click)="moveClub(i, 1)" [disabled]="order.completed || i === orderClubs.length - 1">↓</button></span></div></div>
-      <div class="actions" *ngIf="!order.completed"><button class="primary" (click)="submitOrder()" [disabled]="loading">Submit order</button></div>
-      <div class="result" *ngIf="order.completed" [class.success]="order.correct"><h2>{{ order.correct ? 'Correct order!' : 'Not quite' }}</h2><div *ngIf="order.correctOrder"><p>Correct order:</p><ol><li *ngFor="let club of order.correctOrder">{{ club.name }}</li></ol></div><button class="primary" (click)="start()">Play again</button></div>
-    </ng-container>
-
-    <ng-container *ngIf="game === 'mystery-player' && mystery">
-      <p>Reveal clues one at a time and guess the player as early as possible.</p><div class="clues"><div *ngFor="let clue of mystery.revealedClues; let i = index"><strong>Clue {{ i + 1 }}</strong><span>{{ clue }}</span></div></div>
-      <div class="answer-area" *ngIf="!mystery.completed"><input type="search" [value]="searchTerm" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" placeholder="Type first or last name…" autocomplete="off" aria-autocomplete="list" aria-controls="career-player-suggestions"><div id="career-player-suggestions" class="suggestions" *ngIf="suggestions.length" role="listbox"><button *ngFor="let player of suggestions; let i = index" type="button" [class.active]="i === activeSuggestionIndex" [attr.aria-selected]="i === activeSuggestionIndex" role="option" (click)="selectPlayer(player)">{{ player.displayName }}</button></div><div class="actions"><button class="secondary" (click)="submitMystery(true)" [disabled]="loading">Skip / reveal clue</button></div><p class="answer-feedback" *ngIf="answerFeedback" role="status">{{ answerFeedback }}</p></div>
-      <div class="result" *ngIf="mystery.completed" [class.success]="mystery.correct"><h2>{{ mystery.correct ? 'Correct!' : 'Round over' }}</h2><p>The player was <strong>{{ mystery.correctPlayer?.displayName }}</strong>.</p><button class="primary" (click)="start()">Play again</button></div>
-    </ng-container>
-  </section>
+  <ng-container *ngIf="game === 'missing-club'">
+    <header class="missing-header"><p class="eyebrow">THE MISSING PIECE</p><h1>Missing Club</h1><p>One player. Three clues. Find the club that completes the story.</p></header>
+    <app-basketball-loader *ngIf="loading && !missing" message="Loading ..." [overlay]="true"></app-basketball-loader>
+    <p class="error" *ngIf="errorMessage && !missing" role="alert">{{ errorMessage }}</p>
+    <div class="missing-layout" *ngIf="missing">
+      <section class="game-card missing-card" aria-label="Missing Club game">
+        <div class="player-heading"><img *ngIf="missing.player.imageUrl" [src]="missing.player.imageUrl" alt=""><div><p class="eyebrow">WHO ELSE DID THEY PLAY FOR?</p><h2>{{ missing.player.displayName }}</h2></div></div>
+        <div class="career-clues" aria-label="Known clubs"><div class="career-club" *ngFor="let team of missing.knownTeams; let i = index"><span class="clue-label">CLUB {{ i + 1 }}</span><img *ngIf="team.imageUrl" [src]="team.imageUrl" alt=""><strong>{{ team.name }}</strong></div><div class="career-club missing-slot"><span class="clue-label">MISSING CLUB</span><span class="question-mark" aria-hidden="true">?</span><strong>Make the connection</strong></div></div>
+        <ng-container *ngIf="!missing.completed">
+          <h3 class="options-title">Which club completes this career?</h3>
+          <div class="club-options" role="group" aria-label="Choose the missing club"><button *ngFor="let team of missing.options; let i = index" type="button" [class.selected]="selectedTeamId === team.id" [attr.aria-pressed]="selectedTeamId === team.id" [disabled]="loading" (click)="chooseTeam(team.id)"><span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E', 'F'][i] || (i + 1) }}</span><img *ngIf="team.imageUrl" [src]="team.imageUrl" alt=""><span>{{ team.name }}</span></button></div>
+          <div class="missing-feedback" aria-live="polite"><p>{{ errorMessage || (loading ? 'Checking your answer…' : selectedTeamId !== null ? 'Club selected. Submit when you’re ready.' : 'Choose one of the clubs above.') }}</p></div>
+          <div class="missing-actions"><button class="primary" (click)="submitMissing()" [disabled]="selectedTeamId === null || loading">Submit answer</button><button class="secondary" (click)="submitMissing(true)" [disabled]="loading">Reveal</button></div>
+        </ng-container>
+        <div class="result missing-result" *ngIf="missing.completed" [class.success]="missing.correct" role="status"><p class="result-caption">{{ missing.correct ? 'YOU FOUND THE MISSING PIECE' : 'THE MISSING CLUB' }}</p><h2>{{ missing.correct ? 'That’s the connection.' : 'Here’s the answer.' }}</h2><div class="answer-club" *ngIf="missing.correctTeam as team"><img *ngIf="team.imageUrl" [src]="team.imageUrl" alt=""><strong>{{ team.name }}</strong></div><div class="missing-actions"><button class="primary" (click)="start()" [disabled]="loading">Play again</button><a routerLink="/">All games →</a></div></div>
+      </section>
+      <aside class="missing-guide" aria-label="How to play Missing Club"><p class="eyebrow">THE GAME PLAN</p><h2>The name you know.<br>The club you remember.</h2><ol><li><strong>Study the player</strong><span>Look at the player and the three clubs from their EuroLeague history.</span></li><li><strong>Find the missing club</strong><span>Choose one of the club options, then submit your answer.</span></li><li><strong>Discover the connection</strong><span>See the correct club at the end of the round, then try another player.</span></li></ol><div class="missing-tip"><strong>Need an assist?</strong><p>Use Reveal to see the missing club and explore another career.</p></div></aside>
+    </div>
+  </ng-container>
+  <ng-container *ngIf="game === 'career-order'">
+    <header class="missing-header"><p class="eyebrow">EVERY CAREER HAS A STORY</p><h1>Career Order</h1><p>Know the clubs? Now put them in the right order.</p></header>
+    <app-basketball-loader *ngIf="loading && !order" message="Loading ..." [overlay]="true"></app-basketball-loader>
+    <p class="error" *ngIf="errorMessage && !order" role="alert">{{ errorMessage }}</p>
+    <div class="missing-layout" *ngIf="order">
+      <section class="game-card order-card" aria-label="Career Order game">
+        <div class="player-heading"><img *ngIf="order.player.imageUrl" [src]="order.player.imageUrl" alt=""><div><p class="eyebrow">TRACE THE JOURNEY</p><h2>{{ order.player.displayName }}</h2></div></div>
+        <div class="timeline-label"><span>EARLIEST CLUB</span><span>LATEST CLUB</span></div>
+        <ol class="career-timeline" aria-label="Your club order">
+          <li *ngFor="let club of orderClubs; let i = index; trackBy: trackClub" class="timeline-row">
+            <span class="timeline-number" aria-hidden="true">{{ i + 1 }}</span>
+            <img *ngIf="club.imageUrl" [src]="club.imageUrl" alt=""><strong>{{ club.name }}</strong>
+            <div class="timeline-controls" *ngIf="!order.completed"><button type="button" (click)="moveClub(i, -1)" [disabled]="loading || i === 0" [attr.aria-label]="'Move ' + club.name + ' earlier'">↑</button><button type="button" (click)="moveClub(i, 1)" [disabled]="loading || i === orderClubs.length - 1" [attr.aria-label]="'Move ' + club.name + ' later'">↓</button></div>
+          </li>
+        </ol>
+        <ng-container *ngIf="!order.completed"><div class="missing-feedback" aria-live="polite"><p>{{ errorMessage || (loading ? 'Checking your order…' : 'Move clubs up or down, then submit your order.') }}</p></div><div class="missing-actions"><button class="primary" type="button" (click)="submitOrder()" [disabled]="loading">Submit order</button></div></ng-container>
+        <div class="result order-result" *ngIf="order.completed" [class.success]="order.correct" role="status"><p class="result-caption">{{ order.correct ? 'EVERY CHAPTER IN PLACE' : 'THE CAREER, IN ORDER' }}</p><h2>{{ order.correct ? 'You know the journey.' : 'Here’s how it unfolded.' }}</h2>
+          <ng-container *ngIf="order.correctOrder as correctClubs"><h3 class="correct-order-label">Correct order</h3><ol class="correct-career"><li *ngFor="let club of correctClubs; let i = index"><span>{{ i + 1 }}</span><img *ngIf="club.imageUrl" [src]="club.imageUrl" alt=""><strong>{{ club.name }}</strong></li></ol></ng-container>
+          <div class="missing-actions"><button class="primary" type="button" (click)="start()" [disabled]="loading">Play again</button><a routerLink="/">All games →</a></div>
+        </div>
+      </section>
+      <aside class="missing-guide" aria-label="How to play Career Order"><p class="eyebrow">THE GAME PLAN</p><h2>Right clubs.<br>Right order.</h2><ol><li><strong>Study the career</strong><span>You’ll see a player and a shuffled list of clubs from their EuroLeague history.</span></li><li><strong>Move the clubs</strong><span>Use the arrows to place the earliest club at the top and the latest at the bottom.</span></li><li><strong>Submit your order</strong><span>Check your answer, see the correct sequence, and take on another career.</span></li></ol><div class="missing-tip"><strong>Think in chapters.</strong><p>Start with the player’s earliest club, then work through the moves you remember.</p></div></aside>
+    </div>
+  </ng-container>
+  <ng-container *ngIf="game === 'mystery-player'">
+    <header class="missing-header"><p class="eyebrow">SOLVE THE CLUES</p><h1>Mystery Player</h1><p>Every clue tells a story. How soon will you know the name?</p></header>
+    <app-basketball-loader *ngIf="loading && !mystery" message="Loading ..." [overlay]="true"></app-basketball-loader>
+    <p *ngIf="errorMessage && !mystery" class="error" role="alert">{{ errorMessage }}</p>
+    <div class="missing-layout" *ngIf="mystery">
+      <section class="game-card mystery-card" aria-label="Mystery Player game">
+        <div class="mystery-heading"><div><strong>{{ mystery.revealedClueCount }} <span>/ {{ mystery.totalClues }}</span></strong><span>clues revealed</span></div><span class="mystery-tag">{{ mystery.completed ? 'Case closed' : 'Who am I?' }}</span></div>
+        <div class="mystery-progress" aria-hidden="true"><span *ngFor="let slot of mysterySlots" [class.shown]="slot < mystery.revealedClueCount"></span></div>
+        <ol class="mystery-clues" aria-label="Revealed clues"><li *ngFor="let clue of mystery.revealedClues; let i = index"><span class="clue-index">{{ i + 1 }}</span><div><strong>CLUE {{ i + 1 }}</strong><p>{{ clue }}</p></div></li></ol>
+        <div class="next-clue" *ngIf="!mystery.completed && mystery.revealedClueCount < mystery.totalClues"><span aria-hidden="true">?</span><span>Another piece of the story is waiting.</span></div>
+        <div class="answer-area mystery-answer" *ngIf="!mystery.completed">
+          <div class="mystery-search-wrap"><label for="mystery-search">Got a name in mind?</label><input #mysterySearch id="mystery-search" type="search" role="combobox" [value]="searchTerm" [attr.aria-busy]="loading" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" placeholder="Search first or last name…" autocomplete="off" aria-autocomplete="list" aria-controls="career-player-suggestions" [attr.aria-expanded]="suggestions.length > 0" [attr.aria-activedescendant]="activeSuggestionIndex >= 0 ? 'mystery-option-' + activeSuggestionIndex : null" aria-describedby="mystery-feedback">
+            <div id="career-player-suggestions" class="suggestions" *ngIf="suggestions.length" role="listbox"><button *ngFor="let player of suggestions; let i = index" [id]="'mystery-option-' + i" type="button" tabindex="-1" [class.active]="i === activeSuggestionIndex" [attr.aria-selected]="i === activeSuggestionIndex" role="option" (mousedown)="$event.preventDefault()" (click)="selectPlayer(player)">{{ player.displayName }}</button></div>
+          </div>
+          <div class="missing-feedback" id="mystery-feedback" aria-live="polite"><p>{{ errorMessage || (loading ? 'Checking your answer…' : answerFeedback || 'Select a player from the suggestions to submit.') }}</p></div>
+          <div class="mystery-actions"><span>Need another clue?</span><button class="secondary" type="button" (click)="submitMystery(true)" [disabled]="loading">{{ mystery.revealedClueCount < mystery.totalClues ? 'Reveal next clue' : 'Reveal player' }}</button></div>
+        </div>
+        <div class="result mystery-result" *ngIf="mystery.completed" [class.success]="mystery.correct" role="status"><p class="result-caption">{{ mystery.correct ? 'MYSTERY SOLVED' : 'THE PLAYER BEHIND THE CLUES' }}</p><h2>{{ mystery.correct ? 'You cracked it.' : 'Meet the mystery player.' }}</h2><div class="mystery-player" *ngIf="mystery.correctPlayer as player"><img *ngIf="player.imageUrl" [src]="player.imageUrl" alt=""><strong>{{ player.displayName }}</strong></div><div class="missing-actions"><button class="primary" type="button" (click)="start()" [disabled]="loading">Play again</button><a routerLink="/">All games →</a></div></div>
+      </section>
+      <aside class="missing-guide" aria-label="How to play Mystery Player"><p class="eyebrow">THE GAME PLAN</p><h2>Read the clues.<br>Find the name.</h2><ol><li><strong>Start with a clue</strong><span>Each clue reveals a detail about one player’s career.</span></li><li><strong>Make your guess</strong><span>Search for a player and select their name to submit. A miss reveals another clue.</span></li><li><strong>Uncover the mystery</strong><span>Reveal another clue when you’re stuck. When the clues run out, the answer is revealed.</span></li></ol><div class="missing-tip"><strong>Trust the details.</strong><p>Try to solve the mystery with as few clues as possible.</p></div></aside>
+    </div>
+  </ng-container>
 </main>

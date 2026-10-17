@@ -1,6 +1,6 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideHttpClient } from '@angular/common/http';
-import { provideRouter, Routes } from '@angular/router';
+import { provideRouter, Routes, withInMemoryScrolling } from '@angular/router';
 import { AppComponent } from './app/app.component';
 import { GridGameComponent } from './app/grid-game.component';
 import { HomeComponent } from './app/home.component';
@@ -10,6 +10,7 @@ import { FivePlayerGameComponent } from './app/five-player-game.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
+  { path: 'grid', redirectTo: 'grid/normal', pathMatch: 'full' },
   { path: 'grid/:difficulty', component: GridGameComponent },
   { path: 'team-history', component: TeamHistoryComponent },
   { path: 'game/five-player', component: FivePlayerGameComponent },
@@ -18,5 +19,5 @@ const routes: Routes = [
 ];
 
 bootstrapApplication(AppComponent, {
-  providers: [provideHttpClient(), provideRouter(routes)]
+  providers: [provideHttpClient(), provideRouter(routes, withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }))]
 }).catch((error: unknown) => console.error(error));

@@ -1,18 +1,21 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Injector, OnInit, ViewChild, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subject, catchError, debounceTime, distinctUntilChanged, finalize, of, switchMap } from 'rxjs';
-import { DataApiService, Player, Team, TeamHistoryRound } from './data-api.service';
+import { DataApiService, Player, TeamHistoryRound } from './data-api.service';
+import { BasketballLoaderComponent } from './basketball-loader.component';
 
 @Component({
   selector: 'app-team-history',
   standalone: true,
-  imports: [NgFor, NgIf, RouterLink],
+  imports: [NgFor, NgIf, RouterLink, BasketballLoaderComponent],
   templateUrl: './team-history.component.html',
   styleUrl: './team-history.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TeamHistoryComponent implements OnInit {
+  @ViewChild('playerSearch') private searchInput?: ElementRef<HTMLInputElement>;
+  private readonly injector = inject(Injector);
   private readonly api = inject(DataApiService);
   private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly searchTerms = new Subject<string>();
@@ -25,6 +28,8 @@ export class TeamHistoryComponent implements OnInit {
   answerFeedback = '';
   loading = false;
   errorMessage = '';
+
+  get clueSlots(): number[] { return Array.from({ length: this.round?.totalTeams ?? 4 }, (_, index) => index); }
 
   ngOnInit(): void {
     this.searchTerms.pipe(
@@ -52,6 +57,8 @@ export class TeamHistoryComponent implements OnInit {
   }
 
   start(): void {
+    if (this.loading) return;
+    this.round = null;
     this.loading = true;
     this.errorMessage = '';
     this.answerFeedback = '';
@@ -59,6 +66,7 @@ export class TeamHistoryComponent implements OnInit {
     this.searchTerm = '';
     this.suggestions = [];
     this.activeSuggestionIndex = -1;
+    this.searchTerms.next('');
     this.api.startTeamHistoryGame().pipe(finalize(() => {
       this.loading = false;
       this.changeDetector.markForCheck();
@@ -71,11 +79,14 @@ export class TeamHistoryComponent implements OnInit {
   onSearch(value: string): void {
     this.searchTerm = value;
     this.selectedPlayer = null;
+    this.suggestions = [];
     this.activeSuggestionIndex = -1;
     this.searchTerms.next(value);
   }
 
   selectPlayer(player: Player): void {
+    if (this.loading || !this.round || this.round.completed) return;
+    this.focusSearch();
     this.selectedPlayer = player;
     this.searchTerm = player.displayName;
     this.suggestions = [];
@@ -120,7 +131,9 @@ export class TeamHistoryComponent implements OnInit {
   }
 
   private submitGuess(playerId: number | undefined, skip: boolean): void {
-    if (!this.round) return;
+    if (!this.round || this.loading || this.round.completed) return;
+    this.errorMessage = '';
+    this.answerFeedback = '';
     this.selectedPlayer = null;
     this.searchTerm = '';
     this.suggestions = [];
@@ -129,11 +142,12 @@ export class TeamHistoryComponent implements OnInit {
     this.loading = true;
     this.api.guessTeamHistory(this.round.roundId, playerId, skip).pipe(finalize(() => {
       this.loading = false;
+      this.focusSearch();
       this.changeDetector.markForCheck();
     })).subscribe({
       next: round => {
         this.round = round;
-        this.answerFeedback = skip
+        this.answerFeedback = round.completed ? '' : skip
           ? 'Another club was revealed.'
           : round.completed
             ? ''
@@ -141,5 +155,13 @@ export class TeamHistoryComponent implements OnInit {
       },
       error: () => this.errorMessage = 'Your answer could not be submitted.'
     });
+  }
+
+  private focusSearch(): void {
+    if (!this.round || this.round.completed) return;
+    this.searchInput?.nativeElement.focus({ preventScroll: true });
+    afterNextRender(() => {
+      if (this.round && !this.round.completed) this.searchInput?.nativeElement.focus({ preventScroll: true });
+    }, { injector: this.injector });
   }
 }

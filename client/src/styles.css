@@ -3,7 +3,7 @@
 * { box-sizing: border-box; }
 html, body { overflow-x: hidden; }
 body { margin: 0; color: #172033; background: #f7f8fb; font-family: 'DM Sans', sans-serif; }
-.game-shell h1 { font-size: clamp(32px, 5vw, 50px) !important; line-height: 1 !important; }
+.game-shell h1 { font-size: clamp(25px, 4vw, 36px) !important; line-height: 1.15 !important; }
 
 button, .level-links a, .single-link {
   transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease, border-color .16s ease;
@@ -19,4 +19,64 @@ button:not(:disabled):not(.grid-cell):not(.suggestions button):hover,
 button:focus-visible, .level-links a:focus-visible, .single-link:focus-visible {
   outline: 3px solid rgba(239, 131, 84, .4);
   outline-offset: 2px;
+}
+
+body { background: #e7ecf2; }
+a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #fb923c; outline-offset: 3px; }
+app-root app-grid-game, app-root app-team-history, app-root app-five-player-game, app-root app-career-games { min-height: 0; }
+app-root .shell, app-root .history-shell, app-root .game-shell { padding-top: 28px; padding-bottom: 36px; }
+app-root .game-header { margin-bottom: 22px; }
+app-root .game-header h1, app-root .history-card h1 { font-size: clamp(25px, 4vw, 36px); line-height: 1.15; letter-spacing: -.04em; }
+app-root .back-link { color: #64748b; font-size: 12px; }
+app-root .back-link:hover { color: #c2410c; }
+app-root .game-header .eyebrow { margin-top: 22px; }
+app-root .game-card, app-root .history-card, app-root .panel { border-color: #e2e8f0; box-shadow: 0 8px 28px #0f172a05; }
+app-root .game-shell .game-card, app-root .history-card { margin-top: 18px; padding: 28px; border-radius: 16px; overflow: visible; }
+app-root .eyebrow { color: #c2410c; }
+app-root .game-shell .eyebrow, app-root .history-shell .eyebrow, app-root .game-header .eyebrow { font-size: 10px; letter-spacing: .13em; }
+app-root .intro, app-root .game-card > p:not(.eyebrow):not(.error) { font-size: 14px; line-height: 1.65; color: #64748b; }
+app-root .primary { background: #c2410c; border-color: #c2410c; color: #fff; }
+app-root .primary:hover:not(:disabled) { background: #9a3412; border-color: #9a3412; }
+app-root .secondary { background: #f8fafc; border-color: #e2e8f0; box-shadow: none; }
+app-root .answer-area input, app-root .answer-entry input { background: #f8fafc; border-color: #dbe2ea; min-height: 46px; font-size: 16px; }
+app-root .answer-area input:focus, app-root .answer-entry input:focus { background: white; }
+app-root .grid-corner, app-root .axis-header, app-root .axis-side { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+app-root .grid-cell { background: #f8fafc; border-color: #e2e8f0; }
+app-root .grid-cell.selectable { background: #ffedd5; border-color: transparent; color: #9a3412; }
+app-root .grid-cell.filled { background: #dcfce7; border-color: #bbf7d0; color: #166534; }
+app-root .panel-heading h2 { font-size: 18px; }
+app-root .result { border: 1px solid #fed7aa; background: #fff7ed; }
+app-root .result.success { border-color: #bbf7d0; background: #f0fdf4; }
+app-root .result h2 { font-size: 22px; letter-spacing: -.03em; margin-top: 0; }
+app-root .answer-area { padding-bottom: 4px; }
+app-root .suggestions { max-height: min(240px, 35vh); overscroll-behavior: contain; }
+
+/* Shared contrast treatment for all player autocomplete menus. */
+app-root .page-content :is(.grid-page, .history-page, .game-shell) .suggestions[role="listbox"] {
+  background: #1e293b;
+  color: #f1f5f9;
+  border: 1px solid #64748b;
+  box-shadow: 0 12px 32px #0f172a40;
+  color-scheme: dark;
+  scrollbar-color: #64748b #1e293b;
+}
+app-root .page-content :is(.grid-page, .history-page, .game-shell) .suggestions :is(li, button) {
+  background: transparent;
+  color: #f1f5f9;
+  border-bottom: 1px solid #334155;
+}
+app-root .page-content :is(.grid-page, .history-page, .game-shell) .suggestions :is(li, button):last-child { border-bottom: 0; }
+app-root .page-content :is(.grid-page, .history-page, .game-shell) .suggestions :is(li, button):is(:hover, .active) {
+  background: #334155;
+  color: #fdba74;
+  box-shadow: inset 3px 0 #fb923c;
+}
+app-root .page-content :is(.grid-page, .history-page, .game-shell) .suggestions small { color: #cbd5e1; }
+@media (max-width: 600px) {
+  app-root .shell, app-root .history-shell, app-root .game-shell { padding: 20px 12px 24px; }
+  app-root .game-shell .game-card, app-root .history-card { padding: 18px; }
+  app-root .game-header .intro { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  button, .level-links a, .single-link { transition: none; }
 }
