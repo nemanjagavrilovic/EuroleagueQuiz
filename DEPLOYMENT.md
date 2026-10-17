@@ -244,7 +244,7 @@ Create a `.env` file on the droplet. Do not commit this file:
 
 ```bash
 POSTGRES_CONNECTION_STRING='Host=YOUR_SUPABASE_HOST;Port=5432;Database=postgres;Username=postgres;Password=YOUR_PASSWORD;SSL Mode=Require;Trust Server Certificate=true'
-PUBLIC_ORIGIN=https://your-domain.com
+PUBLIC_ORIGIN=https://pickandroll.io
 ```
 
 Use the connection string supplied by Supabase. If the direct Supabase connection is not reachable from the Droplet, use Supabase's transaction/session pooler connection string instead.
@@ -257,23 +257,62 @@ docker compose ps
 docker compose logs -f --tail=100
 ```
 
-The application will be available at `http://YOUR_DROPLET_IP`. The Docker host exposes only Nginx on port 80; the API is reachable only inside the Docker network.
+The application container listens privately on `127.0.0.1:8080`. Public traffic should be handled by the host Nginx configuration described below; the API remains reachable only through the web container's `/api` proxy.
 
 ### Run database migrations
 
 The API image contains the application but does not automatically run migrations. Run migrations from a temporary SDK container using the same Supabase connection string, or apply the existing PostgreSQL migration through your normal migration workflow before starting the application. Do not expose the migration endpoint publicly.
 
-### Open the firewall
+### Configure DNS and HTTPS with host Nginx
+
+For the root domain, create an `A` record at your DNS provider:
+
+```text
+Name: @
+Value: YOUR_DROPLET_PUBLIC_IPV4
+```
+
+If your Droplet has a public IPv6 address, also create an `AAAA` record for `@`. For `www`, either create a `CNAME` with value `pickandroll.io` or an additional `A` record pointing to the same IPv4 address. A CNAME is not used for the root domain in this setup.
+
+Install Nginx and Certbot on the Droplet:
+
+```bash
+sudo apt update
+sudo apt install -y nginx certbot python3-certbot-nginx
+sudo mkdir -p /var/www/certbot
+sudo cp docker/pickandroll.io.nginx.conf /etc/nginx/sites-available/pickandroll.io
+sudo ln -s /etc/nginx/sites-available/pickandroll.io /etc/nginx/sites-enabled/pickandroll.io
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Open HTTP and HTTPS in the firewall:
 
 Allow SSH and HTTP initially:
 
 ```bash
 sudo ufw allow OpenSSH
 sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
 sudo ufw enable
 ```
 
-For HTTPS, put a domain in front of the Droplet and add a reverse proxy such as Caddy or Certbot/Nginx. Do not expose port 8080 publicly.
+Issue the certificate for both names:
+
+```bash
+sudo certbot certonly --webroot -w /var/www/certbot \
+  -d pickandroll.io -d www.pickandroll.io
+```
+
+Then uncomment the HTTPS server block in `/etc/nginx/sites-available/pickandroll.io`, test, and reload Nginx:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Do not expose port 8080 publicly. Certbot renewals can be tested with `sudo certbot renew --dry-run`.
 
 ### Update the application
 

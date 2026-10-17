@@ -80,6 +80,7 @@ export class TeamHistoryComponent implements OnInit {
     this.searchTerm = player.displayName;
     this.suggestions = [];
     this.activeSuggestionIndex = -1;
+    this.guess();
   }
 
   onSearchKeydown(event: KeyboardEvent): void {
@@ -105,7 +106,6 @@ export class TeamHistoryComponent implements OnInit {
     } else if (event.key === 'Enter') {
       event.preventDefault();
       this.selectPlayer(this.suggestions[this.activeSuggestionIndex >= 0 ? this.activeSuggestionIndex : 0]);
-      this.guess();
     }
   }
 

@@ -16,7 +16,7 @@
       </div>
 
       <div class="positions" aria-label="Five player answers">
-        <div class="position" *ngFor="let slot of answerSlots; let i = index" [class.filled]="round.players[i]">
+        <div class="position" *ngFor="let slot of answerSlots; let i = index" [class.filled]="round.players[i]" [class.revealed]="isRevealed(round.players[i])">
           <span>Player {{ i + 1 }}</span>
           <strong *ngIf="round.players[i]; else emptyAnswer">{{ round.players[i].displayName }}</strong>
           <ng-template #emptyAnswer><strong class="empty-answer">Empty</strong></ng-template>
@@ -30,7 +30,6 @@
           <button *ngFor="let player of suggestions; let i = index" type="button" [class.active]="i === activeSuggestionIndex" (click)="selectPlayer(player)" role="option">{{ player.displayName }}</button>
         </div>
         <div class="actions">
-          <button class="primary" (click)="submitGuess()" [disabled]="!selectedPlayer || loading">Guess player</button>
           <button class="secondary" (click)="submitGuess(true)" [disabled]="loading">Reveal round</button>
         </div>
         <p class="feedback" *ngIf="feedback" role="status">{{ feedback }}</p>

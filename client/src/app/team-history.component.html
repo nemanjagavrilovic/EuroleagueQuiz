@@ -24,7 +24,6 @@
           <button type="button" *ngFor="let player of suggestions; let i = index" [class.active]="i === activeSuggestionIndex" [attr.aria-selected]="i === activeSuggestionIndex" role="option" (click)="selectPlayer(player)">{{ player.displayName }}</button>
         </div>
         <div class="actions">
-          <button class="primary" type="button" (click)="guess()" [disabled]="!selectedPlayer || loading">Guess player</button>
           <button class="secondary" type="button" (click)="skip()" [disabled]="loading">Skip / reveal next club</button>
         </div>
         <p class="answer-feedback" *ngIf="answerFeedback" role="status">{{ answerFeedback }}</p>

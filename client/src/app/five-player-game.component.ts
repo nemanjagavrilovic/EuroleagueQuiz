@@ -28,6 +28,7 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   loading = false;
   secondsRemaining = 24;
   readonly answerSlots = [0, 1, 2, 3, 4];
+  readonly revealedPlayerIds = new Set<number>();
   private timeoutSubmitted = false;
 
   ngOnInit(): void {
@@ -52,6 +53,7 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.feedback = '';
     this.round = null;
+    this.revealedPlayerIds.clear();
     this.clearSearch();
     this.timer?.unsubscribe();
     this.api.startFivePlayerGame().pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
@@ -84,7 +86,6 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
     } else if (event.key === 'Enter') {
       event.preventDefault();
       this.selectPlayer(this.suggestions[this.activeSuggestionIndex >= 0 ? this.activeSuggestionIndex : 0]);
-      this.submitGuess();
     }
     this.detector.markForCheck();
   }
@@ -94,15 +95,22 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
     this.searchTerm = player.displayName;
     this.suggestions = [];
     this.activeSuggestionIndex = -1;
+    this.submitGuess();
   }
 
   submitGuess(skip = false): void {
     if (!this.round || this.round.completed || (!skip && !this.selectedPlayer)) return;
     this.loading = true;
+    const previousPlayerIds = new Set(this.round.players.map(player => player.id));
     const playerId = this.selectedPlayer?.id;
     this.clearSearch();
     this.api.guessFivePlayer(this.round.roundId, playerId, skip).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
       next: round => {
+        if (skip) {
+          round.players
+            .filter(player => !previousPlayerIds.has(player.id))
+            .forEach(player => this.revealedPlayerIds.add(player.id));
+        }
         this.round = round;
         this.secondsRemaining = round.secondsRemaining;
         this.feedback = skip ? 'Round revealed.' : round.lastGuessCorrect ? 'Correct player!' : 'This player did not play for this club, or was already guessed.';
@@ -115,7 +123,12 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   nextRound(): void {
     if (!this.round || !this.round.completed || this.round.gameCompleted) return;
     this.loading = true;
+    this.revealedPlayerIds.clear();
     this.api.nextFivePlayerRound(this.round.roundId).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe(round => this.setRound(round));
+  }
+
+  isRevealed(player: Player | undefined): boolean {
+    return !!player && this.revealedPlayerIds.has(player.id);
   }
 
   private setRound(round: FivePlayerGameRound): void {

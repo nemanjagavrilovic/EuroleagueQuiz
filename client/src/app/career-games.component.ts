@@ -107,7 +107,6 @@ export class CareerGamesComponent implements OnInit {
     } else if (event.key === 'Enter') {
       event.preventDefault();
       this.selectPlayer(this.suggestions[this.activeSuggestionIndex >= 0 ? this.activeSuggestionIndex : 0]);
-      this.submitMystery();
     }
   }
 
@@ -116,6 +115,7 @@ export class CareerGamesComponent implements OnInit {
     this.searchTerm = player.displayName;
     this.suggestions = [];
     this.activeSuggestionIndex = -1;
+    this.submitMystery();
   }
   submitMystery(skip = false): void {
     if (!this.mystery || (!skip && !this.selectedPlayer)) return;
