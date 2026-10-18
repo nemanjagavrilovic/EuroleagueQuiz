@@ -1,4 +1,5 @@
 [
+  { "path": "/contact", "title": "Contact Us | Pick & Roll", "description": "Contact Pick & Roll to report a basketball quiz issue, suggest a new game, or ask a question. Help us improve our EuroLeague quiz games." },
   { "path": "/", "title": "Pick & Roll | EuroLeague Basketball Quizzes", "description": "Test your EuroLeague knowledge with six free basketball quiz games. Connect clubs in Player Grid, guess careers, solve clues, and beat the Starting Five clock." },
   { "path": "/grid/easy", "title": "Easy EuroLeague Player Grid | Pick & Roll", "description": "Play an easy 3×3 EuroLeague basketball grid. Find players who represented both clubs at each intersection and test your basketball memory." },
   { "path": "/grid/normal", "title": "EuroLeague Player Grid | Pick & Roll", "description": "Connect EuroLeague clubs in a 3×3 basketball quiz grid. Guess players who played for both teams, with a fresh challenge every time you play." },

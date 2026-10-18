@@ -15,6 +15,7 @@ public static class DependencyInjection
         services.AddScoped<ITeamHistoryGameService, TeamHistoryGameService>();
         services.AddScoped<ICareerGamesService, CareerGamesService>();
         services.AddScoped<IFivePlayerGameService, FivePlayerGameService>();
+        services.AddScoped<IContactService, ContactService>();
         return services;
     }
 }

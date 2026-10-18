@@ -7,12 +7,14 @@ import { HomeComponent } from './app/home.component';
 import { TeamHistoryComponent } from './app/team-history.component';
 import { CareerGamesComponent } from './app/career-games.component';
 import { FivePlayerGameComponent } from './app/five-player-game.component';
+import { ContactComponent } from './app/contact.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'grid', redirectTo: 'grid/normal', pathMatch: 'full' },
   { path: 'grid/:difficulty', component: GridGameComponent },
   { path: 'team-history', component: TeamHistoryComponent },
+  { path: 'contact', component: ContactComponent },
   { path: 'game/five-player', component: FivePlayerGameComponent },
   { path: 'game/:game', component: CareerGamesComponent },
   { path: '**', redirectTo: '' }

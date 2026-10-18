@@ -4,7 +4,7 @@ Production origin: `https://pickandroll.io`.
 
 ## Included
 
-- `client/src/seo-pages.json` defines the ten public URLs, titles and descriptions.
+- `client/src/seo-pages.json` defines the eleven public URLs, titles and descriptions, including Contact Us.
 - Angular's SEO service updates titles, descriptions, canonical URLs and share metadata on navigation. Query strings and fragments are excluded from canonical URLs.
 - `npm run build -- --configuration production` automatically runs `postbuild`, generating an HTML shell with unique metadata for every public route, plus `robots.txt` and `sitemap.xml` in the browser output directory.
 - Nginx serves these route files directly, redirects `/grid` to `/grid/normal`, and returns HTTP 404 for unknown URLs. API proxying is unchanged.

@@ -6,6 +6,7 @@ using EuroleagueQuiz.Infrastructure.DataProviders.InCrowd;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using EuroleagueQuiz.Infrastructure.Email;
 
 namespace EuroleagueQuiz.Infrastructure;
 
@@ -35,6 +36,8 @@ public static class DependencyInjection
             client.DefaultRequestHeaders.UserAgent.ParseAdd("EuroleagueQuiz/1.0");
         });
         services.AddScoped<IDataImportService, InCrowdImportService>();
+        services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
+        services.AddScoped<IContactEmailSender, SmtpContactEmailSender>();
 
         return services;
     }
