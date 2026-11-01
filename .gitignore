@@ -42,6 +42,7 @@ secrets.json
 client/node_modules/
 **/node_modules/
 client/.angular/
+client/out-tsc/
 client/dist/
 **/dist/
 client/.cache/

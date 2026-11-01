@@ -2,8 +2,8 @@
   <header><a class="back-link" routerLink="/">← All games</a><p class="eyebrow">LET’S TALK BASKETBALL</p><h1>Contact us</h1><p class="intro">Found a wrong answer? Have a game idea? We’d love to hear it.</p></header>
   <div class="contact-layout">
     <section class="contact-card" aria-label="Contact form">
-      <form *ngIf="!sent" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="sending">
-        <h2>Send us a message</h2><p class="form-intro">All fields are required.</p>
+      <form #contactForm *ngIf="!sent" [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="sending">
+        <p class="eyebrow">FROM THE SIDELINES</p><h2>Send us a message</h2><p class="form-intro">A question, a correction, or your next game idea. All fields are required.</p>
         <fieldset [disabled]="sending">
           <div class="field"><label for="contact-name">Your name</label><input id="contact-name" formControlName="name" autocomplete="name" maxlength="100" required [attr.aria-invalid]="invalid('name')" aria-describedby="name-error"><p id="name-error" class="field-error" *ngIf="invalid('name')">Enter your name (up to 100 characters).</p></div>
           <div class="field"><label for="contact-email">Email address</label><input id="contact-email" type="email" formControlName="email" autocomplete="email" maxlength="254" required [attr.aria-invalid]="invalid('email')" aria-describedby="email-error"><p id="email-error" class="field-error" *ngIf="invalid('email')">Enter a valid email address so we can reply.</p></div>
@@ -14,8 +14,8 @@
         <p class="submit-error" *ngIf="errorMessage" role="alert">{{ errorMessage }}</p>
         <div class="form-actions"><button type="submit" [disabled]="sending">{{ sending ? 'Sending…' : 'Send message' }}</button><span>We’ll use your email to reply.</span></div>
       </form>
-      <div *ngIf="sent" class="contact-success" role="status"><p class="eyebrow">MESSAGE SENT</p><h2>Thanks for the assist.</h2><p>Your message has been sent to the Pick & Roll inbox.</p><a routerLink="/">Back to the games →</a></div>
+      <div #successMessage *ngIf="sent" class="contact-success" role="status" tabindex="-1"><p class="eyebrow">MESSAGE SENT</p><h2>Thanks for the assist.</h2><p>Your message has been sent to the Pick & Roll inbox.</p><a routerLink="/">Back to the games →</a></div>
     </section>
-    <aside class="contact-guide"><p class="eyebrow">YOUR FEEDBACK COUNTS</p><h2>Help us make<br>the next play better.</h2><div><h3>Report a quiz issue</h3><p>Tell us the game, player and clubs involved so we can check the data.</p></div><div><h3>Suggest a game</h3><p>Have another way to test basketball knowledge? Share your idea.</p></div><div><h3>Get in touch</h3><p>For questions or collaboration, use the form or email <a href="mailto:noreply@pickandroll.io">noreply&#64;pickandroll.io</a>.</p></div></aside>
+    <aside class="contact-guide" aria-label="What to include in your message"><p class="eyebrow">YOUR FEEDBACK COUNTS</p><h2><span>Help us make</span><span>the next play better.</span></h2><div class="contact-topic"><span class="topic-number" aria-hidden="true">01</span><div><h3>Report a quiz issue</h3><p>Tell us the game, player and clubs involved so we can check the data.</p></div></div><div class="contact-topic"><span class="topic-number" aria-hidden="true">02</span><div><h3>Suggest a game</h3><p>Have another way to test basketball knowledge? Share your idea.</p></div></div><div class="contact-topic"><span class="topic-number" aria-hidden="true">03</span><div><h3>Get in touch</h3><p>Questions about Pick & Roll or an idea for collaboration? We’re listening.</p></div></div><div class="contact-tip"><strong>Prefer email?</strong><p>You can also write to <a href="mailto:noreply@pickandroll.io">noreply&#64;pickandroll.io</a>.</p></div></aside>
   </div>
 </main>

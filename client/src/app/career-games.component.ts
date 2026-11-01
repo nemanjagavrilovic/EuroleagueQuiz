@@ -1,7 +1,7 @@
 import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Injector, OnInit, ViewChild, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Observable, Subject, catchError, debounceTime, distinctUntilChanged, finalize, of, switchMap } from 'rxjs';
+import { Observable, Subject, catchError, debounceTime, finalize, map, of, switchMap } from 'rxjs';
 import { CareerOrderClub, CareerOrderRound, DataApiService, MissingClubRound, MysteryPlayerRound, Player } from './data-api.service';
 import { BasketballLoaderComponent } from './basketball-loader.component';
 
@@ -13,6 +13,7 @@ type GameType = 'missing-club' | 'career-order' | 'mystery-player';
 })
 export class CareerGamesComponent implements OnInit {
   @ViewChild('mysterySearch') private mysterySearch?: ElementRef<HTMLInputElement>;
+  @ViewChild('mysterySuggestions') private mysterySuggestions?: ElementRef<HTMLDivElement>;
   private readonly injector = inject(Injector);
   private readonly api = inject(DataApiService);
   private readonly route = inject(ActivatedRoute);
@@ -30,17 +31,30 @@ export class CareerGamesComponent implements OnInit {
   activeSuggestionIndex = -1;
   searchTerm = '';
   answerFeedback = '';
+  orderFeedback = '';
   loading = false;
   errorMessage = '';
+  searchingPlayers = false;
+  searchCompleted = false;
 
   get mysterySlots(): number[] { return Array.from({ length: this.mystery?.totalClues ?? 0 }, (_, index) => index); }
 
   ngOnInit(): void {
     this.game = (this.route.snapshot.paramMap.get('game') as GameType) || 'missing-club';
-    this.searchTerms.pipe(debounceTime(180), distinctUntilChanged(), switchMap(term => {
+    this.searchTerms.pipe(debounceTime(180), switchMap(term => {
       const value = term.trim();
-      return value.length < 2 ? of([] as Player[]) : this.api.searchPlayers(value).pipe(catchError(() => of([] as Player[])));
-    })).subscribe(players => { this.suggestions = players.slice(0, 10); this.activeSuggestionIndex = -1; this.detector.markForCheck(); });
+      return value.length < 2 ? of({ term, players: [] as Player[] }) : this.api.searchPlayers(value).pipe(
+        map(players => ({ term, players })),
+        catchError(() => {
+          if (term === this.searchTerm) this.errorMessage = 'Player search is currently unavailable.';
+          return of({ term, players: [] as Player[] });
+        })
+      );
+    })).subscribe(({ term, players }) => {
+      if (term !== this.searchTerm || this.loading || this.mystery?.completed) return;
+      this.searchingPlayers = false; this.searchCompleted = term.trim().length >= 2;
+      this.suggestions = players.slice(0, 10); this.activeSuggestionIndex = -1; this.detector.markForCheck();
+    });
     this.start();
   }
 
@@ -51,6 +65,7 @@ export class CareerGamesComponent implements OnInit {
   start(): void {
     if (this.loading) return;
     this.selectedTeamId = null;
+    this.orderFeedback = '';
     this.loading = true; this.errorMessage = ''; this.answerFeedback = ''; this.missing = null; this.order = null; this.mystery = null;
     this.clearSearch();
     if (this.game === 'missing-club') {
@@ -86,6 +101,7 @@ export class CareerGamesComponent implements OnInit {
     if (!this.order || this.order.completed || this.loading) return;
     const target = index + direction; if (target < 0 || target >= this.orderClubs.length) return;
     [this.orderClubs[index], this.orderClubs[target]] = [this.orderClubs[target], this.orderClubs[index]];
+    this.orderFeedback = `${this.orderClubs[target].name} moved to position ${target + 1} of ${this.orderClubs.length}.`;
   }
   submitOrder(): void {
     if (!this.order || this.order.completed || this.loading) return;
@@ -103,6 +119,9 @@ export class CareerGamesComponent implements OnInit {
 
   onSearch(value: string): void {
     this.searchTerm = value;
+    this.errorMessage = '';
+    this.searchingPlayers = value.trim().length >= 2;
+    this.searchCompleted = false;
     this.selectedPlayer = null;
     this.suggestions = [];
     this.activeSuggestionIndex = -1;
@@ -122,12 +141,14 @@ export class CareerGamesComponent implements OnInit {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       this.activeSuggestionIndex = (this.activeSuggestionIndex + 1) % this.suggestions.length;
+      this.scrollMysterySuggestion();
       this.detector.markForCheck();
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       this.activeSuggestionIndex = this.activeSuggestionIndex <= 0
         ? this.suggestions.length - 1
         : this.activeSuggestionIndex - 1;
+      this.scrollMysterySuggestion();
       this.detector.markForCheck();
     } else if (event.key === 'Enter') {
       event.preventDefault();
@@ -171,10 +192,23 @@ export class CareerGamesComponent implements OnInit {
   }
 
   private clearSearch(): void {
+    this.searchingPlayers = false;
+    this.searchCompleted = false;
     this.selectedPlayer = null;
     this.searchTerm = '';
     this.suggestions = [];
     this.activeSuggestionIndex = -1;
     this.searchTerms.next('');
+  }
+
+  private scrollMysterySuggestion(): void {
+    afterNextRender(() => {
+      const list = this.mysterySuggestions?.nativeElement;
+      const option = list?.children[this.activeSuggestionIndex] as HTMLElement | undefined;
+      if (!list || !option) return;
+      const top = option.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop;
+      if (top < list.scrollTop) list.scrollTop = top;
+      else if (top + option.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = top + option.offsetHeight - list.clientHeight;
+    }, { injector: this.injector });
   }
 }

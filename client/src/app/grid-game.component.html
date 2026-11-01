@@ -12,17 +12,17 @@
     <section class="panel grid-panel" aria-label="Player Grid game">
       <div class="panel-heading">
         <div class="progress-copy"><strong>{{ guessedCount }} <span>/ 9</span></strong><span>connections found</span></div>
-        <button class="reveal-button" type="button" (click)="revealGrid()" [disabled]="revealing || checkingPlayer || gridRevealed || isGridComplete()">{{ revealing ? 'Revealing…' : 'Reveal' }}</button>
+        <button class="reveal-button" type="button" (click)="revealGrid()" [disabled]="revealing || checkingPlayer || gridRevealed || isGridComplete()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6m-5 3h4M8.5 13.5a6 6 0 1 1 7 0c-1 .7-1.5 1.5-1.5 2.5h-4c0-1-.5-1.8-1.5-2.5Z"/></svg>{{ revealing ? 'Revealing…' : 'Reveal' }}</button>
       </div>
       <div class="progress-track" role="progressbar" [attr.aria-valuenow]="guessedCount" aria-valuemin="0" aria-valuemax="9" aria-label="Players guessed"><span [style.width.%]="guessedCount / 9 * 100"></span></div>
 
       <div class="grid-layout" aria-label="Club intersections">
-        <div class="grid-corner"><span aria-hidden="true">×</span><small>Find the link</small></div>
+        <div class="grid-corner" aria-label="Match the row and column clubs"><span aria-hidden="true">×</span></div>
         <div class="axis-header" *ngFor="let team of currentGrid.columnTeams" tabindex="0" [attr.title]="team.name" [attr.aria-label]="team.name">
-          <img *ngIf="team.imageUrl" [src]="team.imageUrl" alt=""><span [class.logo-fallback]="!team.imageUrl">{{ team.name }}</span>
+          <img *ngIf="team.imageUrl" [src]="team.imageUrl" alt=""><span [class.logo-fallback]="!team.imageUrl">{{ team.shortName || team.name }}</span>
         </div>
         <ng-container *ngFor="let team of currentGrid.rowTeams; let row = index">
-          <div class="axis-header axis-side" tabindex="0" [attr.title]="team.name" [attr.aria-label]="team.name"><img *ngIf="team.imageUrl" [src]="team.imageUrl" alt=""><span [class.logo-fallback]="!team.imageUrl">{{ team.name }}</span></div>
+          <div class="axis-header axis-side" tabindex="0" [attr.title]="team.name" [attr.aria-label]="team.name"><img *ngIf="team.imageUrl" [src]="team.imageUrl" alt=""><span [class.logo-fallback]="!team.imageUrl">{{ team.shortName || team.name }}</span></div>
           <button type="button" class="grid-cell" *ngFor="let column of [0, 1, 2]"
             [class.selectable]="isPendingCell(row, column)" [class.filled]="isCellFilled(row, column)" [class.revealed]="isCellRevealed(row, column)"
             [disabled]="!isPendingCell(row, column) || isCellFilled(row, column) || checkingPlayer || revealing"
@@ -33,26 +33,33 @@
           </button>
         </ng-container>
       </div>
+      <p class="grid-caption">Find a player for each club intersection.</p>
+    </section>
 
+    <section class="search-panel" aria-label="Find a player">
+      <p class="eyebrow">MAKE THE CONNECTION</p>
+      <h2>{{ gridRevealed ? 'Answers revealed' : isGridComplete() ? 'Grid complete' : 'Who’s the connection?' }}</h2>
       <div class="completion-message" *ngIf="isGridComplete()" role="status"><div><strong>Nothing but net.</strong><span>You found all nine connections!</span></div><a routerLink="/">Explore games →</a></div>
       <div class="revealed-message" *ngIf="gridRevealed && !isGridComplete()" role="status"><strong>Grid revealed</strong><span>{{ guessedCount }} of 9 guessed. Your answers stay green; revealed answers are red.</span><a routerLink="/">Explore games →</a></div>
 
       <div class="answer-section" *ngIf="!isGridComplete() && !gridRevealed">
         <div class="answer-entry">
-          <label for="player-search">Who’s the connection?</label>
+          <label for="player-search" class="search-label">Search players</label>
           <div class="search-control"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
             <input #playerSearch id="player-search" type="search" role="combobox" [value]="searchTerm" [attr.aria-busy]="checkingPlayer || revealing" placeholder="Search first or last name…" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" autocomplete="off" aria-autocomplete="list" aria-controls="player-suggestions" [attr.aria-expanded]="playerResults.length > 0" [attr.aria-activedescendant]="activeResultIndex >= 0 ? 'player-option-' + activeResultIndex : null" aria-describedby="grid-feedback">
           </div>
-          <ul id="player-suggestions" class="suggestions" *ngIf="playerResults.length > 0" role="listbox">
+          <div class="feedback-slot" id="grid-feedback" aria-live="polite" aria-atomic="true">
+            <p *ngIf="checkingPlayer">Checking club history…</p>
+            <p *ngIf="!checkingPlayer && searchingPlayers">Finding players…</p>
+            <p *ngIf="!checkingPlayer && searchError" class="search-feedback">{{ searchError }}</p>
+            <p *ngIf="!checkingPlayer && !searchError && pendingCells.length > 1" class="hint">{{ selectedPlayer?.displayName }} fits multiple squares. Tap a highlighted square.</p>
+            <p *ngIf="!checkingPlayer && !searchingPlayers && !searchError && pendingCells.length === 0">{{ searchCompleted && playerResults.length === 0 ? 'No matching players. Try another name.' : 'Select a player from the suggestions to submit.' }}</p>
+          </div>
+          <ul #suggestionsList id="player-suggestions" class="suggestions" *ngIf="playerResults.length > 0" role="listbox">
             <li *ngFor="let player of playerResults; let i = index" [id]="'player-option-' + i" [class.active]="i === activeResultIndex" role="option" [attr.aria-selected]="i === activeResultIndex" (mousedown)="$event.preventDefault()" (click)="selectPlayer(player)"><strong>{{ player.displayName }}</strong><small>{{ player.nationality || 'Unknown nationality' }}</small></li>
           </ul>
         </div>
-        <div class="feedback-slot" id="grid-feedback" aria-live="polite" aria-atomic="true">
-          <p *ngIf="checkingPlayer">Checking club history…</p>
-          <p *ngIf="!checkingPlayer && searchError" class="search-feedback">{{ searchError }}</p>
-          <p *ngIf="!checkingPlayer && !searchError && pendingCells.length > 1" class="hint">{{ selectedPlayer?.displayName }} fits multiple squares. Tap a highlighted square.</p>
-          <p *ngIf="!checkingPlayer && !searchError && pendingCells.length === 0">Select a player from the suggestions to submit.</p>
-        </div>
+        <div class="search-empty" *ngIf="!checkingPlayer && !searchingPlayers && !searchCompleted && playerResults.length === 0 && pendingCells.length === 0 && !searchError"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="17"/><path d="M7 24h34M24 7v34M12 12c16 2 22 13 24 24M36 12c-16 2-22 13-24 24"/></svg><p>Your next connection starts here.</p><span>Type at least two letters to find a player.</span></div>
       </div>
     </section>
 

@@ -1,7 +1,7 @@
 import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Injector, OnInit, ViewChild, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Subject, catchError, debounceTime, distinctUntilChanged, finalize, of, switchMap } from 'rxjs';
+import { Subject, catchError, debounceTime, finalize, map, of, switchMap } from 'rxjs';
 import { DataApiService, Player, TeamHistoryRound } from './data-api.service';
 import { BasketballLoaderComponent } from './basketball-loader.component';
 
@@ -15,6 +15,7 @@ import { BasketballLoaderComponent } from './basketball-loader.component';
 })
 export class TeamHistoryComponent implements OnInit {
   @ViewChild('playerSearch') private searchInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('suggestionsList') private suggestionsList?: ElementRef<HTMLDivElement>;
   private readonly injector = inject(Injector);
   private readonly api = inject(DataApiService);
   private readonly changeDetector = inject(ChangeDetectorRef);
@@ -28,20 +29,30 @@ export class TeamHistoryComponent implements OnInit {
   answerFeedback = '';
   loading = false;
   errorMessage = '';
+  searchingPlayers = false;
+  searchCompleted = false;
 
   get clueSlots(): number[] { return Array.from({ length: this.round?.totalTeams ?? 4 }, (_, index) => index); }
 
   ngOnInit(): void {
     this.searchTerms.pipe(
       debounceTime(180),
-      distinctUntilChanged(),
       switchMap(term => {
         const value = term.trim();
-        if (value.length < 2) return of([] as Player[]);
-        return this.api.searchPlayers(value).pipe(catchError(() => of([] as Player[])));
+        if (value.length < 2) return of({ term, players: [] as Player[] });
+        return this.api.searchPlayers(value).pipe(
+          map(players => ({ term, players })),
+          catchError(() => {
+            if (term === this.searchTerm) this.errorMessage = 'Player search is currently unavailable.';
+            return of({ term, players: [] as Player[] });
+          })
+        );
       })
     ).subscribe({
-      next: players => {
+      next: ({ term, players }) => {
+        if (term !== this.searchTerm || this.loading || this.round?.completed) return;
+        this.searchingPlayers = false;
+        this.searchCompleted = term.trim().length >= 2;
         this.suggestions = players.slice(0, 12);
         this.activeSuggestionIndex = -1;
         this.changeDetector.markForCheck();
@@ -62,6 +73,8 @@ export class TeamHistoryComponent implements OnInit {
     this.loading = true;
     this.errorMessage = '';
     this.answerFeedback = '';
+    this.searchingPlayers = false;
+    this.searchCompleted = false;
     this.selectedPlayer = null;
     this.searchTerm = '';
     this.suggestions = [];
@@ -78,6 +91,9 @@ export class TeamHistoryComponent implements OnInit {
 
   onSearch(value: string): void {
     this.searchTerm = value;
+    this.errorMessage = '';
+    this.searchingPlayers = value.trim().length >= 2;
+    this.searchCompleted = false;
     this.selectedPlayer = null;
     this.suggestions = [];
     this.activeSuggestionIndex = -1;
@@ -88,6 +104,8 @@ export class TeamHistoryComponent implements OnInit {
     if (this.loading || !this.round || this.round.completed) return;
     this.focusSearch();
     this.selectedPlayer = player;
+    this.searchingPlayers = false;
+    this.searchCompleted = false;
     this.searchTerm = player.displayName;
     this.suggestions = [];
     this.activeSuggestionIndex = -1;
@@ -107,12 +125,14 @@ export class TeamHistoryComponent implements OnInit {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       this.activeSuggestionIndex = (this.activeSuggestionIndex + 1) % this.suggestions.length;
+      this.scrollActiveSuggestion();
       this.changeDetector.markForCheck();
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       this.activeSuggestionIndex = this.activeSuggestionIndex <= 0
         ? this.suggestions.length - 1
         : this.activeSuggestionIndex - 1;
+      this.scrollActiveSuggestion();
       this.changeDetector.markForCheck();
     } else if (event.key === 'Enter') {
       event.preventDefault();
@@ -134,6 +154,8 @@ export class TeamHistoryComponent implements OnInit {
     if (!this.round || this.loading || this.round.completed) return;
     this.errorMessage = '';
     this.answerFeedback = '';
+    this.searchingPlayers = false;
+    this.searchCompleted = false;
     this.selectedPlayer = null;
     this.searchTerm = '';
     this.suggestions = [];
@@ -149,9 +171,7 @@ export class TeamHistoryComponent implements OnInit {
         this.round = round;
         this.answerFeedback = round.completed ? '' : skip
           ? 'Another club was revealed.'
-          : round.completed
-            ? ''
-            : 'Not this player — another club was revealed.';
+          : 'Not this player — another club was revealed.';
       },
       error: () => this.errorMessage = 'Your answer could not be submitted.'
     });
@@ -162,6 +182,17 @@ export class TeamHistoryComponent implements OnInit {
     this.searchInput?.nativeElement.focus({ preventScroll: true });
     afterNextRender(() => {
       if (this.round && !this.round.completed) this.searchInput?.nativeElement.focus({ preventScroll: true });
+    }, { injector: this.injector });
+  }
+
+  private scrollActiveSuggestion(): void {
+    afterNextRender(() => {
+      const list = this.suggestionsList?.nativeElement;
+      const option = list?.children[this.activeSuggestionIndex] as HTMLElement | undefined;
+      if (!list || !option) return;
+      const top = option.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop;
+      if (top < list.scrollTop) list.scrollTop = top;
+      else if (top + option.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = top + option.offsetHeight - list.clientHeight;
     }, { injector: this.injector });
   }
 }

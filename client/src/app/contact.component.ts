@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Injector, ViewChild, inject } from '@angular/core';
 import { NgIf } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -13,6 +13,9 @@ import { environment } from '../environments/environment';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ContactComponent {
+  @ViewChild('contactForm') private contactForm?: ElementRef<HTMLFormElement>;
+  @ViewChild('successMessage') private successMessage?: ElementRef<HTMLDivElement>;
+  private readonly injector = inject(Injector);
   private readonly http = inject(HttpClient);
   private readonly detector = inject(ChangeDetectorRef);
   private readonly builder = inject(FormBuilder);
@@ -36,7 +39,10 @@ export class ContactComponent {
   submit(): void {
     if (this.sending || this.sent) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.contactForm?.nativeElement.querySelector<HTMLElement>('input.ng-invalid, textarea.ng-invalid')?.focus();
+      return;
+    }
     const values = this.form.getRawValue();
     const request = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value.trim()]));
     this.sending = true;
@@ -44,7 +50,10 @@ export class ContactComponent {
     this.http.post(`${environment.apiUrl.replace(/\/+$/, '')}/contact`, request).pipe(
       finalize(() => { this.sending = false; this.detector.markForCheck(); })
     ).subscribe({
-      next: () => { this.sent = true; this.form.reset(); },
+      next: () => {
+        this.sent = true; this.form.reset();
+        afterNextRender(() => this.successMessage?.nativeElement.focus({ preventScroll: true }), { injector: this.injector });
+      },
       error: (error: HttpErrorResponse) => {
         this.errorMessage = error.status === 429
           ? 'Too many messages have been sent recently. Please wait a minute and try again.'

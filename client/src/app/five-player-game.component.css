@@ -1,22 +1,23 @@
 :host { display: block; }
+.five-page *, .five-page *::before, .five-page *::after { box-sizing: border-box; }
 .game-shell.five-page { max-width: 1120px; margin: auto; padding: 28px 24px 40px; }
 .five-header { margin-bottom: 24px; }
-.back-link { color: #64748b; font-size: 12px; font-weight: 700; text-decoration: none; }
-.eyebrow { font-size: 10px; font-weight: 800; letter-spacing: .13em; color: #c2410c; margin: 22px 0 8px; }
+.back-link { color: var(--muted); font-size: 12px; font-weight: 700; text-decoration: none; }
+.eyebrow { font-size: 10px; font-weight: 800; letter-spacing: .13em; color: var(--accent); margin: 22px 0 8px; }
 h1 { margin: 0; letter-spacing: -.04em; }
-.intro { color: #64748b; font-size: 14px; line-height: 1.65; }
+.intro { color: var(--muted); font-size: 14px; line-height: 1.65; }
 .five-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 28px; align-items: start; }
-.five-page .five-card { min-width: 0; padding: 24px; margin: 0; border: 1px solid #e2e8f0; border-radius: 18px; background: white; overflow: visible; }
-.scoreboard { display: grid; grid-template-columns: repeat(3, 1fr); background: #111827; color: white; border-radius: 12px; padding: 16px 8px; }
-.scoreboard > div { display: grid; justify-items: center; gap: 6px; border-right: 1px solid #334155; }
+.five-page .five-card { min-width: 0; padding: 24px; margin: 0; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); overflow: visible; }
+.scoreboard { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--deep); color: white; border-radius: 12px; padding: 16px 8px; }
+.scoreboard > div { display: grid; justify-items: center; gap: 6px; border-right: 1px solid var(--text-secondary); }
 .scoreboard > div:last-child { border: 0; }
-.scoreboard span { font-size: 9px; letter-spacing: .12em; font-weight: 800; color: #cbd5e1; }
+.scoreboard span { font-size: 9px; letter-spacing: .12em; font-weight: 800; color: var(--border-strong); }
 .scoreboard strong { font-size: 26px; line-height: 1.2; font-variant-numeric: tabular-nums; }
-.scoreboard small { font-size: 14px; color: #94a3b8; }
-.timer strong { color: #fb923c; }
+.scoreboard small { font-size: 14px; color: var(--muted); }
+.timer strong { color: var(--accent); }
 .timer.warning strong { color: #fca5a5; }
-.time-track { height: 4px; background: #e2e8f0; border-radius: 4px; margin-top: 10px; overflow: hidden; }
-.time-track > span { display: block; height: 100%; background: #f97316; transition: width .2s linear; }
+.time-track { height: 4px; background: var(--border); border-radius: 4px; margin-top: 10px; overflow: hidden; }
+.time-track > span { display: block; height: 100%; background: var(--accent); transition: width .2s linear; }
 .time-track.warning > span { background: #ef4444; }
 .club-heading { display: flex; align-items: center; gap: 14px; margin: 22px 0; }
 .club-heading img { width: 48px; height: 48px; object-fit: contain; }
@@ -24,44 +25,121 @@ h1 { margin: 0; letter-spacing: -.04em; }
 .club-heading h2 { margin: 0; font-size: 23px; line-height: 1.3; letter-spacing: -.03em; }
 .answers-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .answers-heading h3 { font-size: 14px; margin: 0; }
-.answers-heading > span { font-size: 11px; color: #64748b; }
+.answers-heading > span { font-size: 11px; color: var(--muted); }
 .player-slots { list-style: none; display: grid; gap: 7px; padding: 0; margin: 0; }
-.player-slots li { display: flex; align-items: center; gap: 10px; min-height: 43px; padding: 8px 12px; border: 1px solid #dbe2ea; border-radius: 9px; background: #f8fafc; }
-.slot-number { flex-shrink: 0; font-size: 11px; color: #64748b; width: 18px; }
+.player-slots li { display: flex; align-items: center; gap: 10px; min-height: 43px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-raised); }
+.slot-number { flex-shrink: 0; font-size: 11px; color: var(--muted); width: 18px; }
 .player-slots strong { font-size: 13px; line-height: 1.4; }
-.empty-answer { font-size: 12px; color: #94a3b8; }
-.player-slots li.filled { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
-.player-slots li.revealed { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+.empty-answer { font-size: 12px; color: var(--muted); }
+.player-slots li.filled { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+.player-slots li.revealed { background: var(--error-bg); color: var(--error-text); border-color: var(--error-border); }
 .revealed-label { margin-left: auto; font-size: 10px; }
-.answer-area { border-top: 1px solid #e2e8f0; margin-top: 20px; padding-top: 16px; }
+.answer-area { border-top: 1px solid var(--border); margin-top: 20px; padding-top: 16px; }
 .five-search-wrap { position: relative; }
 label { display: block; margin-bottom: 9px; font-size: 14px; font-weight: 800; }
-input { width: 100%; border: 1px solid #dbe2ea; border-radius: 10px; padding: 13px 14px; font: inherit; font-size: 16px; }
-.five-page .suggestions { position: absolute; bottom: 100%; left: 0; right: 0; z-index: 10; max-height: min(220px, 30svh); overflow-y: auto; margin-bottom: 6px; padding: 4px; border: 1px solid #64748b; border-radius: 12px; }
+input { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 13px 14px; font: inherit; font-size: 16px; }
+.five-page .suggestions { position: absolute; bottom: 100%; left: 0; right: 0; z-index: 10; max-height: min(220px, 30svh); overflow-y: auto; margin-bottom: 6px; padding: 4px; border: 1px solid var(--muted); border-radius: 12px; }
 .suggestions button { display: block; width: 100%; padding: 12px; border: 0; border-radius: 7px; text-align: left; font: inherit; font-size: 14px; cursor: pointer; }
 .feedback-slot { min-height: 54px; padding-top: 12px; }
-.feedback-slot p { margin: 0; font-size: 12px; color: #64748b; line-height: 1.6; }
-.round-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
-.round-actions > span { font-size: 12px; color: #64748b; }
-.primary, .secondary { border: 1px solid #e2e8f0; border-radius: 9px; padding: 11px 16px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
-.primary { background: #c2410c; color: white; border-color: #c2410c; }
-.secondary { background: #f8fafc; color: #334155; }
+.feedback-slot p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.round-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+.round-actions > span { font-size: 12px; color: var(--muted); }
+.primary, .secondary { border: 1px solid var(--border); border-radius: 9px; padding: 11px 16px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.primary { background: var(--accent); color: white; border-color: var(--accent); }
+.secondary { background: var(--surface-raised); color: var(--text-secondary); }
 button:disabled { opacity: .5; cursor: default; }
 .result { margin-top: 20px; padding: 20px; border-radius: 12px; }
-.result-label { font-size: 9px; font-weight: 800; letter-spacing: .12em; color: #64748b; }
+.result-label { font-size: 9px; font-weight: 800; letter-spacing: .12em; color: var(--muted); }
 .result > p:not(.result-label) { font-size: 14px; line-height: 1.6; }
 .result-actions { display: flex; align-items: center; gap: 18px; }
 .result-actions a { color: inherit; font-size: 12px; font-weight: 800; }
-.error, .result-error { color: #b91c1c; font-size: 13px; }
+.error, .result-error { color: var(--error-text); font-size: 13px; }
 .five-guide { padding: 2px 0; }
 .five-guide h2 { font-size: 28px; letter-spacing: -.035em; line-height: 1.25; margin: 12px 0 24px; }
 .five-guide ol { list-style: none; padding: 0; counter-reset: steps; display: grid; gap: 20px; }
 .five-guide li { position: relative; padding-left: 34px; counter-increment: steps; font-size: 16px; line-height: 1.75; }
-.five-guide li::before { content: counter(steps, decimal-leading-zero); position: absolute; left: 0; color: #c2410c; font-size: 14px; font-weight: 800; }
+.five-guide li::before { content: counter(steps, decimal-leading-zero); position: absolute; left: 0; color: var(--accent); font-size: 14px; font-weight: 800; }
 .five-guide li strong { display: block; font-size: 17px; margin-bottom: 4px; }
-.five-guide li span { color: #64748b; }
-.guide-tip { border-top: 1px solid #cbd5e1; margin-top: 28px; padding-top: 20px; font-size: 15px; }
-.guide-tip p { color: #64748b; line-height: 1.7; }
+.five-guide li span { color: var(--muted); }
+.guide-tip { border-top: 1px solid var(--border-strong); margin-top: 28px; padding-top: 20px; font-size: 15px; }
+.guide-tip p { color: var(--muted); line-height: 1.7; }
 @media (max-width: 850px) { .five-layout { grid-template-columns: minmax(0, 1fr); max-width: 680px; margin: auto; } .five-header { max-width: 680px; margin-left: auto; margin-right: auto; } .five-guide h2 br { display: none; } }
 @media (max-width: 600px) { .game-shell.five-page { padding: 18px 12px 24px; } .five-page .five-card { padding: 16px; } .scoreboard { padding: 12px 6px; } .scoreboard strong { font-size: 24px; } .scoreboard span { font-size: 8px; } .club-heading h2 { font-size: 20px; } .club-heading { margin: 18px 0; } .player-slots li { padding: 8px 10px; } .five-header { margin-bottom: 18px; } .round-actions, .result-actions { flex-wrap: wrap; } }
 @media (prefers-reduced-motion: reduce) { .time-track > span { transition: none; } }
+
+.game-shell.five-page { max-width: 1400px; padding: 32px 24px 40px; }
+.five-page h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; }
+.five-layout { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.five-page .five-card, .five-search-panel, .five-guide { min-width: 0; margin: 0; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+.scoreboard { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr); padding: 16px 8px; align-items: center; border: 1px solid var(--border); }
+.scoreboard > div { min-width: 0; border-color: var(--border); }
+.scoreboard span { color: var(--muted); }
+.scoreboard .timer { gap: 8px; }
+.timer app-shot-clock { width: 112px; max-width: 100%; }
+.timer.warning { filter: drop-shadow(0 0 6px #ef444430); }
+.club-heading img { width: 64px; height: 64px; flex-shrink: 0; background: #e7edf3; border-radius: 8px; padding: 4px; }
+.club-heading > div { min-width: 0; }
+.club-heading h2 { overflow-wrap: anywhere; }
+.player-slots { gap: 8px; }
+.player-slots li { min-height: 52px; }
+.player-slots strong { font-size: 14px; min-width: 0; overflow-wrap: anywhere; }
+.slot-number { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--deep); }
+.revealed-label { flex-shrink: 0; }
+.round-actions { margin-top: 20px; padding-top: 18px; flex-wrap: wrap; }
+.five-search-panel > .eyebrow, .five-guide > .eyebrow { margin: 2px 0 12px; }
+.five-search-panel > h2 { margin: 0 0 20px; font-size: 23px; letter-spacing: -.035em; }
+.answer-area { margin: 0; padding: 0; border: 0; }
+.five-search-label { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.five-search-control { position: relative; }
+.five-search-control svg { position: absolute; width: 20px; height: 20px; left: 13px; top: 50%; transform: translateY(-50%); fill: none; stroke: var(--muted); stroke-width: 1.8; pointer-events: none; }
+.five-search-control input { min-width: 0; padding: 14px 12px 14px 40px; border-color: var(--border-strong); background: var(--surface-raised); color: var(--text); font-size: 14px; }
+.five-search-control input:focus { border-color: var(--accent); }
+.feedback-slot { min-height: 66px; }
+.five-page .suggestions { position: static; margin: 0; max-height: min(400px, 46svh); border-color: var(--border-strong); overscroll-behavior: contain; }
+.suggestions button { display: flex; flex-direction: column; gap: 5px; padding: 13px 10px; }
+.suggestions strong { font-size: 14px; overflow-wrap: anywhere; }
+.suggestions small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.five-search-empty { padding: 32px 8px; text-align: center; border-top: 1px solid var(--border); color: var(--muted); }
+.five-search-empty > span { font-size: 42px; color: var(--border-strong); font-weight: 800; font-variant-numeric: tabular-nums; }
+.five-search-empty p { font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+.five-search-empty small { font-size: 12px; }
+.five-search-panel .result { margin: 0; padding: 18px; background: var(--deep); border: 1px solid var(--border); }
+.five-search-panel .result.success { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+.result h2 { margin: 12px 0; font-size: 22px; }
+.result-actions { flex-wrap: wrap; gap: 14px; }
+.primary { color: var(--on-accent); }
+.five-guide h2 { font-size: 27px; margin: 0 0 24px; }
+.five-guide h2 span { display: block; }
+.five-guide ol { margin: 0; gap: 18px; }
+.five-guide li { padding-left: 48px; line-height: 1.65; }
+.five-guide li + li { padding-top: 18px; border-top: 1px solid var(--border); }
+.five-guide li::before { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--accent); border-radius: 50%; font-size: 12px; color: var(--text); }
+.five-guide li strong { line-height: 1.5; }
+.guide-tip { padding: 16px; margin-top: 24px; border: 1px solid var(--border); border-radius: 10px; background: var(--deep); }
+.guide-tip p { margin: 8px 0 0; font-size: 14px; }
+@media (max-width: 1200px) {
+  .five-layout { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+  .five-guide { grid-column: 1 / -1; }
+  .five-guide ol { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+  .five-guide li + li { padding-top: 0; border: 0; }
+}
+@media (max-width: 900px) {
+  .five-layout { grid-template-columns: minmax(0, 1fr); max-width: 600px; margin: auto; }
+  .five-header { max-width: 600px; margin-left: auto; margin-right: auto; }
+  .five-guide { grid-column: auto; }
+  .five-guide ol { grid-template-columns: minmax(0, 1fr); }
+  .five-guide li + li { padding-top: 18px; border-top: 1px solid var(--border); }
+  .five-page .suggestions { position: absolute; bottom: 100%; left: 0; right: 0; max-height: min(240px, 32svh); margin-bottom: 8px; box-shadow: 0 -8px 28px #0006; }
+  .five-search-empty { display: none; }
+  .five-search-control input { font-size: 16px; }
+}
+@media (max-width: 600px) {
+  .game-shell.five-page { padding: 20px 12px 28px; }
+  .five-page .five-card, .five-search-panel, .five-guide { padding: 16px; }
+  .scoreboard { padding: 12px 6px; }
+  .timer app-shot-clock { width: 88px; }
+  .club-heading img { width: 48px; height: 48px; }
+  .player-slots li { min-height: 44px; padding: 8px; gap: 8px; }
+  .player-slots strong { font-size: 13px; }
+  .five-guide h2 { font-size: 25px; }
+}

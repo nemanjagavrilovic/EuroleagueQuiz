@@ -2,7 +2,7 @@ import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component,
 import { NgFor, NgIf } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, of } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, finalize, map, switchMap } from 'rxjs/operators';
 import { DataApiService, GridCell, GridDefinition, Player } from './data-api.service';
 import { BasketballLoaderComponent } from './basketball-loader.component';
 
@@ -16,6 +16,7 @@ import { BasketballLoaderComponent } from './basketball-loader.component';
 })
 export class GridGameComponent {
   @ViewChild('playerSearch') private searchInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('suggestionsList') private suggestionsList?: ElementRef<HTMLUListElement>;
   private readonly injector = inject(Injector);
   private readonly api = inject(DataApiService);
   private readonly route = inject(ActivatedRoute);
@@ -33,6 +34,8 @@ export class GridGameComponent {
   pendingCells: GridCell[] = [];
   revealedAnswers: (Player | null)[] = Array(9).fill(null);
   searchError = '';
+  searchingPlayers = false;
+  searchCompleted = false;
   checkingPlayer = false;
   revealing = false;
   gridRevealed = false;
@@ -45,13 +48,17 @@ export class GridGameComponent {
       debounceTime(250),
       distinctUntilChanged(),
       switchMap(term => term.trim().length < 2
-        ? of([])
-        : this.api.searchPlayers(term.trim()).pipe(catchError(() => {
-            this.searchError = 'Player search is currently unavailable.';
-            this.changeDetector.markForCheck();
-            return of([]);
+        ? of({ term, players: [] as Player[] })
+        : this.api.searchPlayers(term.trim()).pipe(
+          map(players => ({ term, players })),
+          catchError(() => {
+            if (term === this.searchTerm) this.searchError = 'Player search is currently unavailable.';
+            return of({ term, players: [] as Player[] });
           })))
-    ).subscribe(players => {
+    ).subscribe(({ term, players }) => {
+      if (term !== this.searchTerm || this.checkingPlayer || this.revealing || this.gridRevealed || this.isGridComplete()) return;
+      this.searchingPlayers = false;
+      this.searchCompleted = term.trim().length >= 2;
       this.playerResults = players.filter(player => !this.isPlayerUsed(player.id));
       this.activeResultIndex = -1;
       this.changeDetector.markForCheck();
@@ -68,6 +75,8 @@ export class GridGameComponent {
   onSearch(term: string): void {
     this.searchTerm = term;
     this.searchError = '';
+    this.searchingPlayers = term.trim().length >= 2;
+    this.searchCompleted = false;
     this.playerResults = [];
     this.activeResultIndex = -1;
     this.playerSearch$.next(term);
@@ -86,12 +95,14 @@ export class GridGameComponent {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       this.activeResultIndex = (this.activeResultIndex + 1) % this.playerResults.length;
+      this.scrollActiveSuggestion();
       this.changeDetector.markForCheck();
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       this.activeResultIndex = this.activeResultIndex <= 0
         ? this.playerResults.length - 1
         : this.activeResultIndex - 1;
+      this.scrollActiveSuggestion();
       this.changeDetector.markForCheck();
     } else if (event.key === 'Enter') {
       event.preventDefault();
@@ -109,6 +120,8 @@ export class GridGameComponent {
       return;
     }
     this.selectedPlayer = player;
+    this.searchingPlayers = false;
+    this.searchCompleted = false;
     this.playerResults = [];
     this.activeResultIndex = -1;
     this.pendingCells = [];
@@ -196,6 +209,8 @@ export class GridGameComponent {
 
   private clearSearch(): void {
     this.selectedPlayer = null;
+    this.searchingPlayers = false;
+    this.searchCompleted = false;
     this.searchTerm = '';
     this.playerResults = [];
     this.activeResultIndex = -1;
@@ -211,6 +226,17 @@ export class GridGameComponent {
       if (!this.gridRevealed && !this.isGridComplete()) {
         this.searchInput?.nativeElement.focus({ preventScroll: true });
       }
+    }, { injector: this.injector });
+  }
+
+  private scrollActiveSuggestion(): void {
+    afterNextRender(() => {
+      const list = this.suggestionsList?.nativeElement;
+      const option = list?.children[this.activeResultIndex] as HTMLElement | undefined;
+      if (!list || !option) return;
+      const top = option.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop;
+      if (top < list.scrollTop) list.scrollTop = top;
+      else if (top + option.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = top + option.offsetHeight - list.clientHeight;
     }, { injector: this.injector });
   }
 

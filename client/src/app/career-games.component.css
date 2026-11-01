@@ -1,34 +1,37 @@
 :host { display: block; min-height: 100vh; }
+.mystery-page *, .mystery-page *::before, .mystery-page *::after { box-sizing: border-box; }
+.order-page *, .order-page *::before, .order-page *::after { box-sizing: border-box; }
+.missing-page *, .missing-page *::before, .missing-page *::after { box-sizing: border-box; }
 .game-shell { max-width: 820px; margin: 0 auto; padding: 48px 24px; }
-.back-link { color: #596273; text-decoration: none; font-weight: 700; }
-.game-card { margin-top: 28px; padding: 32px; border: 1px solid #e5e7eb; border-radius: 22px; background: #fff; box-shadow: 0 18px 50px rgba(15, 23, 42, .08); overflow: hidden; }
-.eyebrow { color: #ef8354; font-size: 12px; font-weight: 800; letter-spacing: .16em; }
+.back-link { color: var(--muted); text-decoration: none; font-weight: 700; }
+.game-card { margin-top: 28px; padding: 32px; border: 1px solid var(--border); border-radius: 22px; background: var(--surface); box-shadow: 0 18px 50px rgba(15, 23, 42, .08); overflow: hidden; }
+.eyebrow { color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .16em; }
 h1 { font-size: clamp(32px, 5vw, 50px); line-height: 1; letter-spacing: -.05em; margin: 10px 0; }
 h2 { margin-top: 28px; }
 .chips, .options, .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
-.chip { padding: 14px 16px; border-radius: 10px; background: #f1f4f8; font-weight: 800; }
-.options button, .order-item { padding: 14px 16px; border: 1px solid #dbe2ea; border-radius: 10px; background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
-.options button.selected, .options button:hover { border-color: #ef8354; background: #fff1eb; }
+.chip { padding: 14px 16px; border-radius: 10px; background: var(--surface-raised); font-weight: 800; }
+.options button, .order-item { padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font: inherit; font-weight: 700; cursor: pointer; }
+.options button.selected, .options button:hover { border-color: var(--accent); background: var(--selected-bg); }
 .primary, .secondary, .move { border: 1px solid transparent; border-radius: 9px; padding: 12px 16px; font: inherit; font-weight: 800; cursor: pointer; box-shadow: 0 2px 5px rgba(15, 23, 42, .08); }
-.primary { border-color: #172033; background: #172033; color: #fff; }
-.secondary { border-color: #d7dee8; background: #fff; color: #172033; }
+.primary { border-color: var(--text); background: var(--text); color: #fff; }
+.secondary { border-color: var(--border); background: var(--surface); color: var(--text); }
 .primary:disabled, .secondary:disabled, .move:disabled { opacity: .5; cursor: not-allowed; }
 .order-list { display: grid; gap: 10px; margin-top: 24px; }
 .order-item { display: flex; align-items: center; justify-content: space-between; cursor: default; }
-.move { padding: 7px 10px; margin-left: 5px; border-color: #d7dee8; background: #fff; }
-.result { margin-top: 24px; padding: 22px; border-radius: 14px; background: #fff1eb; }
-.result.success { background: #e9f8ef; }
+.move { padding: 7px 10px; margin-left: 5px; border-color: var(--border); background: var(--surface); }
+.result { margin-top: 24px; padding: 22px; border-radius: 14px; background: var(--selected-bg); }
+.result.success { background: var(--success-bg); }
 .clues { display: grid; gap: 10px; max-height: 260px; overflow-y: auto; margin-top: 22px; padding-right: 3px; }
-.clues div { display: flex; flex-direction: column; gap: 5px; padding: 14px; border-radius: 10px; background: #f1f4f8; }
+.clues div { display: flex; flex-direction: column; gap: 5px; padding: 14px; border-radius: 10px; background: var(--surface-raised); }
 .answer-area { position: relative; margin-top: 24px; }
-.answer-area input { box-sizing: border-box; width: 100%; padding: 14px 16px; border: 1px solid #cbd5e1; border-radius: 10px; font: inherit; }
-.suggestions { position: absolute; z-index: 2; left: 0; right: 0; max-height: 230px; overflow-y: auto; background: #fff; border: 1px solid #dbe2ea; border-radius: 10px; box-shadow: 0 12px 30px rgba(15, 23, 42, .12); }
-.suggestions button { display: block; width: 100%; padding: 12px 14px; border: 0; background: #fff; text-align: left; font: inherit; cursor: pointer; }
-.suggestions button:hover { background: #f1f4f8; }
-.suggestions button.active { background: #ffe0cf; color: #9a3412; }
-.error { color: #be123c; }
-.status { color: #596273; }
-.answer-feedback { margin: 12px 0 0; padding: 10px 12px; border-radius: 9px; background: #fff7ed; color: #9a3412; font-size: 14px; font-weight: 700; }
+.answer-area input { box-sizing: border-box; width: 100%; padding: 14px 16px; border: 1px solid var(--border-strong); border-radius: 10px; font: inherit; }
+.suggestions { position: absolute; z-index: 2; left: 0; right: 0; max-height: 230px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 12px 30px rgba(15, 23, 42, .12); }
+.suggestions button { display: block; width: 100%; padding: 12px 14px; border: 0; background: var(--surface); text-align: left; font: inherit; cursor: pointer; }
+.suggestions button:hover { background: var(--surface-raised); }
+.suggestions button.active { background: var(--selected-bg); color: var(--accent-soft); }
+.error { color: var(--error-text); }
+.status { color: var(--muted); }
+.answer-feedback { margin: 12px 0 0; padding: 10px 12px; border-radius: 9px; background: var(--selected-bg); color: var(--accent-soft); font-size: 14px; font-weight: 700; }
 .game-shell.missing-page { max-width: 1120px; }
 .game-shell.order-page { max-width: 1120px; }
 .game-shell.mystery-page { max-width: 1120px; }
@@ -36,84 +39,84 @@ h2 { margin-top: 28px; }
 .mystery-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .mystery-heading > div { display: flex; align-items: baseline; gap: 10px; }
 .mystery-heading strong { font-size: 22px; letter-spacing: -.04em; }
-.mystery-heading strong span { font-weight: 500; color: #94a3b8; }
-.mystery-heading > div > span { font-size: 11px; color: #64748b; }
-.mystery-tag { background: #ede9fe; color: #5b21b6; font-size: 11px; font-weight: 800; padding: 7px 12px; border-radius: 20px; }
+.mystery-heading strong span { font-weight: 500; color: var(--muted); }
+.mystery-heading > div > span { font-size: 11px; color: var(--muted); }
+.mystery-tag { background: var(--surface-raised); color: var(--accent-soft); font-size: 11px; font-weight: 800; padding: 7px 12px; border-radius: 20px; }
 .mystery-progress { display: flex; gap: 5px; margin: 16px 0 22px; }
-.mystery-progress span { flex: 1; height: 4px; border-radius: 5px; background: #e2e8f0; }
-.mystery-progress span.shown { background: #f97316; }
+.mystery-progress span { flex: 1; height: 4px; border-radius: 5px; background: var(--border); }
+.mystery-progress span.shown { background: var(--accent); }
 .mystery-clues { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
-.mystery-clues li { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border: 1px solid #dbe2ea; border-radius: 12px; background: #f1f5f9; }
-.clue-index { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px; background: #111827; color: #fb923c; font-size: 12px; font-weight: 800; }
-.mystery-clues strong { font-size: 9px; letter-spacing: .1em; color: #64748b; }
-.mystery-clues p { margin: 6px 0 0; font-size: 15px; line-height: 1.65; color: #334155; }
-.next-clue { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px dashed #cbd5e1; border-radius: 10px; margin-top: 10px; color: #64748b; font-size: 12px; }
+.mystery-clues li { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-raised); }
+.clue-index { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px; background: var(--deep); color: var(--accent); font-size: 12px; font-weight: 800; }
+.mystery-clues strong { font-size: 9px; letter-spacing: .1em; color: var(--muted); }
+.mystery-clues p { margin: 6px 0 0; font-size: 15px; line-height: 1.65; color: var(--text-secondary); }
+.next-clue { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px dashed var(--border-strong); border-radius: 10px; margin-top: 10px; color: var(--muted); font-size: 12px; }
 .next-clue > span:first-child { font-size: 20px; font-weight: 800; }
-.mystery-answer { border-top: 1px solid #e2e8f0; padding-top: 18px; }
+.mystery-answer { border-top: 1px solid var(--border); padding-top: 18px; }
 .mystery-search-wrap { position: relative; }
 .mystery-search-wrap label { display: block; margin-bottom: 9px; font-size: 14px; font-weight: 800; }
 .mystery-page .mystery-search-wrap .suggestions { top: auto; bottom: 100%; margin-bottom: 6px; padding: 4px; max-height: min(220px, 30svh); border-radius: 12px; z-index: 10; }
 .mystery-search-wrap .suggestions button { border-radius: 7px; font-size: 14px; }
-.mystery-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
-.mystery-actions > span { color: #64748b; font-size: 12px; }
+.mystery-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+.mystery-actions > span { color: var(--muted); font-size: 12px; }
 .mystery-actions button { font-size: 13px; }
-.mystery-page .mystery-result { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
-.mystery-page .mystery-result.success { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+.mystery-page .mystery-result { background: var(--error-bg); color: var(--error-text); border-color: var(--error-border); }
+.mystery-page .mystery-result.success { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
 .mystery-player { display: flex; align-items: center; gap: 12px; margin: 20px 0; font-size: 20px; }
 .mystery-player img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
 @media (max-width: 600px) { .mystery-page .mystery-card { padding: 16px; } .mystery-clues li { padding: 12px; } .mystery-clues p { font-size: 14px; } .mystery-actions { flex-wrap: wrap; } }
 .order-page .order-card { margin: 0; min-width: 0; padding: 24px; border-radius: 18px; }
-.timeline-label { display: flex; justify-content: space-between; margin: 22px 0 12px; color: #64748b; font-size: 9px; font-weight: 800; letter-spacing: .1em; }
+.timeline-label { display: flex; justify-content: space-between; margin: 22px 0 12px; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .1em; }
 .career-timeline { list-style: none; display: grid; gap: 10px; padding: 0; margin: 0; }
-.timeline-row { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 12px; }
-.timeline-number { flex-shrink: 0; display: grid; place-items: center; width: 28px; height: 28px; background: #111827; color: #fb923c; border-radius: 8px; font-size: 12px; font-weight: 800; }
+.timeline-row { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 12px; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 12px; }
+.timeline-number { flex-shrink: 0; display: grid; place-items: center; width: 28px; height: 28px; background: var(--deep); color: var(--accent); border-radius: 8px; font-size: 12px; font-weight: 800; }
 .timeline-row > img { width: 34px; height: 34px; object-fit: contain; flex-shrink: 0; }
 .timeline-row > strong { flex: 1; min-width: 0; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
 .timeline-controls { display: flex; gap: 6px; flex-shrink: 0; }
-.timeline-controls button { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-size: 20px; color: #334155; cursor: pointer; }
-.timeline-controls button:hover:not(:disabled) { background: #ffedd5; border-color: #fb923c; }
+.timeline-controls button { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); font-size: 20px; color: var(--text-secondary); cursor: pointer; }
+.timeline-controls button:hover:not(:disabled) { background: var(--selected-bg); border-color: var(--accent); }
 .timeline-controls button:disabled { opacity: .35; cursor: default; }
-.order-page .order-result { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
-.order-page .order-result.success { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+.order-page .order-result { background: var(--error-bg); color: var(--error-text); border-color: var(--error-border); }
+.order-page .order-result.success { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
 .correct-order-label { font-size: 13px; margin: 18px 0 10px; }
 .correct-career { list-style: none; padding: 0; margin: 0 0 20px; display: grid; gap: 10px; }
 .correct-career li { display: flex; align-items: center; gap: 10px; font-size: 13px; line-height: 1.5; }
-.correct-career li > span { color: #64748b; font-size: 11px; }
+.correct-career li > span { color: var(--muted); font-size: 11px; }
 .correct-career img { width: 24px; height: 24px; object-fit: contain; }
 @media (max-width: 600px) { .order-page .order-card { padding: 16px; } .timeline-row { padding: 10px 8px; gap: 8px; } .timeline-controls { flex-direction: column; gap: 4px; } .timeline-controls button { width: 44px; height: 36px; } .timeline-row > strong { font-size: 12px; } .timeline-row > img { width: 28px; height: 28px; } .timeline-number { width: 24px; height: 24px; } }
 .missing-header { margin: 22px 0 24px; }
-.missing-header .eyebrow, .missing-page .eyebrow { font-size: 10px; letter-spacing: .13em; color: #c2410c; }
+.missing-header .eyebrow, .missing-page .eyebrow { font-size: 10px; letter-spacing: .13em; color: var(--accent); }
 .missing-header h1 { margin: 8px 0; }
-.missing-header > p:last-child { color: #64748b; font-size: 14px; line-height: 1.65; }
+.missing-header > p:last-child { color: var(--muted); font-size: 14px; line-height: 1.65; }
 .missing-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 28px; align-items: start; }
 .missing-page .missing-card { margin: 0; min-width: 0; padding: 24px; border-radius: 18px; }
-.player-heading { display: flex; align-items: center; gap: 14px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0; }
-.player-heading > img { width: 64px; height: 64px; object-fit: cover; border-radius: 50%; background: #e2e8f0; }
+.player-heading { display: flex; align-items: center; gap: 14px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.player-heading > img { width: 64px; height: 64px; object-fit: cover; border-radius: 50%; background: var(--border); }
 .player-heading .eyebrow { margin: 0 0 7px; font-size: 9px; }
 .player-heading h2 { margin: 0; font-size: 23px; line-height: 1.3; letter-spacing: -.03em; }
 .career-clues { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 22px 0; }
-.career-club { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 9px; padding: 12px 6px; min-width: 0; min-height: 132px; text-align: center; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px; }
-.clue-label { font-size: 8px; color: #64748b; letter-spacing: .08em; font-weight: 800; }
+.career-club { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 9px; padding: 12px 6px; min-width: 0; min-height: 132px; text-align: center; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 10px; }
+.clue-label { font-size: 8px; color: var(--muted); letter-spacing: .08em; font-weight: 800; }
 .career-club img { width: 36px; height: 36px; object-fit: contain; }
 .career-club strong { font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
-.career-club.missing-slot { background: #fff7ed; border: 1px dashed #fb923c; color: #9a3412; }
+.career-club.missing-slot { background: var(--selected-bg); border: 1px dashed var(--accent); color: var(--accent-soft); }
 .question-mark { font-size: 32px; font-weight: 800; line-height: 1.2; }
 .options-title { font-size: 15px; margin: 24px 0 12px; }
 .club-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.club-options button { display: flex; align-items: center; gap: 10px; padding: 14px 12px; min-height: 70px; min-width: 0; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; border-radius: 10px; text-align: left; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.club-options button { display: flex; align-items: center; gap: 10px; padding: 14px 12px; min-height: 70px; min-width: 0; border: 1px solid var(--border-strong); background: var(--surface-raised); color: var(--text-secondary); border-radius: 10px; text-align: left; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .club-options button > span:last-child { overflow-wrap: anywhere; }
 .club-options img { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
-.option-letter { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: #e2e8f0; color: #475569; font-size: 11px; flex-shrink: 0; }
-.club-options button.selected { background: #ffedd5; border-color: #c2410c; color: #9a3412; }
-.club-options button.selected .option-letter { background: #c2410c; color: white; }
+.option-letter { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--border); color: var(--text-secondary); font-size: 11px; flex-shrink: 0; }
+.club-options button.selected { background: var(--selected-bg); border-color: var(--accent); color: var(--accent-soft); }
+.club-options button.selected .option-letter { background: var(--accent); color: var(--on-accent); }
 .club-options button:disabled { opacity: .6; cursor: default; }
 .missing-feedback { min-height: 52px; padding-top: 12px; }
-.missing-feedback p { margin: 0; font-size: 12px; color: #64748b; line-height: 1.6; }
+.missing-feedback p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
 .missing-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 .missing-actions button { font-size: 13px; }
 .missing-actions a { color: inherit; font-size: 12px; font-weight: 800; margin-left: 6px; }
-.missing-page .missing-result { margin-top: 20px; background: #fff1f2; color: #9f1239; border: 1px solid #fecdd3; }
-.missing-page .missing-result.success { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+.missing-page .missing-result { margin-top: 20px; background: var(--error-bg); color: var(--error-text); border: 1px solid var(--error-border); }
+.missing-page .missing-result.success { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
 .result-caption { font-size: 9px; font-weight: 800; letter-spacing: .12em; }
 .missing-result h2 { font-size: 22px; margin: 12px 0; }
 .answer-club { display: flex; align-items: center; gap: 12px; margin: 20px 0; font-size: 20px; }
@@ -122,11 +125,11 @@ h2 { margin-top: 28px; }
 .missing-guide h2 { font-size: 28px; letter-spacing: -.035em; line-height: 1.25; margin: 12px 0 24px; }
 .missing-guide ol { padding: 0; list-style: none; counter-reset: steps; display: grid; gap: 20px; }
 .missing-guide li { position: relative; padding-left: 34px; counter-increment: steps; font-size: 16px; line-height: 1.75; }
-.missing-guide li::before { content: counter(steps, decimal-leading-zero); position: absolute; left: 0; color: #c2410c; font-size: 14px; font-weight: 800; }
+.missing-guide li::before { content: counter(steps, decimal-leading-zero); position: absolute; left: 0; color: var(--accent); font-size: 14px; font-weight: 800; }
 .missing-guide li strong { display: block; font-size: 17px; margin-bottom: 4px; }
-.missing-guide li span { color: #64748b; }
-.missing-tip { border-top: 1px solid #cbd5e1; margin-top: 28px; padding-top: 20px; font-size: 15px; }
-.missing-tip p { color: #64748b; line-height: 1.7; }
+.missing-guide li span { color: var(--muted); }
+.missing-tip { border-top: 1px solid var(--border-strong); margin-top: 28px; padding-top: 20px; font-size: 15px; }
+.missing-tip p { color: var(--muted); line-height: 1.7; }
 @media (max-width: 850px) { .missing-layout { grid-template-columns: minmax(0, 1fr); max-width: 680px; margin: auto; } .missing-header { max-width: 680px; margin-left: auto; margin-right: auto; } .missing-guide h2 br { display: none; } }
 @media (max-width: 600px) { .missing-page .missing-card { padding: 16px; } .career-clues { grid-template-columns: repeat(2, minmax(0, 1fr)); } .career-club { min-height: 110px; } .club-options { grid-template-columns: minmax(0, 1fr); } .player-heading h2 { font-size: 20px; } .player-heading > img { width: 48px; height: 48px; } }
 @media (max-width: 600px) {
@@ -140,4 +143,210 @@ h2 { margin-top: 28px; }
   .result { padding: 16px; }
   .clues { max-height: 220px; }
   .answer-area input { min-height: 46px; }
+}
+
+/* Missing Club shares the three-panel layout used by Grid and Team History. */
+.game-shell.missing-page { max-width: 1400px; padding: 32px 24px 40px; }
+.missing-page .back-link { font-size: 12px; }
+.missing-page h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; letter-spacing: -.04em; }
+.missing-page .missing-layout { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: stretch; }
+.missing-page .missing-card, .missing-page .missing-choice-panel, .missing-page .missing-guide { min-width: 0; margin: 0; padding: 20px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: none; }
+.missing-page .player-heading > div { min-width: 0; }
+.missing-page .player-heading h2 { overflow-wrap: anywhere; font-size: 24px; }
+.missing-page .player-heading > img { flex-shrink: 0; }
+.missing-page .career-clues { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 20px 0 18px; }
+.missing-page .career-club { min-height: 176px; padding: 16px 12px; gap: 12px; border-radius: 12px; }
+.missing-page .clue-label { font-size: 9px; }
+.missing-page .career-club img { width: 64px; height: 64px; }
+.missing-page .career-club strong { font-size: 14px; }
+.missing-page .question-mark { font-size: 48px; }
+.missing-page .missing-slot { border-color: var(--selected-border); }
+.missing-page .missing-slot.answered { background: var(--error-bg); color: var(--error-text); border: 1px solid var(--error-border); }
+.missing-page .missing-slot.correct { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+.missing-page .missing-slot.answered .clue-label { color: inherit; }
+.career-note { margin: 0 0 18px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.career-assist { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 18px; border-top: 1px solid var(--border); }
+.career-assist > span { color: var(--muted); font-size: 12px; }
+.career-assist button { font-size: 13px; }
+.missing-choice-panel > .eyebrow, .missing-page .missing-guide > .eyebrow { margin: 2px 0 12px; }
+.missing-choice-panel > h2 { font-size: 23px; letter-spacing: -.035em; line-height: 1.3; margin: 0 0 14px; }
+.choice-intro { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0 0 20px; }
+.missing-page .club-options { grid-template-columns: minmax(0, 1fr); }
+.missing-page .club-options button { min-height: 76px; gap: 10px; padding: 12px 10px; transition: background .15s, border-color .15s; }
+.missing-page .club-options button:hover:not(:disabled) { background: var(--selected-bg); border-color: var(--selected-border); }
+.missing-page .club-options img { width: 38px; height: 38px; background: #e7edf3; border-radius: 6px; padding: 3px; }
+.missing-page .club-options button > span:last-child { flex: 1; min-width: 0; line-height: 1.5; }
+.missing-page .option-letter { width: 26px; height: 26px; }
+.missing-page .missing-feedback { min-height: 66px; }
+.missing-page .missing-result { margin: 20px 0 0; padding: 18px; }
+.missing-page .missing-choice-panel .missing-actions > .primary { width: 100%; background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.missing-page .answer-club { font-size: 20px; line-height: 1.4; overflow-wrap: anywhere; }
+.missing-page .answer-club img { flex-shrink: 0; }
+.missing-page .missing-guide h2 { font-size: 27px; margin: 0 0 24px; }
+.missing-page .missing-guide h2 span { display: block; }
+.missing-page .missing-guide ol { margin: 0; gap: 18px; }
+.missing-page .missing-guide li { padding-left: 48px; line-height: 1.65; }
+.missing-page .missing-guide li + li { padding-top: 18px; border-top: 1px solid var(--border); }
+.missing-page .missing-guide li::before { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--accent); border-radius: 50%; font-size: 12px; color: var(--text); }
+.missing-page .missing-guide li strong { line-height: 1.5; }
+.missing-page .missing-tip { padding: 16px; margin-top: 24px; background: var(--deep); border: 1px solid var(--border); border-radius: 10px; }
+.missing-page .missing-tip p { margin: 8px 0 0; font-size: 14px; }
+@media (max-width: 1200px) {
+  .missing-page .missing-layout { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+  .missing-page .missing-guide { grid-column: 1 / -1; }
+  .missing-page .missing-guide ol { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+  .missing-page .missing-guide li + li { padding-top: 0; border: 0; }
+}
+@media (max-width: 900px) {
+  .missing-page .missing-layout { grid-template-columns: minmax(0, 1fr); max-width: 600px; margin: auto; }
+  .missing-page .missing-header { max-width: 600px; margin-left: auto; margin-right: auto; }
+  .missing-page .missing-guide { grid-column: auto; }
+  .missing-page .missing-guide ol { grid-template-columns: minmax(0, 1fr); }
+  .missing-page .missing-guide li + li { padding-top: 18px; border-top: 1px solid var(--border); }
+}
+@media (max-width: 600px) {
+  .game-shell.missing-page { padding: 20px 12px 28px; }
+  .missing-page .missing-card, .missing-page .missing-choice-panel, .missing-page .missing-guide { padding: 16px; }
+  .missing-page .career-clues { gap: 8px; }
+  .missing-page .career-club { min-height: 146px; padding: 12px 8px; gap: 8px; }
+  .missing-page .career-club img { width: 48px; height: 48px; }
+  .missing-page .career-club strong { font-size: 12px; }
+  .missing-page .player-heading h2 { font-size: 20px; }
+  .missing-page .missing-guide h2 { font-size: 25px; }
+}
+
+/* Career Order keeps the timeline wide, with controls that wrap below on phones. */
+.game-shell.order-page { max-width: 1400px; padding: 32px 24px 40px; }
+.order-page .back-link { font-size: 12px; }
+.order-page h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; letter-spacing: -.04em; }
+.order-page .missing-layout { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.order-page .order-card, .order-page .missing-guide { min-width: 0; margin: 0; padding: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: none; }
+.order-page .player-heading > div { min-width: 0; }
+.order-page .player-heading h2 { overflow-wrap: anywhere; font-size: 24px; }
+.order-page .player-heading > img { flex-shrink: 0; }
+.order-page .timeline-label { gap: 12px; line-height: 1.6; }
+.order-page .timeline-label > span:last-child { flex-shrink: 0; }
+.order-page .career-timeline { gap: 12px; }
+.order-page .timeline-row { display: grid; grid-template-columns: 28px 48px minmax(0, 1fr) auto; gap: 14px; padding: 14px; }
+.order-page .timeline-row > img { width: 48px; height: 48px; }
+.order-page .timeline-row > strong { grid-column: 3; font-size: 15px; line-height: 1.5; }
+.order-page .timeline-controls { grid-column: 4; flex-direction: row; gap: 8px; }
+.order-page .timeline-controls button { width: 46px; height: 46px; min-width: 46px; padding: 0; touch-action: manipulation; }
+.order-page .timeline-controls svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.order-page .timeline-controls button > span { display: none; }
+.order-page .timeline-controls button:disabled { opacity: .4; }
+.order-page .timeline-controls button:hover:not(:disabled) { color: var(--accent-soft); }
+.timeline-end { margin: 14px 0 0; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .1em; }
+.order-page .missing-feedback { min-height: 66px; }
+.order-page .missing-actions .primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.order-page .order-result { border: 1px solid var(--error-border); }
+.order-page .order-result.success { border-color: var(--success-border); }
+.order-page .correct-career li { min-width: 0; padding: 10px 0; border-bottom: 1px solid var(--error-border); }
+.order-page .order-result.success .correct-career li { border-color: var(--success-border); }
+.order-page .correct-career li:last-child { border: 0; }
+.order-page .correct-career strong { overflow-wrap: anywhere; }
+.order-page .correct-career img { width: 36px; height: 36px; flex-shrink: 0; }
+.order-page .missing-guide > .eyebrow { margin: 2px 0 12px; font-size: 10px; letter-spacing: .13em; }
+.order-page .missing-guide h2 { font-size: 27px; margin: 0 0 24px; }
+.order-page .missing-guide h2 span { display: block; }
+.order-page .missing-guide ol { margin: 0; gap: 18px; }
+.order-page .missing-guide li { padding-left: 48px; line-height: 1.65; }
+.order-page .missing-guide li + li { padding-top: 18px; border-top: 1px solid var(--border); }
+.order-page .missing-guide li::before { width: 34px; height: 34px; border: 1px solid var(--accent); border-radius: 50%; display: grid; place-items: center; font-size: 12px; color: var(--text); }
+.order-page .missing-guide li strong { line-height: 1.5; }
+.order-page .missing-tip { padding: 16px; margin-top: 24px; border: 1px solid var(--border); border-radius: 10px; background: var(--deep); }
+.order-page .missing-tip p { margin: 8px 0 0; font-size: 14px; }
+@media (max-width: 1100px) and (min-width: 901px) {
+  .order-page .timeline-row { grid-template-columns: 28px 40px minmax(0, 1fr); gap: 10px; }
+  .order-page .timeline-row > img { width: 40px; height: 40px; }
+  .order-page .timeline-controls { grid-column: 2 / -1; justify-content: flex-end; }
+}
+@media (max-width: 900px) {
+  .order-page .missing-layout { grid-template-columns: minmax(0, 1fr); max-width: 680px; margin: auto; }
+  .order-page .missing-header { max-width: 680px; margin-left: auto; margin-right: auto; }
+}
+@media (max-width: 600px) {
+  .game-shell.order-page { padding: 20px 12px 28px; }
+  .order-page .order-card, .order-page .missing-guide { padding: 16px; }
+  .order-page .player-heading h2 { font-size: 20px; }
+  .order-page .timeline-row { grid-template-columns: 24px 36px minmax(0, 1fr); gap: 10px; padding: 12px; }
+  .order-page .timeline-row > img { width: 36px; height: 36px; }
+  .order-page .timeline-row > strong { font-size: 14px; }
+  .order-page .timeline-controls { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-top: 4px; }
+  .order-page .timeline-controls button { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 46px; font-size: 12px; font-weight: 700; }
+  .order-page .timeline-controls button > span { display: inline; }
+  .order-page .missing-actions > .primary { width: 100%; }
+  .order-page .missing-guide h2 { font-size: 25px; }
+}
+
+/* Mystery Player keeps every revealed clue in view, beside the search panel. */
+.game-shell.mystery-page { max-width: 1400px; padding: 32px 24px 40px; }
+.mystery-page .back-link { font-size: 12px; }
+.mystery-page h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; letter-spacing: -.04em; }
+.mystery-page .missing-layout { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.mystery-page .mystery-card, .mystery-search-panel, .mystery-page .missing-guide { min-width: 0; margin: 0; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: none; overflow: visible; }
+.mystery-page .mystery-heading strong { font-size: 28px; }
+.mystery-page .mystery-heading > div { gap: 8px; flex-wrap: wrap; }
+.mystery-page .mystery-clues { max-height: none; overflow: visible; }
+.mystery-page .mystery-clues li { padding: 14px; gap: 12px; }
+.mystery-page .mystery-clues li > div { min-width: 0; }
+.mystery-page .mystery-clues p { overflow-wrap: anywhere; margin-top: 6px; line-height: 1.6; }
+.mystery-page .clue-index { flex-shrink: 0; }
+.mystery-page .latest-clue { background: var(--selected-bg); border-color: var(--selected-border); }
+.mystery-page .latest-clue strong { color: var(--accent-soft); }
+.mystery-page .next-clue { font-size: 12px; line-height: 1.6; }
+.mystery-page .mystery-actions { margin-top: 18px; padding-top: 18px; flex-wrap: wrap; }
+.mystery-search-panel > .eyebrow, .mystery-page .missing-guide > .eyebrow { margin: 2px 0 12px; font-size: 10px; letter-spacing: .13em; }
+.mystery-search-panel > h2 { margin: 0 0 20px; font-size: 23px; letter-spacing: -.035em; }
+.mystery-page .mystery-answer { border: 0; padding: 0; margin: 0; }
+.mystery-page .mystery-search-label { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.mystery-search-control { position: relative; }
+.mystery-search-control svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; fill: none; stroke: var(--muted); stroke-width: 1.8; pointer-events: none; }
+.mystery-page .mystery-search-control input { min-width: 0; padding: 14px 12px 14px 40px; background: var(--surface-raised); color: var(--text); font-size: 14px; }
+.mystery-page .mystery-search-control input:focus { border-color: var(--accent); }
+.mystery-page .missing-feedback { min-height: 66px; }
+.mystery-page .mystery-search-wrap .suggestions { position: static; margin: 0; max-height: min(400px, 46svh); border-color: var(--border-strong); box-shadow: none; overscroll-behavior: contain; }
+.mystery-page .suggestions button { display: flex; flex-direction: column; gap: 5px; padding: 13px 10px; }
+.mystery-page .suggestions strong { font-size: 14px; overflow-wrap: anywhere; }
+.mystery-page .suggestions small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.mystery-search-empty { text-align: center; padding: 32px 8px; border-top: 1px solid var(--border); color: var(--muted); }
+.mystery-search-empty > span { font-size: 42px; color: var(--border-strong); font-weight: 800; }
+.mystery-search-empty p { font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+.mystery-search-empty small { font-size: 12px; }
+.mystery-page .mystery-result { margin: 0; padding: 18px; border: 1px solid var(--error-border); }
+.mystery-page .mystery-result.success { border-color: var(--success-border); }
+.mystery-page .mystery-result h2 { margin: 12px 0; font-size: 22px; }
+.mystery-page .mystery-player { flex-wrap: wrap; overflow-wrap: anywhere; }
+.mystery-page .missing-actions .primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.mystery-page .missing-guide h2 { font-size: 27px; margin: 0 0 24px; }
+.mystery-page .missing-guide h2 span { display: block; }
+.mystery-page .missing-guide ol { margin: 0; gap: 18px; }
+.mystery-page .missing-guide li { padding-left: 48px; line-height: 1.65; }
+.mystery-page .missing-guide li + li { padding-top: 18px; border-top: 1px solid var(--border); }
+.mystery-page .missing-guide li::before { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--accent); border-radius: 50%; font-size: 12px; color: var(--text); }
+.mystery-page .missing-guide li strong { line-height: 1.5; }
+.mystery-page .missing-tip { padding: 16px; margin-top: 24px; border: 1px solid var(--border); border-radius: 10px; background: var(--deep); }
+.mystery-page .missing-tip p { margin: 8px 0 0; font-size: 14px; }
+@media (max-width: 1200px) {
+  .mystery-page .missing-layout { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+  .mystery-page .missing-guide { grid-column: 1 / -1; }
+  .mystery-page .missing-guide ol { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+  .mystery-page .missing-guide li + li { padding-top: 0; border: 0; }
+}
+@media (max-width: 900px) {
+  .mystery-page .missing-layout { grid-template-columns: minmax(0, 1fr); max-width: 600px; margin: auto; }
+  .mystery-page .missing-header { max-width: 600px; margin-left: auto; margin-right: auto; }
+  .mystery-page .missing-guide { grid-column: auto; }
+  .mystery-page .missing-guide ol { grid-template-columns: minmax(0, 1fr); }
+  .mystery-page .missing-guide li + li { padding-top: 18px; border-top: 1px solid var(--border); }
+  .mystery-page .mystery-search-wrap .suggestions { position: absolute; bottom: 100%; left: 0; right: 0; max-height: min(240px, 32svh); margin-bottom: 8px; box-shadow: 0 -8px 28px #0006; }
+  .mystery-search-empty { display: none; }
+  .mystery-page .mystery-search-control input { font-size: 16px; }
+}
+@media (max-width: 600px) {
+  .game-shell.mystery-page { padding: 20px 12px 28px; }
+  .mystery-page .mystery-card, .mystery-search-panel, .mystery-page .missing-guide { padding: 16px; }
+  .mystery-page .mystery-clues li { padding: 12px; gap: 10px; }
+  .mystery-page .mystery-clues p { font-size: 14px; }
+  .mystery-page .missing-guide h2 { font-size: 25px; }
 }

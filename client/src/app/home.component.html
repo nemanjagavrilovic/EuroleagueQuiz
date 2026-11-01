@@ -1,40 +1,20 @@
 <main class="home-shell">
   <header class="hero">
-    <p class="eyebrow">FOR THE FANS WHO KNOW THE GAME</p>
-    <h1>Your basketball knowledge.<br><span>Put it to the test.</span></h1>
-    <p class="intro">Connect clubs. Trace careers. Name the players.<br>Pick your challenge and prove your EuroLeague knowledge.</p>
-    <div class="hero-tags"><span>6 ways to play</span><span>No sign-up needed</span></div>
-    <div class="court-art" aria-hidden="true"><div></div><span>LET’S PLAY.</span></div>
+    <img class="hero-image" src="assets/home/basketball-arena.jpg" alt="" width="1536" height="1024" fetchpriority="high">
+    <div class="hero-copy"><p class="eyebrow">EUROLEAGUE QUIZZES</p><h1>Pick <span>&amp;</span> Roll</h1><p class="hero-tagline">Know the game.<br>Make the connection.</p><p class="intro">Pick a challenge. Test your basketball knowledge.</p><a class="hero-play" href="#games-title">Choose your game <span aria-hidden="true">→</span></a></div>
+    <figure class="playbook"><img src="assets/home/pick-and-roll-basic.jpg" width="300" height="285" alt="Basketball diagram showing a ball handler using a teammate’s screen and passing to the player rolling toward the basket."><figcaption><span class="playbook-label">THE PLAY BEHIND THE NAME</span><p>A screen. A roll. A connection.</p></figcaption></figure>
   </header>
-  <div class="section-heading"><h2>Choose your game</h2><span>A new challenge every time</span></div>
-  <section class="games-grid" aria-label="Basketball games">
-    <article class="game-card">
-      <div class="game-visual visual-grid" aria-hidden="true"><span>×</span><div>▦</div><span>01 / CONNECT</span></div>
-      <div class="game-copy"><p class="eyebrow">CONNECT THE CLUBS</p><h2>Player Grid</h2><p>Nine intersections. Find the players who connect both clubs.</p><span class="level-label">Choose your difficulty</span><div class="level-links"><a *ngFor="let level of levels" [routerLink]="['/grid', level.name.toLowerCase()]" [title]="level.description">{{ level.name }}</a></div></div>
-    </article>
-    <article class="game-card">
-      <div class="game-visual visual-history" aria-hidden="true"><span>↗</span><div>01 — 02 — ?</div><span>02 / FOLLOW THE JOURNEY</span></div>
-      <div class="game-copy"><p class="eyebrow">FOUR CLUBS. ONE PLAYER.</p><h2>Team History</h2><p>Follow a player’s career. Each miss reveals another club.</p><a class="single-link" routerLink="/team-history">Play now <span aria-hidden="true">↗</span></a></div>
-    </article>
-    <article class="game-card">
-      <div class="game-visual visual-missing" aria-hidden="true"><span>?</span><div>■ ■ ■ □</div><span>03 / FILL THE GAP</span></div>
-      <div class="game-copy"><p class="eyebrow">THE MISSING PIECE</p><h2>Missing Club</h2><p>Three clubs are given. Can you name the fourth?</p><a class="single-link" routerLink="/game/missing-club">Play now <span aria-hidden="true">↗</span></a></div>
-    </article>
-    <article class="game-card">
-      <div class="game-visual visual-order" aria-hidden="true"><span>⇄</span><div>1 → 2 → 3 → 4</div><span>04 / GET IT IN ORDER</span></div>
-      <div class="game-copy"><p class="eyebrow">EVERY CAREER HAS A STORY</p><h2>Career Order</h2><p>Put the clubs in order, from first chapter to last.</p><a class="single-link" routerLink="/game/career-order">Play now <span aria-hidden="true">↗</span></a></div>
-    </article>
-    <article class="game-card">
-      <div class="game-visual visual-mystery" aria-hidden="true"><span>◎</span><div>WHO AM I?</div><span>05 / SOLVE THE CLUES</span></div>
-      <div class="game-copy"><p class="eyebrow">LESS CLUES. MORE BRAGGING RIGHTS.</p><h2>Mystery Player</h2><p>Uncover the player one career clue at a time.</p><a class="single-link" routerLink="/game/mystery-player">Play now <span aria-hidden="true">↗</span></a></div>
-    </article>
-    <article class="game-card">
-      <div class="game-visual visual-five" aria-hidden="true"><span>24s</span><div>● ● ● ● ●</div><span>06 / BEAT THE CLOCK</span></div>
-      <div class="game-copy"><p class="eyebrow">FIVE PLAYERS. NO HESITATION.</p><h2>Starting Five</h2><p>Name five players for each club. Five rounds, 24 seconds each.</p><a class="single-link" routerLink="/game/five-player">Play now <span aria-hidden="true">↗</span></a></div>
-    </article>
+  <section class="games-section" aria-labelledby="games-title">
+    <div class="section-heading"><h2 id="games-title">Choose your game</h2><span>Free to play. No sign-up needed.</span></div>
+    <div class="games-grid">
+      <article class="game-card" *ngFor="let game of games" [class.featured]="game.art === 'grid'">
+        <div class="game-visual"><app-game-art [game]="game.art"></app-game-art></div>
+        <div class="game-copy"><h3>{{ game.title }}</h3><p>{{ game.description }}</p>
+          <div class="difficulty-actions" *ngIf="game.art === 'grid'; else playLink"><span class="level-label">Choose difficulty</span><div class="level-links"><a *ngFor="let level of levels" [routerLink]="['/grid', level.name.toLowerCase()]" [title]="level.description" [attr.aria-label]="'Play ' + level.name + ' Player Grid'">{{ level.name }}</a></div></div>
+          <ng-template #playLink><a class="single-link" [routerLink]="game.route" [attr.aria-label]="'Play ' + game.title">Play <span aria-hidden="true">→</span></a></ng-template>
+        </div>
+      </article>
+    </div>
   </section>
-  <section id="how-to-play" class="how-to-play" aria-labelledby="how-title">
-    <div><p class="eyebrow">YOUR NEXT CHALLENGE STARTS HERE</p><h2 id="how-title">Simple to play.<br>Hard to put down.</h2></div>
-    <ol><li><strong>Pick a game</strong><span>Choose a challenge above. For Player Grid, choose a difficulty.</span></li><li><strong>Trust your memory</strong><span>Read the clues, then select a player from search or follow the game’s instructions.</span></li><li><strong>Keep playing</strong><span>Stuck? Reveal the answer and discover a career you might have forgotten.</span></li></ol>
-  </section>
+  <details id="how-to-play" class="how-to-play"><summary>New to Pick & Roll? <span>How to play <span aria-hidden="true">+</span></span></summary><ol><li><strong>Pick a game</strong><span>Choose a challenge. For Player Grid, choose your difficulty.</span></li><li><strong>Make the connection</strong><span>Follow the clues or search for a player and select their name.</span></li><li><strong>Keep playing</strong><span>Need an assist? Reveal an answer and discover a career you forgot.</span></li></ol></details>
 </main>
