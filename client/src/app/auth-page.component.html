@@ -1,0 +1,41 @@
+<main class="auth-shell">
+  <section class="auth-card">
+    <a class="back" routerLink="/">← All games</a>
+    <p class="eyebrow">PICK & ROLL ACCOUNT</p>
+    <h1 *ngIf="mode() === 'login'">Welcome back</h1>
+    <h1 *ngIf="mode() === 'register'">Create your account</h1>
+    <h1 *ngIf="mode() === 'forgot'">Reset your password</h1>
+    <h1 *ngIf="mode() === 'reset'">Choose a new password</h1>
+    <h1 *ngIf="mode() === 'resend'">Confirm your email</h1>
+    <p class="intro" *ngIf="mode() === 'login'">Sign in for ranked daily challenges and future leaderboards.</p>
+    <p class="intro" *ngIf="mode() === 'register'">Your guest attempts remain visible but unranked. Ranked play starts with a fresh daily challenge.</p>
+
+    <button *ngIf="mode() === 'login' || mode() === 'register'" class="google" type="button" (click)="google()">
+      <span aria-hidden="true">G</span> Continue with Google
+    </button>
+    <div *ngIf="mode() === 'login' || mode() === 'register'" class="divider"><span>or use email</span></div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label *ngIf="mode() === 'register'">Display name<input formControlName="displayName" autocomplete="name" placeholder="How players will see you"></label>
+      <label>Email<input formControlName="email" type="email" autocomplete="email" placeholder="you@example.com"></label>
+      <label *ngIf="mode() === 'login' || mode() === 'register' || mode() === 'reset'">Password<input formControlName="password" type="password" [autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'" placeholder="At least 8 characters"></label>
+      <small class="password-hint" *ngIf="mode() === 'register' || mode() === 'reset'">Use at least 8 characters with uppercase, lowercase and a number.</small>
+      <label *ngIf="mode() === 'register' || mode() === 'reset'">Confirm password<input formControlName="confirmPassword" type="password" autocomplete="new-password"></label>
+      <p class="form-error" *ngIf="error()" role="alert">{{ error() }}</p>
+      <p class="form-success" *ngIf="message()" role="status">{{ message() }}</p>
+      <button *ngIf="showResend()" class="resend-button" type="button" [disabled]="loading()" (click)="resend()">Resend confirmation email</button>
+      <button *ngIf="mode() !== 'register' || !showResend()" class="submit" type="submit" [disabled]="loading()">
+        {{ loading() ? 'Please wait…' : mode() === 'login' ? 'Sign in' : mode() === 'register' ? 'Create account' : mode() === 'forgot' ? 'Send reset link' : mode() === 'resend' ? 'Resend confirmation' : 'Update password' }}
+      </button>
+    </form>
+
+    <div class="auth-links">
+      <a *ngIf="mode() === 'login'" routerLink="/forgot-password">Forgot password?</a>
+      <a *ngIf="mode() === 'login'" routerLink="/resend-confirmation">Resend confirmation</a>
+      <span *ngIf="mode() === 'login'">New here? <a routerLink="/register">Create account</a></span>
+      <span *ngIf="mode() === 'register'">Already registered? <a routerLink="/login">Sign in</a></span>
+      <a *ngIf="mode() === 'forgot' || mode() === 'reset' || mode() === 'resend'" routerLink="/login">Back to sign in</a>
+    </div>
+  </section>
+  <aside class="auth-side"><span class="score">100</span><h2>One account.<br>Every daily challenge.</h2><p>Practice freely. Compete once a day. Build your score over the season.</p></aside>
+</main>

@@ -1,5 +1,12 @@
 using EuroleagueQuiz.Application;
+using EuroleagueQuiz.Api.Authentication;
 using EuroleagueQuiz.Infrastructure;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +16,75 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+var dataProtectionPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionPath))
+    builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath)).SetApplicationName("PickAndRoll");
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+builder.Services.Configure<ClientOptions>(builder.Configuration.GetSection("Client"));
+builder.Services.Configure<GoogleOptions>(builder.Configuration.GetSection(GoogleOptions.SectionName));
+builder.Services.Configure<IdentityBootstrapOptions>(builder.Configuration.GetSection("Identity"));
+
+var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+if (string.IsNullOrWhiteSpace(jwtOptions.SigningKey))
+{
+    if (!builder.Environment.IsDevelopment())
+        throw new InvalidOperationException("Authentication:Jwt:SigningKey must be configured in production.");
+    jwtOptions.SigningKey = "Development-only-PickAndRoll-signing-key-change-me";
+}
+if (Encoding.UTF8.GetByteCount(jwtOptions.SigningKey) < 32)
+    throw new InvalidOperationException("Authentication:Jwt:SigningKey must contain at least 32 bytes.");
+builder.Services.Configure<JwtOptions>(options =>
+{
+    options.Issuer = jwtOptions.Issuer;
+    options.Audience = jwtOptions.Audience;
+    options.SigningKey = jwtOptions.SigningKey;
+    options.AccessTokenMinutes = jwtOptions.AccessTokenMinutes;
+    options.RefreshTokenDays = jwtOptions.RefreshTokenDays;
+});
+builder.Services.AddScoped<TokenService>();
+
+var authentication = builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.MapInboundClaims = false;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true, ValidIssuer = jwtOptions.Issuer,
+        ValidateAudience = true, ValidAudience = jwtOptions.Audience,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SigningKey)),
+        ValidateLifetime = true, ClockSkew = TimeSpan.FromSeconds(30),
+        NameClaimType = System.Security.Claims.ClaimTypes.Name,
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role
+    };
+})
+.AddCookie("External", options =>
+{
+    options.Cookie.Name = "pickandroll.external";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
+});
+var googleOptions = builder.Configuration.GetSection(GoogleOptions.SectionName).Get<GoogleOptions>() ?? new GoogleOptions();
+if (!string.IsNullOrWhiteSpace(googleOptions.ClientId) && !string.IsNullOrWhiteSpace(googleOptions.ClientSecret))
+    authentication.AddGoogle("Google", options =>
+    {
+        options.SignInScheme = "External";
+        options.ClientId = googleOptions.ClientId;
+        options.ClientSecret = googleOptions.ClientSecret;
+        options.CallbackPath = "/api/signin-google";
+    });
+builder.Services.AddAuthorization();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -16,6 +92,13 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("contact", _ => RateLimitPartition.GetFixedWindowLimiter("contact", _ => new FixedWindowRateLimiterOptions
     {
         PermitLimit = 10,
+        Window = TimeSpan.FromMinutes(1),
+        QueueLimit = 0,
+        AutoReplenishment = true
+    }));
+    options.AddPolicy("auth", _ => RateLimitPartition.GetFixedWindowLimiter("auth", _ => new FixedWindowRateLimiterOptions
+    {
+        PermitLimit = 30,
         Window = TimeSpan.FromMinutes(1),
         QueueLimit = 0,
         AutoReplenishment = true
@@ -30,10 +113,12 @@ builder.Services.AddCors(options => options.AddPolicy("Angular", policy =>
         return;
     }
 
-    policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
+    policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
 }));
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
@@ -44,5 +129,8 @@ if (app.Environment.IsDevelopment())
 app.UseRouting();
 app.UseCors("Angular");
 app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
+await IdentitySeeder.SeedAsync(app.Services);
 app.Run();

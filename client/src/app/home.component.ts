@@ -14,11 +14,11 @@ import { RouterLink } from '@angular/router';
 export class HomeComponent {
   readonly games = [
     { art: 'grid', title: 'Player Grid', description: 'Find players who played for both clubs.', route: '/grid/normal' },
-    { art: 'history', title: 'Team History', description: 'Guess the player from their club history.', route: '/team-history' },
-    { art: 'missing', title: 'Missing Club', description: 'Find the missing club in a player’s career.', route: '/game/missing-club' },
-    { art: 'order', title: 'Career Order', description: 'Put the clubs in the right order.', route: '/game/career-order' },
-    { art: 'mystery', title: 'Mystery Player', description: 'Follow the clues. Find the name.', route: '/game/mystery-player' },
-    { art: 'five', title: 'Starting Five', description: 'Five names. One club. Beat the clock.', route: '/game/five-player' }
+    { art: 'history', title: 'Team History', description: 'A daily career. Four clubs. Up to 100 points.', route: '/team-history' },
+    { art: 'missing', title: 'Missing Club', description: 'A daily missing club. One answer. 100 points.', route: '/game/missing-club' },
+    { art: 'order', title: 'Career Order', description: 'Order a daily career. Earn up to 100 points.', route: '/game/career-order' },
+    { art: 'mystery', title: 'Mystery Player', description: 'A daily mystery. Five clues. Up to 100 points.', route: '/game/mystery-player' },
+    { art: 'five', title: 'Starting Five', description: 'Five daily rounds. Beat the clock. Earn 100 points.', route: '/game/five-player' }
   ];
   readonly levels = [
     { name: 'Easy', description: 'More familiar clubs and broader player pools.' },

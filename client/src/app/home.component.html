@@ -10,7 +10,7 @@
       <article class="game-card" *ngFor="let game of games" [class.featured]="game.art === 'grid'">
         <div class="game-visual"><app-game-art [game]="game.art"></app-game-art></div>
         <div class="game-copy"><h3>{{ game.title }}</h3><p>{{ game.description }}</p>
-          <div class="difficulty-actions" *ngIf="game.art === 'grid'; else playLink"><span class="level-label">Choose difficulty</span><div class="level-links"><a *ngFor="let level of levels" [routerLink]="['/grid', level.name.toLowerCase()]" [title]="level.description" [attr.aria-label]="'Play ' + level.name + ' Player Grid'">{{ level.name }}</a></div></div>
+          <div class="difficulty-actions" *ngIf="game.art === 'grid'; else playLink"><span class="level-label">Daily grid · choose your level</span><div class="level-links"><a *ngFor="let level of levels" [routerLink]="['/grid', level.name.toLowerCase()]" [title]="level.description" [attr.aria-label]="'Play ' + level.name + ' Player Grid'">{{ level.name }}</a></div></div>
           <ng-template #playLink><a class="single-link" [routerLink]="game.route" [attr.aria-label]="'Play ' + game.title">Play <span aria-hidden="true">→</span></a></ng-template>
         </div>
       </article>

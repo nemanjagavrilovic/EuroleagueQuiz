@@ -1,10 +1,11 @@
 import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Injector, ViewChild, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, of } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, finalize, map, switchMap } from 'rxjs/operators';
-import { DataApiService, GridCell, GridDefinition, Player } from './data-api.service';
+import { catchError, debounceTime, finalize, map, switchMap } from 'rxjs/operators';
+import { DailyGridAttempt, DataApiService, GridCell, GridDefinition, Player } from './data-api.service';
 import { BasketballLoaderComponent } from './basketball-loader.component';
+import { createGuestUuid } from './guest-identity';
 
 @Component({
   selector: 'app-grid-game',
@@ -20,6 +21,7 @@ export class GridGameComponent {
   private readonly injector = inject(Injector);
   private readonly api = inject(DataApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly changeDetector = inject(ChangeDetectorRef);
   readonly playerSearch$ = new Subject<string>();
   grid: GridDefinition | null = null;
@@ -39,6 +41,8 @@ export class GridGameComponent {
   checkingPlayer = false;
   revealing = false;
   gridRevealed = false;
+  dailyAttempt: DailyGridAttempt | null = null;
+  get attemptCompleted(): boolean { return this.dailyAttempt?.completed ?? false; }
 
   get guessedCount(): number { return this.answers.filter(player => player !== null).length; }
 
@@ -46,7 +50,6 @@ export class GridGameComponent {
     this.loadGrid();
     this.playerSearch$.pipe(
       debounceTime(250),
-      distinctUntilChanged(),
       switchMap(term => term.trim().length < 2
         ? of({ term, players: [] as Player[] })
         : this.api.searchPlayers(term.trim()).pipe(
@@ -56,7 +59,7 @@ export class GridGameComponent {
             return of({ term, players: [] as Player[] });
           })))
     ).subscribe(({ term, players }) => {
-      if (term !== this.searchTerm || this.checkingPlayer || this.revealing || this.gridRevealed || this.isGridComplete()) return;
+      if (term !== this.searchTerm || this.checkingPlayer || this.revealing || this.attemptCompleted) return;
       this.searchingPlayers = false;
       this.searchCompleted = term.trim().length >= 2;
       this.playerResults = players.filter(player => !this.isPlayerUsed(player.id));
@@ -66,13 +69,14 @@ export class GridGameComponent {
   }
 
   private loadGrid(): void {
-    this.api.getGrid(this.selectedDifficulty).subscribe({
-      next: grid => { this.grid = grid; this.gridLoading = false; this.changeDetector.markForCheck(); },
+    this.api.startDailyGrid(this.selectedDifficulty).subscribe({
+      next: attempt => { this.applyAttempt(attempt); this.gridLoading = false; this.changeDetector.markForCheck(); },
       error: () => { this.gridError = 'The grid could not be loaded.'; this.gridLoading = false; this.changeDetector.markForCheck(); }
     });
   }
 
   onSearch(term: string): void {
+    if (this.attemptCompleted || this.pendingCells.length || this.checkingPlayer || this.revealing) return;
     this.searchTerm = term;
     this.searchError = '';
     this.searchingPlayers = term.trim().length >= 2;
@@ -111,7 +115,7 @@ export class GridGameComponent {
   }
 
   selectPlayer(player: Player): void {
-    if (this.checkingPlayer || this.revealing || this.gridRevealed || this.isGridComplete()) return;
+    if (this.checkingPlayer || this.revealing || this.attemptCompleted || this.pendingCells.length) return;
     this.focusSearch();
     if (this.isPlayerUsed(player.id)) {
       this.searchError = 'This player has already been used in the grid.';
@@ -129,7 +133,7 @@ export class GridGameComponent {
     this.checkingPlayer = true;
     this.searchError = '';
     this.playerSearch$.next('');
-    this.api.getGridPlayerMatch(player.id, this.grid.rowTeams.map(team => team.id), this.grid.columnTeams.map(team => team.id)).pipe(
+    this.api.guessDailyGrid(this.dailyAttempt!.challengeId, player.id, createGuestUuid()).pipe(
       finalize(() => {
         this.checkingPlayer = false;
         this.focusSearch();
@@ -137,44 +141,22 @@ export class GridGameComponent {
       })
     ).subscribe({
       next: result => {
-        this.pendingCells = result.availableCells.filter(cell => !this.cellAnswer(cell.row, cell.column));
-        if (this.pendingCells.length === 0) {
-          this.searchError = 'This player does not match any empty grid cell.';
-          this.clearSearch();
-        } else if (this.pendingCells.length === 1 || this.pendingCells.some(cell => cell.playerCount === 1)) {
-          for (const cell of this.pendingCells) this.answers[cell.row * 3 + cell.column] = player;
-          this.pendingCells = [];
-          this.clearSearch();
-        }
+        this.applyAttempt(result);
         this.changeDetector.markForCheck();
       },
-      error: () => { this.searchError = 'The player could not be checked against this grid.'; this.changeDetector.markForCheck(); }
-    });
-  }
-
-  changeGrid(): void {
-    this.gridLoading = true;
-    this.gridError = '';
-    this.resetAnswers();
-    this.api.changeGrid(this.selectedDifficulty).subscribe({
-      next: grid => { this.grid = grid; this.gridLoading = false; this.changeDetector.markForCheck(); },
-      error: () => { this.gridError = 'The new grid could not be loaded.'; this.gridLoading = false; this.changeDetector.markForCheck(); }
+      error: () => { this.searchError = 'The answer could not be confirmed. Restoring your saved progress…'; this.loadGrid(); }
     });
   }
 
   revealGrid(): void {
-    if (!this.grid || this.checkingPlayer || this.revealing || this.gridRevealed || this.isGridComplete()) return;
+    if (!this.grid || !this.dailyAttempt || this.checkingPlayer || this.revealing || this.attemptCompleted) return;
     this.revealing = true;
     this.searchError = '';
-    this.api.revealGrid(this.grid.rowTeams.map(team => team.id), this.grid.columnTeams.map(team => team.id)).pipe(
+    this.api.revealDailyGrid(this.dailyAttempt.challengeId).pipe(
       finalize(() => { this.revealing = false; this.changeDetector.markForCheck(); })
     ).subscribe({
       next: result => {
-        this.revealedAnswers = Array(9).fill(null);
-        for (const cell of result.cells) this.revealedAnswers[cell.row * 3 + cell.column] = cell.player;
-        this.gridRevealed = true;
-        this.pendingCells = [];
-        this.clearSearch();
+        this.applyAttempt(result);
         this.changeDetector.markForCheck();
       },
       error: () => { this.gridError = 'The grid answers could not be revealed.'; this.changeDetector.markForCheck(); }
@@ -193,18 +175,32 @@ export class GridGameComponent {
   cellAnswer(row: number, column: number): Player | null { return this.answers[row * 3 + column] ?? this.revealedAnswers[row * 3 + column]; }
 
   placePlayer(cell: GridCell): void {
-    if (!this.selectedPlayer || this.isCellFilled(cell.row, cell.column)) return;
-    this.answers[cell.row * 3 + cell.column] = this.selectedPlayer;
-    this.pendingCells = [];
-    this.clearSearch();
+    if (!this.dailyAttempt || !this.selectedPlayer || this.isCellFilled(cell.row, cell.column) || this.checkingPlayer || this.revealing || this.attemptCompleted) return;
+    this.checkingPlayer = true;
+    this.api.placeDailyGrid(this.dailyAttempt.challengeId, cell.row, cell.column).pipe(finalize(() => {
+      this.checkingPlayer = false; this.focusSearch(); this.changeDetector.markForCheck();
+    })).subscribe({ next: result => this.applyAttempt(result), error: () => { this.searchError = 'Placement could not be confirmed. Restoring your saved progress…'; this.loadGrid(); } });
   }
 
-  private resetAnswers(): void {
-    this.gridRevealed = false;
+  private applyAttempt(attempt: DailyGridAttempt): void {
+    this.dailyAttempt = attempt;
+    this.grid = attempt.grid;
+    this.selectedDifficulty = attempt.grid.difficulty;
+    if (this.route.snapshot.paramMap.get('difficulty')?.toLowerCase() !== this.selectedDifficulty.toLowerCase()) {
+      void this.router.navigate(['/grid', this.selectedDifficulty.toLowerCase()], { replaceUrl: true });
+    }
+    this.gridRevealed = attempt.revealed;
     this.answers = Array(9).fill(null);
     this.revealedAnswers = Array(9).fill(null);
-    this.pendingCells = [];
+    for (const cell of attempt.answers) (cell.revealed ? this.revealedAnswers : this.answers)[cell.row * 3 + cell.column] = cell.player;
     this.clearSearch();
+    this.pendingCells = attempt.pendingCells;
+    this.selectedPlayer = attempt.pendingPlayer;
+    this.searchError = attempt.pendingPlayer
+      ? `${attempt.pendingPlayer.displayName} fits multiple squares. Tap a highlighted square.`
+      : attempt.feedback || '';
+    this.gridError = '';
+    this.changeDetector.markForCheck();
   }
 
   private clearSearch(): void {
@@ -219,11 +215,11 @@ export class GridGameComponent {
   }
 
   private focusSearch(): void {
-    if (this.gridRevealed || this.isGridComplete()) return;
+    if (this.attemptCompleted) return;
     this.searchInput?.nativeElement.focus({ preventScroll: true });
     // Reapply focus after Angular finishes updating the result list and grid cells.
     afterNextRender(() => {
-      if (!this.gridRevealed && !this.isGridComplete()) {
+      if (!this.attemptCompleted) {
         this.searchInput?.nativeElement.focus({ preventScroll: true });
       }
     }, { injector: this.injector });
@@ -240,6 +236,6 @@ export class GridGameComponent {
     }, { injector: this.injector });
   }
 
-  private isPlayerUsed(playerId: number): boolean { return [...this.answers, ...this.revealedAnswers].some(player => player?.id === playerId); }
+  private isPlayerUsed(playerId: number): boolean { return this.dailyAttempt?.usedPlayerIds.includes(playerId) ?? false; }
   private toTitleCase(value: string): string { return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase(); }
 }

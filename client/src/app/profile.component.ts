@@ -1,0 +1,12 @@
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { NgFor, NgIf } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { AuthService } from './auth.service';
+
+@Component({
+  selector: 'app-profile', standalone: true, imports: [NgIf, NgFor, RouterLink],
+  template: `<main class="profile-shell"><a routerLink="/" class="back">← All games</a><section *ngIf="auth.user() as user; else signedOut"><p class="eyebrow">MY PROFILE</p><div class="avatar">{{ user.displayName.charAt(0).toUpperCase() }}</div><h1>{{ user.displayName }}</h1><p class="email">{{ user.email }}</p><div class="details"><div><span>Plan</span><strong>{{ user.subscriptionPlan }}</strong></div><div><span>Role</span><strong>{{ user.roles.join(', ') }}</strong></div><div><span>Ranked play</span><strong>Daily</strong></div></div><button type="button" (click)="auth.logout()">Sign out</button></section><ng-template #signedOut><section><h1>Sign in to view your profile</h1><a class="primary" routerLink="/login">Sign in</a></section></ng-template></main>`,
+  styles: [`.profile-shell{width:min(760px,calc(100% - 32px));min-height:60vh;margin:40px auto}.back{color:var(--muted);text-decoration:none;font-size:13px}section{margin-top:24px;padding:clamp(24px,5vw,46px);text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:16px}.eyebrow{color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.15em}.avatar{display:grid;place-items:center;width:80px;height:80px;margin:20px auto 12px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:34px;font-weight:800}h1{margin:0;font-size:34px}.email{color:var(--muted)}.details{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:30px 0}.details div{padding:16px;border:1px solid var(--border);border-radius:9px;background:var(--deep)}.details span,.details strong{display:block}.details span{margin-bottom:6px;color:var(--muted);font-size:11px;text-transform:uppercase}.details strong{font-size:14px}button,.primary{display:inline-block;padding:12px 22px;border:1px solid var(--border-strong);border-radius:8px;background:transparent;color:var(--text);font-weight:800;text-decoration:none;cursor:pointer}@media(max-width:560px){.details{grid-template-columns:1fr}}`],
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class ProfileComponent { readonly auth = inject(AuthService); }

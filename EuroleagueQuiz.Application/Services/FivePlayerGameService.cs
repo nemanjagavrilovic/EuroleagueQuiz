@@ -19,6 +19,23 @@ public sealed class FivePlayerGameService : IFivePlayerGameService
         _teams = teams;
     }
 
+    public async Task<FivePlayerChallengeDto> CreateChallengeAsync(CancellationToken cancellationToken)
+    {
+        var ids = await _relationships.GetTeamIdsWithAtLeastPlayersAsync(5, cancellationToken);
+        if (ids.Count < TotalRounds) throw new InvalidOperationException("Not enough team roster data exists for this game.");
+        var clubs = new List<FivePlayerClubChallengeDto>();
+        foreach (var id in ids.OrderBy(_ => Random.Shared.Next()).Take(TotalRounds))
+        {
+            var team = await _teams.GetByIdAsync(id, cancellationToken);
+            if (team is null) throw new InvalidOperationException("A selected club could not be loaded.");
+            var players = (await _relationships.GetForTeamAsync(id, cancellationToken)).Select(x => x.Player)
+                .DistinctBy(x => x.Id).OrderBy(x => x.DisplayName).Select(PlayerDto.FromEntity).ToList();
+            if (players.Count < 5) throw new InvalidOperationException("A selected club needs at least five historical players.");
+            clubs.Add(new(TeamDto.FromEntity(team), players));
+        }
+        return new(clubs);
+    }
+
     public async Task<FivePlayerGameRoundDto> StartAsync(CancellationToken cancellationToken)
     {
         var teamIds = await _relationships.GetTeamIdsWithAtLeastPlayersAsync(5, cancellationToken);

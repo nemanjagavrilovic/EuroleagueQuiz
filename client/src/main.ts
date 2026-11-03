@@ -1,5 +1,6 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { APP_INITIALIZER } from '@angular/core';
 import { provideRouter, Routes, withInMemoryScrolling } from '@angular/router';
 import { AppComponent } from './app/app.component';
 import { GridGameComponent } from './app/grid-game.component';
@@ -8,6 +9,12 @@ import { TeamHistoryComponent } from './app/team-history.component';
 import { CareerGamesComponent } from './app/career-games.component';
 import { FivePlayerGameComponent } from './app/five-player-game.component';
 import { ContactComponent } from './app/contact.component';
+import { AuthPageComponent } from './app/auth-page.component';
+import { AuthCallbackComponent } from './app/auth-callback.component';
+import { ConfirmEmailComponent } from './app/confirm-email.component';
+import { ProfileComponent } from './app/profile.component';
+import { AuthService } from './app/auth.service';
+import { authInterceptor } from './app/auth.interceptor';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -15,11 +22,23 @@ const routes: Routes = [
   { path: 'grid/:difficulty', component: GridGameComponent },
   { path: 'team-history', component: TeamHistoryComponent },
   { path: 'contact', component: ContactComponent },
+  { path: 'login', component: AuthPageComponent, data: { mode: 'login' } },
+  { path: 'register', component: AuthPageComponent, data: { mode: 'register' } },
+  { path: 'forgot-password', component: AuthPageComponent, data: { mode: 'forgot' } },
+  { path: 'resend-confirmation', component: AuthPageComponent, data: { mode: 'resend' } },
+  { path: 'reset-password', component: AuthPageComponent, data: { mode: 'reset' } },
+  { path: 'confirm-email', component: ConfirmEmailComponent },
+  { path: 'auth/callback', component: AuthCallbackComponent },
+  { path: 'profile', component: ProfileComponent },
   { path: 'game/five-player', component: FivePlayerGameComponent },
   { path: 'game/:game', component: CareerGamesComponent },
   { path: '**', redirectTo: '' }
 ];
 
 bootstrapApplication(AppComponent, {
-  providers: [provideHttpClient(), provideRouter(routes, withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }))]
+  providers: [
+    provideHttpClient(withInterceptors([authInterceptor])),
+    provideRouter(routes, withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' })),
+    { provide: APP_INITIALIZER, multi: true, deps: [AuthService], useFactory: (auth: AuthService) => () => auth.restoreSession() }
+  ]
 }).catch((error: unknown) => console.error(error));

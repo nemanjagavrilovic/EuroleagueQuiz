@@ -1,8 +1,9 @@
-import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Injector, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostListener, Injector, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subject, Subscription, catchError, debounceTime, finalize, interval, map, of, switchMap } from 'rxjs';
-import { DataApiService, FivePlayerGameRound, Player } from './data-api.service';
+import { DailyFivePlayerAttempt, DataApiService, FivePlayerGameRound, Player } from './data-api.service';
+import { createGuestUuid } from './guest-identity';
 import { BasketballLoaderComponent } from './basketball-loader.component';
 import { ShotClockComponent } from './shot-clock.component';
 
@@ -23,8 +24,13 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   private readonly searchTerms = new Subject<string>();
   private timer?: Subscription;
   private searchSubscription?: Subscription;
+  private destroyed = false;
 
   round: FivePlayerGameRound | null = null;
+  dailyAttempt: DailyFivePlayerAttempt | null = null;
+  restoring = false;
+  private localDeadline = 0;
+  private nextSyncAt = 0;
   suggestions: Player[] = [];
   selectedPlayer: Player | null = null;
   activeSuggestionIndex = -1;
@@ -53,10 +59,10 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
         })
       ))
     ).subscribe(({ term, players }) => {
-      if (term !== this.searchTerm || this.loading || this.round?.completed) return;
+      if (term !== this.searchTerm || this.loading || this.restoring || this.round?.completed || this.secondsRemaining <= 0) return;
       this.searchingPlayers = false;
       this.searchCompleted = term.trim().length >= 2;
-      this.suggestions = players.slice(0, 10);
+      this.suggestions = players.filter(player => !this.round?.players.some(answer => answer.id === player.id)).slice(0, 10);
       this.activeSuggestionIndex = -1;
       this.detector.markForCheck();
     });
@@ -64,12 +70,13 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     this.timer?.unsubscribe();
     this.searchSubscription?.unsubscribe();
   }
 
   start(): void {
-    if (this.loading) return;
+    if (this.loading || this.restoring) return;
     this.loading = true;
     this.errorMessage = '';
     this.feedback = '';
@@ -77,13 +84,15 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
     this.revealedPlayerIds.clear();
     this.clearSearch();
     this.timer?.unsubscribe();
-    this.api.startFivePlayerGame().pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
-      next: round => this.setRound(round),
+    const sentAt = performance.now();
+    this.api.startDailyFivePlayer().pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
+      next: attempt => this.applyAttempt(attempt, sentAt),
       error: () => this.errorMessage = 'The game could not be started. Import player and club data first.'
     });
   }
 
   onSearch(value: string): void {
+    if (this.loading || this.restoring || this.round?.completed || this.secondsRemaining <= 0) return;
     this.searchTerm = value;
     this.errorMessage = '';
     this.searchingPlayers = value.trim().length >= 2;
@@ -118,7 +127,7 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   }
 
   selectPlayer(player: Player): void {
-    if (this.loading || !this.round || this.round.completed || this.secondsRemaining <= 0) return;
+    if (this.loading || this.restoring || !this.round || this.round.completed || this.secondsRemaining <= 0) return;
     this.focusSearch();
     this.selectedPlayer = player;
     this.searchTerm = player.displayName;
@@ -128,36 +137,27 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   }
 
   submitGuess(skip = false): void {
-    if (!this.round || this.round.completed || this.loading || (!skip && (!this.selectedPlayer || this.secondsRemaining <= 0))) return;
+    if (!this.round || !this.dailyAttempt || this.round.completed || this.loading || this.restoring || (!skip && (!this.selectedPlayer || this.secondsRemaining <= 0))) return;
     this.errorMessage = '';
     this.feedback = '';
     this.loading = true;
-    const previousPlayerIds = new Set(this.round.players.map(player => player.id));
     const playerId = this.selectedPlayer?.id;
     this.clearSearch();
-    this.api.guessFivePlayer(this.round.roundId, playerId, skip).pipe(finalize(() => { this.loading = false; this.focusSearch(); this.detector.markForCheck(); })).subscribe({
-      next: round => {
-        if (skip) {
-          round.players
-            .filter(player => !previousPlayerIds.has(player.id))
-            .forEach(player => this.revealedPlayerIds.add(player.id));
-        }
-        this.round = round;
-        this.secondsRemaining = round.secondsRemaining;
-        this.feedback = skip ? 'Round revealed.' : round.lastGuessCorrect ? 'Correct player!' : 'This player did not play for this club, or was already guessed.';
-        if (round.completed) this.timer?.unsubscribe();
-      },
-      error: () => { this.errorMessage = 'The answer could not be submitted. Please try again.'; }
+    const sentAt = performance.now();
+    this.api.guessDailyFivePlayer(this.dailyAttempt.challengeId, this.round.roundNumber, createGuestUuid(), playerId, skip).pipe(finalize(() => { this.loading = false; this.focusSearch(); this.detector.markForCheck(); })).subscribe({
+      next: attempt => this.applyAttempt(attempt, sentAt),
+      error: () => { this.errorMessage = 'The answer could not be confirmed. Restoring saved progress…'; this.syncAttempt(); }
     });
   }
 
   nextRound(): void {
-    if (!this.round || !this.round.completed || this.round.gameCompleted || this.loading) return;
+    if (!this.round || !this.dailyAttempt || !this.round.completed || this.round.gameCompleted || this.loading || this.restoring) return;
     this.loading = true;
     this.errorMessage = '';
-    this.api.nextFivePlayerRound(this.round.roundId).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
-      next: round => { this.revealedPlayerIds.clear(); this.setRound(round); },
-      error: () => this.errorMessage = 'The next round could not be loaded. Please try again.'
+    const sentAt = performance.now();
+    this.api.nextDailyFivePlayer(this.dailyAttempt.challengeId, this.round.roundNumber, createGuestUuid()).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
+      next: attempt => this.applyAttempt(attempt, sentAt),
+      error: () => { this.errorMessage = 'The next round could not be confirmed. Restoring saved progress…'; this.syncAttempt(); }
     });
   }
 
@@ -165,23 +165,55 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
     return !!player && this.revealedPlayerIds.has(player.id);
   }
 
-  private setRound(round: FivePlayerGameRound): void {
-    this.round = round;
-    this.secondsRemaining = round.secondsRemaining;
+  private applyAttempt(attempt: DailyFivePlayerAttempt, sentAt: number): void {
+    if (this.destroyed) return;
+    this.dailyAttempt = attempt;
+    this.round = attempt.round;
+    this.revealedPlayerIds.clear();
+    attempt.revealedPlayerIds.forEach(id => this.revealedPlayerIds.add(id));
+    const remainingMs = attempt.deadlineUtc ? Date.parse(attempt.deadlineUtc) - Date.parse(attempt.serverNowUtc) : 0;
+    this.localDeadline = performance.now() + Math.max(0, remainingMs - (performance.now() - sentAt) / 2);
+    this.secondsRemaining = attempt.round.completed ? 0 : Math.min(attempt.round.secondsPerRound, Math.max(0, Math.ceil((this.localDeadline - performance.now()) / 1000)));
     this.timeoutSubmitted = false;
-    this.feedback = '';
+    this.nextSyncAt = 0;
+    this.feedback = attempt.feedback || '';
+    this.errorMessage = '';
     this.clearSearch();
     this.timer?.unsubscribe();
-    if (!round.completed) {
-      this.timer = interval(1000).subscribe(() => {
-        this.secondsRemaining = Math.max(0, this.secondsRemaining - 1);
-        if (this.secondsRemaining === 0 && !this.timeoutSubmitted && !this.loading) {
+    if (!attempt.round.completed) {
+      this.timer = interval(250).subscribe(() => {
+        this.secondsRemaining = Math.min(attempt.round.secondsPerRound, Math.max(0, Math.ceil((this.localDeadline - performance.now()) / 1000)));
+        if (this.secondsRemaining === 0 && !this.timeoutSubmitted && !this.loading && !this.restoring && performance.now() >= this.nextSyncAt) {
           this.timeoutSubmitted = true;
-          this.submitGuess(true);
+          this.suggestions = [];
+          // Synchronize the server deadline; a client clock must not surrender a round.
+          this.syncAttempt();
         }
         this.detector.markForCheck();
       });
     }
+  }
+
+  @HostListener('window:focus')
+  @HostListener('document:visibilitychange')
+  onResume(): void {
+    if (document.visibilityState === 'visible' && this.round && !this.round.gameCompleted && !this.loading && !this.restoring) this.syncAttempt();
+  }
+
+  private syncAttempt(): void {
+    if (this.destroyed || this.restoring) return;
+    this.restoring = true;
+    const sentAt = performance.now();
+    this.api.startDailyFivePlayer().pipe(finalize(() => {
+      this.restoring = false; this.focusSearch(); this.detector.markForCheck();
+    })).subscribe({
+      next: attempt => this.applyAttempt(attempt, sentAt),
+      error: () => {
+        this.timeoutSubmitted = false;
+        this.nextSyncAt = performance.now() + 5000;
+        this.errorMessage = 'Saved progress could not be loaded. Check your connection; the round clock continues on the server.';
+      }
+    });
   }
 
   private clearSearch(): void {
@@ -196,10 +228,10 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   }
 
   private focusSearch(): void {
-    if (!this.round || this.round.completed) return;
+    if (this.destroyed || !this.round || this.round.completed || this.secondsRemaining <= 0) return;
     this.searchInput?.nativeElement.focus({ preventScroll: true });
     afterNextRender(() => {
-      if (this.round && !this.round.completed) this.searchInput?.nativeElement.focus({ preventScroll: true });
+      if (this.round && !this.round.completed && this.secondsRemaining > 0) this.searchInput?.nativeElement.focus({ preventScroll: true });
     }, { injector: this.injector });
   }
 

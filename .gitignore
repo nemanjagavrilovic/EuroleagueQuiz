@@ -55,6 +55,7 @@ client/pnpm-debug.log*
 # Environment files
 .env
 .env.*
+!.env.example
 client/.env
 client/.env.*
 !client/.env.example

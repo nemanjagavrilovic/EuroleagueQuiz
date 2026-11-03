@@ -1,9 +1,12 @@
 using EuroleagueQuiz.Domain.Entities;
+using EuroleagueQuiz.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace EuroleagueQuiz.Infrastructure.Persistence;
 
-public sealed class EuroleagueDbContext : DbContext
+public sealed class EuroleagueDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
 {
     public EuroleagueDbContext(DbContextOptions<EuroleagueDbContext> options) : base(options) { }
 
@@ -12,9 +15,60 @@ public sealed class EuroleagueDbContext : DbContext
     public DbSet<Season> Seasons => Set<Season>();
     public DbSet<PlayerTeamSeason> PlayerTeamSeasons => Set<PlayerTeamSeason>();
     public DbSet<DataSyncRun> DataSyncRuns => Set<DataSyncRun>();
+    public DbSet<DailyGridChallenge> DailyGridChallenges => Set<DailyGridChallenge>();
+    public DbSet<DailyGridAttempt> DailyGridAttempts => Set<DailyGridAttempt>();
+    public DbSet<DailyGameChallenge> DailyGameChallenges => Set<DailyGameChallenge>();
+    public DbSet<DailyGameAttempt> DailyGameAttempts => Set<DailyGameAttempt>();
+    public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<ApplicationUser>(entity =>
+        {
+            entity.Property(x => x.DisplayName).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.SubscriptionPlan).HasMaxLength(30).IsRequired();
+            entity.HasIndex(x => x.DisplayName);
+        });
+        modelBuilder.Entity<UserRefreshToken>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.ReplacedByTokenHash).HasMaxLength(64);
+            entity.HasIndex(x => x.TokenHash).IsUnique();
+            entity.HasIndex(x => new { x.UserId, x.ExpiresAtUtc });
+            entity.HasOne(x => x.User).WithMany(x => x.RefreshTokens).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<DailyGameChallenge>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Game).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.DefinitionJson).HasColumnType("jsonb").IsRequired();
+            entity.HasIndex(x => new { x.Game, x.Date }).IsUnique();
+        });
+        modelBuilder.Entity<DailyGameAttempt>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Game).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.StateJson).HasColumnType("jsonb").IsRequired();
+            entity.HasIndex(x => new { x.GuestId, x.Game, x.Date }).IsUnique();
+            entity.HasOne(x => x.Challenge).WithMany().HasForeignKey(x => x.ChallengeId).OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<DailyGridChallenge>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.Date, x.Difficulty }).IsUnique();
+            entity.Property(x => x.Difficulty).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.DefinitionJson).HasColumnType("jsonb").IsRequired();
+        });
+        modelBuilder.Entity<DailyGridAttempt>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.GuestId, x.Date }).IsUnique();
+            entity.Property(x => x.StateJson).HasColumnType("jsonb").IsRequired();
+            entity.HasOne(x => x.Challenge).WithMany().HasForeignKey(x => x.ChallengeId).OnDelete(DeleteBehavior.Restrict);
+        });
         modelBuilder.Entity<Player>(entity =>
         {
             entity.HasKey(x => x.Id);

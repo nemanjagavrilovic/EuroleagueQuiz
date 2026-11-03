@@ -3,6 +3,7 @@
     <a routerLink="/" class="back-link">← All games</a>
     <div class="title-row"><div><p class="eyebrow">CONNECT THE CLUBS</p><h1>Player Grid</h1></div><span class="difficulty-badge">{{ selectedDifficulty }}</span></div>
     <p class="intro">Two clubs. One player. Find the connection in every square.</p>
+    <div class="daily-status" *ngIf="dailyAttempt as attempt"><span>DAILY GRID · {{ attempt.date }} · {{ selectedDifficulty }}</span><span>Resets at 00:00 UTC</span></div>
   </header>
 
   <app-basketball-loader *ngIf="gridLoading" message="Loading ..." [overlay]="true"></app-basketball-loader>
@@ -12,9 +13,10 @@
     <section class="panel grid-panel" aria-label="Player Grid game">
       <div class="panel-heading">
         <div class="progress-copy"><strong>{{ guessedCount }} <span>/ 9</span></strong><span>connections found</span></div>
-        <button class="reveal-button" type="button" (click)="revealGrid()" [disabled]="revealing || checkingPlayer || gridRevealed || isGridComplete()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6m-5 3h4M8.5 13.5a6 6 0 1 1 7 0c-1 .7-1.5 1.5-1.5 2.5h-4c0-1-.5-1.8-1.5-2.5Z"/></svg>{{ revealing ? 'Revealing…' : 'Reveal' }}</button>
+        <button class="reveal-button" type="button" (click)="revealGrid()" [disabled]="revealing || checkingPlayer || attemptCompleted"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6m-5 3h4M8.5 13.5a6 6 0 1 1 7 0c-1 .7-1.5 1.5-1.5 2.5h-4c0-1-.5-1.8-1.5-2.5Z"/></svg>{{ revealing ? 'Revealing…' : 'Reveal' }}</button>
       </div>
       <div class="progress-track" role="progressbar" [attr.aria-valuenow]="guessedCount" aria-valuemin="0" aria-valuemax="9" aria-label="Players guessed"><span [style.width.%]="guessedCount / 9 * 100"></span></div>
+      <div class="daily-score" *ngIf="dailyAttempt as attempt" aria-live="polite"><div><span>YOUR SCORE</span><strong>{{ attempt.score }} <small>/ 100</small></strong></div></div>
 
       <div class="grid-layout" aria-label="Club intersections">
         <div class="grid-corner" aria-label="Match the row and column clubs"><span aria-hidden="true">×</span></div>
@@ -38,15 +40,17 @@
 
     <section class="search-panel" aria-label="Find a player">
       <p class="eyebrow">MAKE THE CONNECTION</p>
-      <h2>{{ gridRevealed ? 'Answers revealed' : isGridComplete() ? 'Grid complete' : 'Who’s the connection?' }}</h2>
+      <h2>{{ gridRevealed ? 'Answers revealed' : isGridComplete() ? 'Grid complete' : attemptCompleted ? 'Daily attempt complete' : 'Who’s the connection?' }}</h2>
       <div class="completion-message" *ngIf="isGridComplete()" role="status"><div><strong>Nothing but net.</strong><span>You found all nine connections!</span></div><a routerLink="/">Explore games →</a></div>
       <div class="revealed-message" *ngIf="gridRevealed && !isGridComplete()" role="status"><strong>Grid revealed</strong><span>{{ guessedCount }} of 9 guessed. Your answers stay green; revealed answers are red.</span><a routerLink="/">Explore games →</a></div>
+      <p class="guest-score-note">Your score is saved for this daily challenge. Guest scores don’t enter the leaderboard.</p>
+      <p class="daily-return" *ngIf="attemptCompleted">Today’s attempt is complete. Come back after 00:00 UTC for a new grid.</p>
 
-      <div class="answer-section" *ngIf="!isGridComplete() && !gridRevealed">
+      <div class="answer-section" *ngIf="!attemptCompleted">
         <div class="answer-entry">
           <label for="player-search" class="search-label">Search players</label>
           <div class="search-control"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
-            <input #playerSearch id="player-search" type="search" role="combobox" [value]="searchTerm" [attr.aria-busy]="checkingPlayer || revealing" placeholder="Search first or last name…" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" autocomplete="off" aria-autocomplete="list" aria-controls="player-suggestions" [attr.aria-expanded]="playerResults.length > 0" [attr.aria-activedescendant]="activeResultIndex >= 0 ? 'player-option-' + activeResultIndex : null" aria-describedby="grid-feedback">
+            <input #playerSearch id="player-search" type="search" role="combobox" [value]="searchTerm" [readOnly]="pendingCells.length > 0 || checkingPlayer || revealing" [attr.aria-busy]="checkingPlayer || revealing" placeholder="Search first or last name…" (input)="onSearch($any($event.target).value)" (keydown)="onSearchKeydown($event)" autocomplete="off" aria-autocomplete="list" aria-controls="player-suggestions" [attr.aria-expanded]="playerResults.length > 0" [attr.aria-activedescendant]="activeResultIndex >= 0 ? 'player-option-' + activeResultIndex : null" aria-describedby="grid-feedback">
           </div>
           <div class="feedback-slot" id="grid-feedback" aria-live="polite" aria-atomic="true">
             <p *ngIf="checkingPlayer">Checking club history…</p>
@@ -66,7 +70,7 @@
     <aside class="grid-guide" aria-label="How to play Player Grid">
       <p class="eyebrow">THE GAME PLAN</p><h2>Nine squares.<br>All your knowledge.</h2>
       <ol><li><strong>Read the clubs</strong><span>Match a club across the top with one down the side.</span></li><li><strong>Find their connection</strong><span>Search for a player who represented both clubs in the available EuroLeague seasons.</span></li><li><strong>Fill the grid</strong><span>Some players fit more than one square. Choose a highlighted square when prompted.</span></li></ol>
-      <div class="guide-tip"><strong>Need an assist?</strong><p>Reveal fills the remaining squares. Your correct guesses stay green.</p></div>
+      <div class="guide-tip"><strong>Daily scoring</strong><p>Unlimited guesses. Earn 10 points per correct square, plus 10 for all nine. Incorrect guesses don’t deduct points.</p><p>One daily grid across all difficulties. Your first choice locks today’s level. Keep guessing until you complete the grid or Reveal to end the attempt and keep your earned points.</p></div>
       <div class="colour-key"><span><i></i>Your answer</span><span><i></i>Revealed</span></div>
     </aside>
   </div>

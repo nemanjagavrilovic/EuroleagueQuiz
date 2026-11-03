@@ -17,6 +17,14 @@ public sealed class TeamHistoryGameService : ITeamHistoryGameService
 
     public async Task<TeamHistoryRoundDto> StartAsync(CancellationToken cancellationToken)
     {
+        var challenge = await CreateChallengeAsync(cancellationToken);
+        var round = new RoundState(Guid.NewGuid(), challenge.Player.Id, challenge.Player, challenge.Teams);
+        Rounds[round.Id] = round;
+        return ToDto(round);
+    }
+
+    public async Task<TeamHistoryChallengeDto> CreateChallengeAsync(CancellationToken cancellationToken)
+    {
         var candidates = await GetCandidatesAsync(cancellationToken);
 
         if (candidates.Count == 0)
@@ -24,9 +32,7 @@ public sealed class TeamHistoryGameService : ITeamHistoryGameService
 
         var selected = candidates[Random.Shared.Next(candidates.Count)];
         var teams = selected.Teams.OrderBy(_ => Random.Shared.Next()).Take(4).ToList();
-        var round = new RoundState(Guid.NewGuid(), selected.Player.Id, selected.Player, teams);
-        Rounds[round.Id] = round;
-        return ToDto(round);
+        return new(selected.Player, teams);
     }
 
     private async Task<IReadOnlyList<Candidate>> GetCandidatesAsync(CancellationToken cancellationToken)

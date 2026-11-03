@@ -42,7 +42,8 @@ public sealed class SmtpContactEmailSender(IOptions<SmtpOptions> options, ILogge
         catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
         {
             // Do not write visitor messages, addresses or SMTP credentials to application logs.
-            logger.LogError("Contact email delivery failed ({FailureType}).", exception.GetType().Name);
+            logger.LogError("Contact email delivery failed ({FailureType}): {FailureReason}",
+                exception.GetType().Name, exception.GetBaseException().Message);
             throw new ContactEmailDeliveryException();
         }
 

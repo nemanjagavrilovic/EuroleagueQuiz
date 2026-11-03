@@ -2,7 +2,8 @@ import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component,
 import { NgFor, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subject, catchError, debounceTime, finalize, map, of, switchMap } from 'rxjs';
-import { DataApiService, Player, TeamHistoryRound } from './data-api.service';
+import { DailyTeamHistoryAttempt, DataApiService, Player, TeamHistoryRound } from './data-api.service';
+import { createGuestUuid } from './guest-identity';
 import { BasketballLoaderComponent } from './basketball-loader.component';
 
 @Component({
@@ -22,12 +23,14 @@ export class TeamHistoryComponent implements OnInit {
   private readonly searchTerms = new Subject<string>();
 
   round: TeamHistoryRound | null = null;
+  dailyAttempt: DailyTeamHistoryAttempt | null = null;
   suggestions: Player[] = [];
   activeSuggestionIndex = -1;
   selectedPlayer: Player | null = null;
   searchTerm = '';
   answerFeedback = '';
   loading = false;
+  restoring = false;
   errorMessage = '';
   searchingPlayers = false;
   searchCompleted = false;
@@ -53,7 +56,7 @@ export class TeamHistoryComponent implements OnInit {
         if (term !== this.searchTerm || this.loading || this.round?.completed) return;
         this.searchingPlayers = false;
         this.searchCompleted = term.trim().length >= 2;
-        this.suggestions = players.slice(0, 12);
+        this.suggestions = players.filter(player => !this.dailyAttempt?.usedPlayerIds.includes(player.id)).slice(0, 12);
         this.activeSuggestionIndex = -1;
         this.changeDetector.markForCheck();
       },
@@ -68,7 +71,7 @@ export class TeamHistoryComponent implements OnInit {
   }
 
   start(): void {
-    if (this.loading) return;
+    if (this.loading || this.restoring) return;
     this.round = null;
     this.loading = true;
     this.errorMessage = '';
@@ -80,16 +83,17 @@ export class TeamHistoryComponent implements OnInit {
     this.suggestions = [];
     this.activeSuggestionIndex = -1;
     this.searchTerms.next('');
-    this.api.startTeamHistoryGame().pipe(finalize(() => {
+    this.api.startDailyTeamHistory().pipe(finalize(() => {
       this.loading = false;
       this.changeDetector.markForCheck();
     })).subscribe({
-      next: round => this.round = round,
+      next: attempt => this.applyAttempt(attempt),
       error: () => this.errorMessage = 'The game could not be started. Make sure player and club data has been imported.'
     });
   }
 
   onSearch(value: string): void {
+    if (this.loading || this.restoring || this.round?.completed) return;
     this.searchTerm = value;
     this.errorMessage = '';
     this.searchingPlayers = value.trim().length >= 2;
@@ -101,7 +105,7 @@ export class TeamHistoryComponent implements OnInit {
   }
 
   selectPlayer(player: Player): void {
-    if (this.loading || !this.round || this.round.completed) return;
+    if (this.loading || this.restoring || !this.round || this.round.completed || this.dailyAttempt?.usedPlayerIds.includes(player.id)) return;
     this.focusSearch();
     this.selectedPlayer = player;
     this.searchingPlayers = false;
@@ -151,7 +155,7 @@ export class TeamHistoryComponent implements OnInit {
   }
 
   private submitGuess(playerId: number | undefined, skip: boolean): void {
-    if (!this.round || this.loading || this.round.completed) return;
+    if (!this.round || !this.dailyAttempt || this.loading || this.restoring || this.round.completed) return;
     this.errorMessage = '';
     this.answerFeedback = '';
     this.searchingPlayers = false;
@@ -162,19 +166,37 @@ export class TeamHistoryComponent implements OnInit {
     this.activeSuggestionIndex = -1;
     this.searchTerms.next('');
     this.loading = true;
-    this.api.guessTeamHistory(this.round.roundId, playerId, skip).pipe(finalize(() => {
+    this.api.guessDailyTeamHistory(this.dailyAttempt.challengeId, createGuestUuid(), playerId, skip).pipe(finalize(() => {
       this.loading = false;
       this.focusSearch();
       this.changeDetector.markForCheck();
     })).subscribe({
-      next: round => {
-        this.round = round;
-        this.answerFeedback = round.completed ? '' : skip
-          ? 'Another club was revealed.'
-          : 'Not this player — another club was revealed.';
-      },
-      error: () => this.errorMessage = 'Your answer could not be submitted.'
+      next: attempt => this.applyAttempt(attempt),
+      error: () => {
+        this.restoring = true;
+        this.errorMessage = 'Your answer could not be confirmed. Restoring saved progress…';
+        this.api.startDailyTeamHistory().pipe(finalize(() => {
+          this.restoring = false; this.focusSearch(); this.changeDetector.markForCheck();
+        })).subscribe({
+          next: attempt => { this.applyAttempt(attempt); this.changeDetector.markForCheck(); },
+          error: () => { this.errorMessage = 'Saved progress could not be loaded. Refresh before submitting another answer.'; this.changeDetector.markForCheck(); }
+        });
+      }
     });
+  }
+
+  private applyAttempt(attempt: DailyTeamHistoryAttempt): void {
+    this.dailyAttempt = attempt;
+    this.round = attempt.round;
+    this.answerFeedback = attempt.feedback || '';
+    this.errorMessage = '';
+    this.searchTerm = '';
+    this.searchCompleted = false;
+    this.searchingPlayers = false;
+    this.suggestions = [];
+    this.activeSuggestionIndex = -1;
+    this.selectedPlayer = null;
+    this.searchTerms.next('');
   }
 
   private focusSearch(): void {

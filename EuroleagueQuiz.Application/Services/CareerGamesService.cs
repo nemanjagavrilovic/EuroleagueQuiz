@@ -18,19 +18,29 @@ public sealed class CareerGamesService : ICareerGamesService
 
     public async Task<MissingClubRoundDto> StartMissingClubAsync(CancellationToken cancellationToken)
     {
-        var candidates = (await GetCatalogAsync(cancellationToken)).Where(x => x.Teams.Count >= 4).ToList();
+        var challenge = await CreateMissingClubChallengeAsync(cancellationToken);
+        var state = new MissingClubState(Guid.NewGuid(), challenge.Player, challenge.KnownTeams, challenge.Options, challenge.CorrectTeam);
+        MissingRounds[state.Id] = state;
+        return ToDto(state);
+    }
+
+    public async Task<MissingClubChallengeDto> CreateMissingClubChallengeAsync(CancellationToken cancellationToken)
+    {
+        var catalog = await GetCatalogAsync(cancellationToken);
+        var allTeams = catalog.SelectMany(x => x.Teams).Select(x => x.Team).DistinctBy(x => x.Id).ToList();
+        // Every distractor must be outside the player's complete career, not just
+        // the four chosen clubs, so there is exactly one correct option.
+        var candidates = catalog.Where(x => x.Teams.Count >= 4 && allTeams.Count - x.Teams.Count >= 3).ToList();
         EnsureCandidates(candidates);
         var career = candidates[Random.Shared.Next(candidates.Count)];
         var selected = career.Teams.OrderBy(_ => Random.Shared.Next()).Take(4).ToList();
         var missing = selected[3].Team;
-        var options = candidates.SelectMany(x => x.Teams)
-            .Where(x => x.Team.Id != missing.Id && selected.All(s => s.Team.Id != x.Team.Id))
-            .DistinctBy(x => x.Team.Id)
+        var careerTeamIds = career.Teams.Select(x => x.Team.Id).ToHashSet();
+        var options = allTeams
+            .Where(x => !careerTeamIds.Contains(x.Id))
             .OrderBy(_ => Random.Shared.Next())
-            .Take(3).Select(x => x.Team).Append(missing).OrderBy(_ => Random.Shared.Next()).ToList();
-        var state = new MissingClubState(Guid.NewGuid(), career.Player, selected.Take(3).Select(x => x.Team).ToList(), options, missing);
-        MissingRounds[state.Id] = state;
-        return ToDto(state);
+            .Take(3).Append(missing).OrderBy(_ => Random.Shared.Next()).ToList();
+        return new(career.Player, selected.Take(3).Select(x => x.Team).ToList(), options, missing);
     }
 
     public Task<MissingClubRoundDto> GuessMissingClubAsync(MissingClubGuessRequest request, CancellationToken cancellationToken)
@@ -56,6 +66,23 @@ public sealed class CareerGamesService : ICareerGamesService
         return ToDto(state);
     }
 
+    public async Task<CareerOrderChallengeDto> CreateCareerOrderChallengeAsync(CancellationToken cancellationToken)
+    {
+        // Season-level data cannot distinguish two first appearances in the same
+        // season. Use different first seasons so scored pairs have a clear order.
+        var candidates = (await GetCatalogAsync(cancellationToken))
+            .Where(x => x.Teams.Select(t => t.StartYear).Distinct().Count() >= 4).ToList();
+        EnsureCandidates(candidates);
+        var career = candidates[Random.Shared.Next(candidates.Count)];
+        var selected = career.Teams.GroupBy(x => x.StartYear)
+            .Select(group => group.OrderBy(_ => Random.Shared.Next()).First())
+            .OrderBy(_ => Random.Shared.Next()).Take(4).ToList();
+        var correct = selected.OrderBy(x => x.StartYear).ToList();
+        if (selected.Select(x => x.Team.Id).SequenceEqual(correct.Select(x => x.Team.Id))) selected.Reverse();
+        static CareerOrderClubDto Club(TeamCareer team) => new(team.Team.Id, team.Team.Name, team.Team.ImageUrl);
+        return new(career.Player, selected.Select(Club).ToList(), correct.Select(Club).ToList());
+    }
+
     public Task<CareerOrderRoundDto> GuessCareerOrderAsync(CareerOrderGuessRequest request, CancellationToken cancellationToken)
     {
         if (!OrderRounds.TryGetValue(request.RoundId, out var state)) throw new KeyNotFoundException("The round was not found.");
@@ -68,6 +95,14 @@ public sealed class CareerGamesService : ICareerGamesService
     }
 
     public async Task<MysteryPlayerRoundDto> StartMysteryPlayerAsync(CancellationToken cancellationToken)
+    {
+        var challenge = await CreateMysteryPlayerChallengeAsync(cancellationToken);
+        var state = new MysteryState(Guid.NewGuid(), challenge.Player, challenge.Clues);
+        MysteryRounds[state.Id] = state;
+        return ToDto(state);
+    }
+
+    public async Task<MysteryPlayerChallengeDto> CreateMysteryPlayerChallengeAsync(CancellationToken cancellationToken)
     {
         var candidates = (await GetCatalogAsync(cancellationToken)).Where(x => x.Teams.Count >= 3).ToList();
         EnsureCandidates(candidates);
@@ -82,9 +117,7 @@ public sealed class CareerGamesService : ICareerGamesService
             $"Career record starts in {career.Teams.Min(x => x.StartYear)}.",
             $"Most recent club in this record: {last.Team.Name}."
         };
-        var state = new MysteryState(Guid.NewGuid(), career.Player, clues);
-        MysteryRounds[state.Id] = state;
-        return ToDto(state);
+        return new(career.Player, clues);
     }
 
     public Task<MysteryPlayerRoundDto> GuessMysteryPlayerAsync(MysteryPlayerGuessRequest request, CancellationToken cancellationToken)

@@ -9,15 +9,19 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Postgres: ${POSTGRES_CONNECTION_STRING}
       Cors__AllowedOrigins__0: ${PUBLIC_ORIGIN:-http://localhost}
-      Smtp__Host: ${SMTP_HOST:-smtp.gmail.com}
-      Smtp__Port: ${SMTP_PORT:-587}
-      Smtp__Security: ${SMTP_SECURITY:-StartTls}
-      Smtp__Username: ${SMTP_USERNAME:-}
-      Smtp__Password: ${SMTP_PASSWORD:-}
-      Smtp__FromAddress: ${SMTP_FROM_ADDRESS:-}
-      Smtp__FromName: Pick & Roll
+      Client__BaseUrl: ${PUBLIC_ORIGIN:-http://localhost}
+      Authentication__Jwt__SigningKey: ${JWT_SIGNING_KEY}
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      Identity__AdminEmails__0: ${ADMIN_EMAIL:-}
+      DataProtection__KeysPath: /app/data-protection
+      Resend__ApiKey: ${RESEND_API_KEY:-}
+      Resend__FromAddress: ${RESEND_FROM_ADDRESS:-noreply@pickandroll.io}
+      Resend__FromName: Pick & Roll
     expose:
       - "8080"
+    volumes:
+      - data-protection:/app/data-protection
 
   web:
     build:
@@ -30,3 +34,6 @@ services:
     ports:
       # Host Nginx terminates HTTPS and proxies to this private port.
       - "127.0.0.1:8080:80"
+
+volumes:
+  data-protection:

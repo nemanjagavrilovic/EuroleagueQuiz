@@ -11,6 +11,12 @@ nav a { color: #cbd5e1; text-decoration: none; font-size: 13px; font-weight: 700
 nav a:hover, nav a.active { color: #ff8a32; }
 nav a.active { box-shadow: 0 2px #f97316; }
 .header-tag { font-size: 10px; font-weight: 800; letter-spacing: .16em; color: #94a3b8; }
+.account-nav { display: flex; align-items: center; gap: 9px; }
+.account-nav a { color: var(--text-secondary); text-decoration: none; font-size: 12px; font-weight: 800; padding: 10px 13px; border-radius: 7px; }
+.account-nav a:hover { color: white; background: var(--surface-raised); }
+.account-nav .create-account { background: var(--accent); color: var(--on-accent); }
+.profile-link { display: flex; align-items: center; gap: 8px; }
+.mini-avatar { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
 .site-footer { background: #07131f; color: #9bafc2; margin-top: 16px; border-top: 1px solid #203344; }
 .footer-inner { padding-top: 22px; padding-bottom: 22px; }
 .footer-brand { display: inline-flex; align-items: center; gap: 10px; color: white; text-decoration: none; font-size: 18px; font-weight: 800; letter-spacing: -.5px; }
@@ -25,6 +31,8 @@ nav a.active { box-shadow: 0 2px #f97316; }
   .brand { font-size: 15px; gap: 7px; }
   .brand-logo { width: 48px; height: 32px; }
   .header-tag { display: none; }
+  .account-nav a { padding: 8px; font-size: 11px; }
+  .account-nav .create-account { display: none; }
   nav { gap: 16px; flex-wrap: wrap; }
   nav a { font-size: 12px; }
   .footer-inner, .footer-bottom { align-items: flex-start; flex-direction: column; }

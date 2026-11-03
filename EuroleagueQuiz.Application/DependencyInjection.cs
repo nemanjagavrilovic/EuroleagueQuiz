@@ -12,9 +12,16 @@ public static class DependencyInjection
         services.AddScoped<ITeamService, TeamService>();
         services.AddScoped<ISeasonService, SeasonService>();
         services.AddScoped<IGridService, GridService>();
+        services.AddScoped<IDailyGridService, DailyGridService>();
+        services.AddSingleton(TimeProvider.System);
         services.AddScoped<ITeamHistoryGameService, TeamHistoryGameService>();
+        services.AddScoped<IDailyTeamHistoryService, DailyTeamHistoryService>();
         services.AddScoped<ICareerGamesService, CareerGamesService>();
+        services.AddScoped<IDailyMissingClubService, DailyMissingClubService>();
+        services.AddScoped<IDailyCareerOrderService, DailyCareerOrderService>();
+        services.AddScoped<IDailyMysteryPlayerService, DailyMysteryPlayerService>();
         services.AddScoped<IFivePlayerGameService, FivePlayerGameService>();
+        services.AddScoped<IDailyFivePlayerService, DailyFivePlayerService>();
         services.AddScoped<IContactService, ContactService>();
         return services;
     }

@@ -9,7 +9,10 @@
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Games</a>
       <a routerLink="/" fragment="how-to-play">How to play</a>
     </nav>
-    <span class="header-tag">EUROLEAGUE QUIZZES</span>
+    <div class="account-nav" *ngIf="auth.user() as user; else signedOut">
+      <a routerLink="/profile" class="profile-link"><span class="mini-avatar">{{ user.displayName.charAt(0).toUpperCase() }}</span>{{ user.displayName }}</a>
+    </div>
+    <ng-template #signedOut><div class="account-nav"><a routerLink="/login">Sign in</a><a class="create-account" routerLink="/register">Create account</a></div></ng-template>
   </div>
 </header>
 <div id="main-content" class="page-content" tabindex="-1"><router-outlet></router-outlet></div>

@@ -1,4 +1,30 @@
 :host { display: block; min-height: 100vh; }
+.mystery-daily-status { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; margin-top: 16px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.mystery-daily-status > span:first-child { color: var(--accent-soft); font-weight: 700; }
+.mystery-daily-score { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-bottom: 16px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
+.mystery-daily-score > div { display: flex; flex-direction: column; gap: 5px; }
+.mystery-daily-score span { color: var(--muted); font-size: 9px; letter-spacing: .08em; line-height: 1.6; }
+.mystery-daily-score strong { font-size: 25px; font-variant-numeric: tabular-nums; }
+.mystery-daily-score small { font-size: 12px; color: var(--muted); font-weight: 400; }
+.mystery-guest-note { font-size: 12px; color: var(--muted); line-height: 1.65; margin: 18px 0 0; }
+.missing-actions .mystery-explore { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 14px; margin: 0; border: 1px solid currentColor; border-radius: 8px; text-decoration: none; }
+.order-daily-status { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; margin-top: 16px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.order-daily-status > span:first-child { color: var(--accent-soft); font-weight: 700; }
+.order-daily-score { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+.order-daily-score > div { display: flex; flex-direction: column; gap: 5px; }
+.order-daily-score span { color: var(--muted); font-size: 9px; letter-spacing: .08em; line-height: 1.6; }
+.order-daily-score strong { font-size: 25px; font-variant-numeric: tabular-nums; }
+.order-daily-score small { font-size: 12px; color: var(--muted); font-weight: 400; }
+.missing-actions .order-explore { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 14px; margin: 0; border: 1px solid currentColor; border-radius: 8px; text-decoration: none; }
+.missing-daily-status { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; margin-top: 16px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.missing-daily-status > span:first-child { color: var(--accent-soft); font-weight: 700; }
+.missing-daily-score { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.missing-daily-score > div { display: flex; flex-direction: column; gap: 5px; }
+.missing-daily-score span { color: var(--muted); font-size: 9px; letter-spacing: .08em; line-height: 1.6; }
+.missing-daily-score strong { font-size: 25px; font-variant-numeric: tabular-nums; }
+.missing-daily-score small { font-size: 12px; color: var(--muted); font-weight: 400; }
+.missing-guest-note { font-size: 12px; color: var(--muted); line-height: 1.65; margin: 18px 0 0; }
+.missing-actions .missing-explore { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 14px; margin: 0; border: 1px solid currentColor; border-radius: 8px; text-decoration: none; }
 .mystery-page *, .mystery-page *::before, .mystery-page *::after { box-sizing: border-box; }
 .order-page *, .order-page *::before, .order-page *::after { box-sizing: border-box; }
 .missing-page *, .missing-page *::before, .missing-page *::after { box-sizing: border-box; }
@@ -87,7 +113,7 @@ h2 { margin-top: 28px; }
 .missing-header { margin: 22px 0 24px; }
 .missing-header .eyebrow, .missing-page .eyebrow { font-size: 10px; letter-spacing: .13em; color: var(--accent); }
 .missing-header h1 { margin: 8px 0; }
-.missing-header > p:last-child { color: var(--muted); font-size: 14px; line-height: 1.65; }
+.missing-header > p:not(.eyebrow) { color: var(--muted); font-size: 14px; line-height: 1.65; }
 .missing-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 28px; align-items: start; }
 .missing-page .missing-card { margin: 0; min-width: 0; padding: 24px; border-radius: 18px; }
 .player-heading { display: flex; align-items: center; gap: 14px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }

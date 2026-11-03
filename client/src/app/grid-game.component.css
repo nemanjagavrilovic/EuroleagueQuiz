@@ -1,4 +1,12 @@
 :host { display: block; }
+.daily-status { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; margin-top: 16px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.daily-status > span:first-child { color: var(--accent-soft); font-weight: 700; }
+.daily-score { padding: 12px 0; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+.daily-score > div { display: flex; flex-direction: column; gap: 5px; }
+.daily-score span { color: var(--muted); font-size: 9px; letter-spacing: .1em; }
+.daily-score strong { color: var(--text); font-size: 24px; font-variant-numeric: tabular-nums; }
+.daily-score small { font-size: 13px; color: var(--muted); font-weight: 400; }
+.guest-score-note, .daily-return { color: var(--muted); font-size: 12px; line-height: 1.65; margin: 16px 0; }
 .shell.grid-page { max-width: 1120px; margin: auto; padding: 28px 24px 40px; }
 .game-header { max-width: 540px; margin-bottom: 18px; }
 .back-link { color: var(--muted); font-size: 12px; text-decoration: none; font-weight: 700; }
