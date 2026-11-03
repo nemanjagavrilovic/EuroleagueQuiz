@@ -3,7 +3,7 @@
     <a routerLink="/" class="back-link">← All games</a>
     <div class="title-row"><div><p class="eyebrow">CONNECT THE CLUBS</p><h1>Player Grid</h1></div><span class="difficulty-badge">{{ selectedDifficulty }}</span></div>
     <p class="intro">Two clubs. One player. Find the connection in every square.</p>
-    <div class="daily-status" *ngIf="dailyAttempt as attempt"><span>DAILY GRID · {{ attempt.date }} · {{ selectedDifficulty }}</span><span>Resets at 00:00 UTC</span></div>
+    <div class="daily-status" *ngIf="practice; else dailyGridStatus"><span>PRACTICE MODE · {{ selectedDifficulty }}</span><span>Unlimited random grids</span></div><ng-template #dailyGridStatus><div class="daily-status" *ngIf="dailyAttempt as attempt"><span>{{ ranked ? 'RANKED' : 'GUEST' }} DAILY GRID · {{ attempt.date }} · {{ selectedDifficulty }}</span><span>Resets at 00:00 UTC</span></div></ng-template>
   </header>
 
   <app-basketball-loader *ngIf="gridLoading" message="Loading ..." [overlay]="true"></app-basketball-loader>
@@ -43,8 +43,9 @@
       <h2>{{ gridRevealed ? 'Answers revealed' : isGridComplete() ? 'Grid complete' : attemptCompleted ? 'Daily attempt complete' : 'Who’s the connection?' }}</h2>
       <div class="completion-message" *ngIf="isGridComplete()" role="status"><div><strong>Nothing but net.</strong><span>You found all nine connections!</span></div><a routerLink="/">Explore games →</a></div>
       <div class="revealed-message" *ngIf="gridRevealed && !isGridComplete()" role="status"><strong>Grid revealed</strong><span>{{ guessedCount }} of 9 guessed. Your answers stay green; revealed answers are red.</span><a routerLink="/">Explore games →</a></div>
-      <p class="guest-score-note">Your score is saved for this daily challenge. Guest scores don’t enter the leaderboard.</p>
-      <p class="daily-return" *ngIf="attemptCompleted">Today’s attempt is complete. Come back after 00:00 UTC for a new grid.</p>
+      <button *ngIf="practice && attemptCompleted" class="primary new-practice-button" type="button" (click)="newPracticeGrid()">New practice grid</button>
+      <p class="guest-score-note">{{ practice ? 'Practice is unlimited and does not affect the leaderboard.' : ranked && dailyAttempt?.leaderboardEligible ? 'This score is eligible for the ranked leaderboard.' : 'This daily score is saved but does not enter the leaderboard.' }}</p>
+      <p class="daily-return" *ngIf="attemptCompleted && !practice">Today’s attempt is complete. Come back after 00:00 UTC for a new grid.</p>
 
       <div class="answer-section" *ngIf="!attemptCompleted">
         <div class="answer-entry">

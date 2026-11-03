@@ -9,16 +9,16 @@ namespace EuroleagueQuiz.Application.Services;
 public sealed class DailyMysteryPlayerService(IDailyGameRepository repository, ICareerGamesService games, IPlayerService players, TimeProvider clock) : IDailyMysteryPlayerService
 {
     public const string Game = "mystery-player";
-    public Task<DailyMysteryPlayerDto> StartAsync(Guid guestId, CancellationToken ct) => ExecuteAsync(guestId, null, ct);
-    public Task<DailyMysteryPlayerDto> GuessAsync(Guid guestId, DailyMysteryPlayerGuessRequest request, CancellationToken ct) => ExecuteAsync(guestId, request, ct);
+    public Task<DailyMysteryPlayerDto> StartAsync(DailyAttemptIdentity identity, CancellationToken ct) => ExecuteAsync(identity, null, ct);
+    public Task<DailyMysteryPlayerDto> GuessAsync(DailyAttemptIdentity identity, DailyMysteryPlayerGuessRequest request, CancellationToken ct) => ExecuteAsync(identity, request, ct);
 
-    private Task<DailyMysteryPlayerDto> ExecuteAsync(Guid guestId, DailyMysteryPlayerGuessRequest? request, CancellationToken ct)
+    private Task<DailyMysteryPlayerDto> ExecuteAsync(DailyAttemptIdentity identity, DailyMysteryPlayerGuessRequest? request, CancellationToken ct)
     {
-        if (guestId == Guid.Empty) throw new ArgumentException("A guest identifier is required.");
+        if (identity.GuestId == Guid.Empty) throw new ArgumentException("A guest identifier is required.");
         var date = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
-        return repository.WithLockAsync($"daily-attempt:{Game}:{date:yyyy-MM-dd}:{guestId}", async () =>
+        return repository.WithLockAsync($"daily-attempt:{Game}:{date:yyyy-MM-dd}:{identity.AttemptId}", async () =>
         {
-            var attempt = await repository.FindAttemptAsync(Game, guestId, date, ct);
+            var attempt = await repository.FindOrClaimAsync(Game, identity, date, ct);
             if (attempt is null)
             {
                 if (request is not null) throw new ArgumentException("Start today's Mystery Player challenge first.");
@@ -29,8 +29,9 @@ public sealed class DailyMysteryPlayerService(IDailyGameRepository repository, I
                         throw new InvalidOperationException("Mystery Player needs five distinct clues.");
                     return JsonSerializer.Serialize(definition);
                 }, ct);
-                attempt = new() { Game = Game, GuestId = guestId, Date = date, Challenge = challenge, ChallengeId = challenge.Id,
+                attempt = new() { Game = Game, Date = date, Challenge = challenge, ChallengeId = challenge.Id,
                     StateJson = JsonSerializer.Serialize(new AttemptState()) };
+                identity.Initialize(attempt);
                 repository.Add(attempt);
             }
             var definition = JsonSerializer.Deserialize<MysteryPlayerChallengeDto>(attempt.Challenge.DefinitionJson)!;
@@ -73,7 +74,7 @@ public sealed class DailyMysteryPlayerService(IDailyGameRepository repository, I
             var round = new MysteryPlayerRoundDto(attempt.Id, definition.Clues.Take(state.RevealedCount).ToList(), state.RevealedCount, 5,
                 state.Completed, state.Correct, state.Completed ? definition.Player : null);
             return new DailyMysteryPlayerDto(attempt.ChallengeId, date, date.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc), round,
-                state.Score, state.Completed ? 0 : Points(state.RevealedCount), false, state.UsedPlayerIds.ToList(), state.Feedback);
+                state.Score, state.Completed ? 0 : Points(state.RevealedCount), attempt.LeaderboardEligible, state.UsedPlayerIds.ToList(), state.Feedback);
         }, ct);
     }
 

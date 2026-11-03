@@ -4,6 +4,6 @@ namespace EuroleagueQuiz.Application.Interfaces;
 
 public interface IDailyMissingClubService
 {
-    Task<DailyMissingClubDto> StartAsync(Guid guestId, CancellationToken cancellationToken);
-    Task<DailyMissingClubDto> GuessAsync(Guid guestId, DailyMissingClubGuessRequest request, CancellationToken cancellationToken);
+    Task<DailyMissingClubDto> StartAsync(DailyAttemptIdentity identity, CancellationToken cancellationToken);
+    Task<DailyMissingClubDto> GuessAsync(DailyAttemptIdentity identity, DailyMissingClubGuessRequest request, CancellationToken cancellationToken);
 }

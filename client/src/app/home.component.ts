@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { GameArtComponent } from './game-art.component';
 import { RouterLink } from '@angular/router';
+import { AuthService } from './auth.service';
 
 @Component({
   selector: 'app-home',
@@ -12,6 +13,7 @@ import { RouterLink } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeComponent {
+  readonly auth = inject(AuthService);
   readonly games = [
     { art: 'grid', title: 'Player Grid', description: 'Find players who played for both clubs.', route: '/grid/normal' },
     { art: 'history', title: 'Team History', description: 'A daily career. Four clubs. Up to 100 points.', route: '/team-history' },
@@ -26,4 +28,17 @@ export class HomeComponent {
     { name: 'Hard', description: 'Rarer club intersections and smaller answer pools.' },
     { name: 'Legend', description: 'The most demanding EuroLeague challenge.' }
   ];
+
+  gameLink(game: { art: string; route: string }): string {
+    if (!this.auth.user()) return game.route;
+    const gameIds: Record<string, string> = {
+      history: 'team-history',
+      missing: 'missing-club',
+      order: 'career-order',
+      mystery: 'mystery-player',
+      five: 'five-player'
+    };
+    const gameId = gameIds[game.art] ?? game.art;
+    return `/play/${gameId}`;
+  }
 }

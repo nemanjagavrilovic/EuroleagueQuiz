@@ -53,7 +53,9 @@ public sealed class EuroleagueDbContext : IdentityDbContext<ApplicationUser, Ide
             entity.Property(x => x.Game).HasMaxLength(40).IsRequired();
             entity.Property(x => x.StateJson).HasColumnType("jsonb").IsRequired();
             entity.HasIndex(x => new { x.GuestId, x.Game, x.Date }).IsUnique();
+            entity.HasIndex(x => new { x.UserId, x.Game, x.Date }).IsUnique().HasFilter("\"UserId\" IS NOT NULL");
             entity.HasOne(x => x.Challenge).WithMany().HasForeignKey(x => x.ChallengeId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
         });
         modelBuilder.Entity<DailyGridChallenge>(entity =>
         {
@@ -66,8 +68,10 @@ public sealed class EuroleagueDbContext : IdentityDbContext<ApplicationUser, Ide
         {
             entity.HasKey(x => x.Id);
             entity.HasIndex(x => new { x.GuestId, x.Date }).IsUnique();
+            entity.HasIndex(x => new { x.UserId, x.Date }).IsUnique().HasFilter("\"UserId\" IS NOT NULL");
             entity.Property(x => x.StateJson).HasColumnType("jsonb").IsRequired();
             entity.HasOne(x => x.Challenge).WithMany().HasForeignKey(x => x.ChallengeId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
         });
         modelBuilder.Entity<Player>(entity =>
         {

@@ -4,6 +4,6 @@ namespace EuroleagueQuiz.Application.Interfaces;
 
 public interface IDailyTeamHistoryService
 {
-    Task<DailyTeamHistoryDto> StartAsync(Guid guestId, CancellationToken cancellationToken);
-    Task<DailyTeamHistoryDto> GuessAsync(Guid guestId, DailyTeamHistoryGuessRequest request, CancellationToken cancellationToken);
+    Task<DailyTeamHistoryDto> StartAsync(DailyAttemptIdentity identity, CancellationToken cancellationToken);
+    Task<DailyTeamHistoryDto> GuessAsync(DailyAttemptIdentity identity, DailyTeamHistoryGuessRequest request, CancellationToken cancellationToken);
 }

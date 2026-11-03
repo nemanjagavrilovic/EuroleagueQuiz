@@ -9,6 +9,37 @@ namespace EuroleagueQuiz.Tests;
 public sealed class DailyGridServiceTests
 {
     [Fact]
+    public async Task New_authenticated_ranked_attempt_is_leaderboard_eligible()
+    {
+        var f = new Fixture();
+        var identity = new DailyAttemptIdentity(Guid.NewGuid(), Guid.NewGuid(), true);
+
+        var attempt = await f.Service.StartAsync(identity, GridDifficulty.Normal, default);
+
+        Assert.True(attempt.LeaderboardEligible);
+        var stored = await f.Repository.FindAttemptAsync(identity.UserId!.Value, DateOnly.FromDateTime(f.Clock.Now.UtcDateTime), default);
+        Assert.Equal(identity.UserId, stored!.UserId);
+        Assert.True(stored.LeaderboardEligible);
+    }
+
+    [Fact]
+    public async Task Guest_attempt_claimed_after_sign_in_remains_unranked()
+    {
+        var f = new Fixture();
+        var guestId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var guestAttempt = await f.Service.StartAsync(guestId, GridDifficulty.Normal, default);
+
+        var claimed = await f.Service.StartAsync(new DailyAttemptIdentity(guestId, userId, true), GridDifficulty.Legend, default);
+
+        Assert.Equal(guestAttempt.ChallengeId, claimed.ChallengeId);
+        Assert.False(claimed.LeaderboardEligible);
+        var stored = await f.Repository.FindAttemptAsync(userId, DateOnly.FromDateTime(f.Clock.Now.UtcDateTime), default);
+        Assert.Equal(userId, stored!.UserId);
+        Assert.False(stored.LeaderboardEligible);
+    }
+
+    [Fact]
     public async Task Daily_grid_is_shared_and_first_difficulty_is_locked_across_refreshes()
     {
         var f = new Fixture(); var guest = Guid.NewGuid();

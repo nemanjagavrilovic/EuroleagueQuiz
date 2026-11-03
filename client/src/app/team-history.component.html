@@ -1,5 +1,5 @@
 <main class="history-shell history-page">
-  <header class="game-header"><a class="back-link" routerLink="/">← All games</a><p class="eyebrow">FOLLOW THE JOURNEY</p><h1>Team History</h1><p class="intro">Four clubs. One player. How soon can you make the connection?</p><div class="history-daily-status" *ngIf="dailyAttempt as attempt"><span>DAILY TEAM HISTORY · {{ attempt.date }}</span><span>Resets at 00:00 UTC</span></div></header>
+  <header class="game-header"><a class="back-link" routerLink="/">← All games</a><p class="eyebrow">FOLLOW THE JOURNEY</p><h1>Team History</h1><p class="intro">Four clubs. One player. How soon can you make the connection?</p><div class="history-daily-status" *ngIf="practice; else historyDaily"><span>PRACTICE MODE</span><span>Unlimited random careers</span></div><ng-template #historyDaily><div class="history-daily-status" *ngIf="dailyAttempt as attempt"><span>{{ ranked ? 'RANKED' : 'GUEST' }} DAILY TEAM HISTORY · {{ attempt.date }}</span><span>Resets at 00:00 UTC</span></div></ng-template></header>
   <app-basketball-loader *ngIf="loading && !round" message="Loading ..." [overlay]="true"></app-basketball-loader>
   <p *ngIf="errorMessage && !round" class="error" role="alert">{{ errorMessage }}</p>
   <div class="history-layout" *ngIf="round">
@@ -32,11 +32,11 @@
       <div *ngIf="round.completed" class="result" [class.success]="round.correct" role="status">
         <p class="result-label">{{ round.correct ? 'YOU FOUND THE CONNECTION' : 'THE PLAYER BEHIND THE CLUBS' }}</p><h2>{{ round.correct ? 'That’s the one.' : 'Meet the answer.' }}</h2>
         <div *ngIf="round.correctPlayer" class="correct-player"><img *ngIf="round.correctPlayer.imageUrl" [src]="round.correctPlayer.imageUrl" alt=""><strong>{{ round.correctPlayer.displayName }}</strong></div>
-        <p>You earned <strong>{{ dailyAttempt?.score }} / 100 points.</strong></p>
-        <p>Today’s attempt is complete. Come back after 00:00 UTC for a new career.</p>
-        <div class="result-actions"><a class="explore-games" routerLink="/">Explore games →</a></div>
+        <p *ngIf="!practice">You earned <strong>{{ dailyAttempt?.score }} / 100 points.</strong></p>
+        <p>{{ practice ? 'Practice complete. Generate another career whenever you are ready.' : 'Today’s attempt is complete. Come back after 00:00 UTC for a new career.' }}</p>
+        <div class="result-actions"><button *ngIf="practice" class="primary" type="button" (click)="start()">New practice career</button><a class="explore-games" routerLink="/">Explore games →</a></div>
       </div>
-      <p class="history-guest-note">Your daily progress and score are saved. Guest scores don’t enter the leaderboard.</p>
+      <p class="history-guest-note">{{ practice ? 'Practice is unlimited and does not affect the leaderboard.' : ranked && dailyAttempt?.leaderboardEligible ? 'Your ranked score is saved for the leaderboard.' : 'Your daily progress is saved, but this score is unranked.' }}</p>
     </section>
     <aside class="history-guide" aria-label="How to play Team History"><p class="eyebrow">THE GAME PLAN</p><h2><span>One career.</span><span>Four connections.</span></h2><ol><li><strong>Start with one club</strong><span>Your first clue is a club from the player’s EuroLeague history.</span></li><li><strong>Name the player</strong><span>Search for a name and select a suggestion to submit your guess.</span></li><li><strong>Use another clue</strong><span>A miss or a skip reveals another club. Miss or reveal at the fourth club and the answer is shown.</span></li></ol><div class="guide-tip"><strong>Daily scoring</strong><p>Correct with 1 club: 100 points. With 2: 75. With 3: 50. With 4: 25.</p><p>Revealing the player or missing the final guess earns 0 points. One daily challenge, with progress saved across refreshes.</p></div></aside>
   </div>

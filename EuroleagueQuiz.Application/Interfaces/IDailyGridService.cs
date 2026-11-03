@@ -4,8 +4,8 @@ namespace EuroleagueQuiz.Application.Interfaces;
 
 public interface IDailyGridService
 {
-    Task<DailyGridAttemptDto> StartAsync(Guid guestId, GridDifficulty difficulty, CancellationToken cancellationToken);
-    Task<DailyGridAttemptDto> GuessAsync(Guid guestId, DailyGridGuessRequest request, CancellationToken cancellationToken);
-    Task<DailyGridAttemptDto> PlaceAsync(Guid guestId, DailyGridPlaceRequest request, CancellationToken cancellationToken);
-    Task<DailyGridAttemptDto> RevealAsync(Guid guestId, DailyGridRevealRequest request, CancellationToken cancellationToken);
+    Task<DailyGridAttemptDto> StartAsync(DailyAttemptIdentity identity, GridDifficulty difficulty, CancellationToken cancellationToken);
+    Task<DailyGridAttemptDto> GuessAsync(DailyAttemptIdentity identity, DailyGridGuessRequest request, CancellationToken cancellationToken);
+    Task<DailyGridAttemptDto> PlaceAsync(DailyAttemptIdentity identity, DailyGridPlaceRequest request, CancellationToken cancellationToken);
+    Task<DailyGridAttemptDto> RevealAsync(DailyAttemptIdentity identity, DailyGridRevealRequest request, CancellationToken cancellationToken);
 }

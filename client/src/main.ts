@@ -1,7 +1,7 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { APP_INITIALIZER } from '@angular/core';
-import { provideRouter, Routes, withInMemoryScrolling } from '@angular/router';
+import { APP_INITIALIZER, inject } from '@angular/core';
+import { CanActivateFn, provideRouter, Router, Routes, withInMemoryScrolling } from '@angular/router';
 import { AppComponent } from './app/app.component';
 import { GridGameComponent } from './app/grid-game.component';
 import { HomeComponent } from './app/home.component';
@@ -15,6 +15,11 @@ import { ConfirmEmailComponent } from './app/confirm-email.component';
 import { ProfileComponent } from './app/profile.component';
 import { AuthService } from './app/auth.service';
 import { authInterceptor } from './app/auth.interceptor';
+import { GameModeComponent } from './app/game-mode.component';
+
+const signedInGuard: CanActivateFn = (_route, state) => inject(AuthService).user()
+  ? true
+  : inject(Router).createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -30,7 +35,9 @@ const routes: Routes = [
   { path: 'confirm-email', component: ConfirmEmailComponent },
   { path: 'auth/callback', component: AuthCallbackComponent },
   { path: 'profile', component: ProfileComponent },
+  { path: 'play/:game', component: GameModeComponent, canActivate: [signedInGuard] },
   { path: 'game/five-player', component: FivePlayerGameComponent },
+  { path: 'game/history', component: TeamHistoryComponent },
   { path: 'game/:game', component: CareerGamesComponent },
   { path: '**', redirectTo: '' }
 ];

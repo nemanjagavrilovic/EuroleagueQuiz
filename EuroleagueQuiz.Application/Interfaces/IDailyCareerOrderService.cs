@@ -4,7 +4,7 @@ namespace EuroleagueQuiz.Application.Interfaces;
 
 public interface IDailyCareerOrderService
 {
-    Task<DailyCareerOrderDto> StartAsync(Guid guestId, CancellationToken cancellationToken);
-    Task<DailyCareerOrderDto> SaveDraftAsync(Guid guestId, DailyCareerOrderRequest request, CancellationToken cancellationToken);
-    Task<DailyCareerOrderDto> SubmitAsync(Guid guestId, DailyCareerOrderRequest request, CancellationToken cancellationToken);
+    Task<DailyCareerOrderDto> StartAsync(DailyAttemptIdentity identity, CancellationToken cancellationToken);
+    Task<DailyCareerOrderDto> SaveDraftAsync(DailyAttemptIdentity identity, DailyCareerOrderRequest request, CancellationToken cancellationToken);
+    Task<DailyCareerOrderDto> SubmitAsync(DailyAttemptIdentity identity, DailyCareerOrderRequest request, CancellationToken cancellationToken);
 }

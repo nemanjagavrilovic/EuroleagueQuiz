@@ -42,6 +42,9 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("GuestId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("LeaderboardEligible")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("StateJson")
                         .IsRequired()
                         .HasColumnType("jsonb");
@@ -49,12 +52,19 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ChallengeId");
 
                     b.HasIndex("GuestId", "Game", "Date")
                         .IsUnique();
+
+                    b.HasIndex("UserId", "Game", "Date")
+                        .IsUnique()
+                        .HasFilter("\"UserId\" IS NOT NULL");
 
                     b.ToTable("DailyGameAttempts");
                 });
@@ -107,6 +117,9 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("GuestId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("LeaderboardEligible")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("StateJson")
                         .IsRequired()
                         .HasColumnType("jsonb");
@@ -114,12 +127,19 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ChallengeId");
 
                     b.HasIndex("GuestId", "Date")
                         .IsUnique();
+
+                    b.HasIndex("UserId", "Date")
+                        .IsUnique()
+                        .HasFilter("\"UserId\" IS NOT NULL");
 
                     b.ToTable("DailyGridAttempts");
                 });
@@ -705,6 +725,11 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("EuroleagueQuiz.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Challenge");
                 });
 
@@ -715,6 +740,11 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ChallengeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("EuroleagueQuiz.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Challenge");
                 });

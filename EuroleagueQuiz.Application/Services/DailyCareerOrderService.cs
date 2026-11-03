@@ -9,17 +9,17 @@ namespace EuroleagueQuiz.Application.Services;
 public sealed class DailyCareerOrderService(IDailyGameRepository repository, ICareerGamesService games, TimeProvider clock) : IDailyCareerOrderService
 {
     public const string Game = "career-order";
-    public Task<DailyCareerOrderDto> StartAsync(Guid guestId, CancellationToken ct) => ExecuteAsync(guestId, null, false, ct);
-    public Task<DailyCareerOrderDto> SaveDraftAsync(Guid guestId, DailyCareerOrderRequest request, CancellationToken ct) => ExecuteAsync(guestId, request, false, ct);
-    public Task<DailyCareerOrderDto> SubmitAsync(Guid guestId, DailyCareerOrderRequest request, CancellationToken ct) => ExecuteAsync(guestId, request, true, ct);
+    public Task<DailyCareerOrderDto> StartAsync(DailyAttemptIdentity identity, CancellationToken ct) => ExecuteAsync(identity, null, false, ct);
+    public Task<DailyCareerOrderDto> SaveDraftAsync(DailyAttemptIdentity identity, DailyCareerOrderRequest request, CancellationToken ct) => ExecuteAsync(identity, request, false, ct);
+    public Task<DailyCareerOrderDto> SubmitAsync(DailyAttemptIdentity identity, DailyCareerOrderRequest request, CancellationToken ct) => ExecuteAsync(identity, request, true, ct);
 
-    private Task<DailyCareerOrderDto> ExecuteAsync(Guid guestId, DailyCareerOrderRequest? request, bool submit, CancellationToken ct)
+    private Task<DailyCareerOrderDto> ExecuteAsync(DailyAttemptIdentity identity, DailyCareerOrderRequest? request, bool submit, CancellationToken ct)
     {
-        if (guestId == Guid.Empty) throw new ArgumentException("A guest identifier is required.");
+        if (identity.GuestId == Guid.Empty) throw new ArgumentException("A guest identifier is required.");
         var date = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
-        return repository.WithLockAsync($"daily-attempt:{Game}:{date:yyyy-MM-dd}:{guestId}", async () =>
+        return repository.WithLockAsync($"daily-attempt:{Game}:{date:yyyy-MM-dd}:{identity.AttemptId}", async () =>
         {
-            var attempt = await repository.FindAttemptAsync(Game, guestId, date, ct);
+            var attempt = await repository.FindOrClaimAsync(Game, identity, date, ct);
             if (attempt is null)
             {
                 if (request is not null) throw new ArgumentException("Start today's Career Order challenge first.");
@@ -33,8 +33,9 @@ public sealed class DailyCareerOrderService(IDailyGameRepository repository, ICa
                     return JsonSerializer.Serialize(definition);
                 }, ct);
                 var definition = JsonSerializer.Deserialize<CareerOrderChallengeDto>(challenge.DefinitionJson)!;
-                attempt = new() { Game = Game, GuestId = guestId, Date = date, Challenge = challenge, ChallengeId = challenge.Id,
+                attempt = new() { Game = Game, Date = date, Challenge = challenge, ChallengeId = challenge.Id,
                     StateJson = JsonSerializer.Serialize(new AttemptState { TeamIds = definition.Clubs.Select(x => x.Id).ToList() }) };
+                identity.Initialize(attempt);
                 repository.Add(attempt);
             }
             var puzzle = JsonSerializer.Deserialize<CareerOrderChallengeDto>(attempt.Challenge.DefinitionJson)!;
@@ -70,7 +71,7 @@ public sealed class DailyCareerOrderService(IDailyGameRepository repository, ICa
             var round = new CareerOrderRoundDto(attempt.Id, puzzle.Player, state.TeamIds.Select(id => clubs[id]).ToList(),
                 state.Completed, state.Completed ? state.Score == 100 : null, state.Completed ? puzzle.CorrectOrder : null);
             return new DailyCareerOrderDto(attempt.ChallengeId, date, date.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
-                round, state.Score, state.Completed ? state.CorrectPairs : null, 6, false);
+                round, state.Score, state.Completed ? state.CorrectPairs : null, 6, attempt.LeaderboardEligible);
         }, ct);
     }
 

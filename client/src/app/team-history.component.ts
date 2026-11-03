@@ -1,7 +1,7 @@
 import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Injector, OnInit, ViewChild, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { Subject, catchError, debounceTime, finalize, map, of, switchMap } from 'rxjs';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Observable, Subject, catchError, debounceTime, finalize, map, of, switchMap } from 'rxjs';
 import { DailyTeamHistoryAttempt, DataApiService, Player, TeamHistoryRound } from './data-api.service';
 import { createGuestUuid } from './guest-identity';
 import { BasketballLoaderComponent } from './basketball-loader.component';
@@ -20,6 +20,7 @@ export class TeamHistoryComponent implements OnInit {
   private readonly injector = inject(Injector);
   private readonly api = inject(DataApiService);
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
   private readonly searchTerms = new Subject<string>();
 
   round: TeamHistoryRound | null = null;
@@ -34,6 +35,9 @@ export class TeamHistoryComponent implements OnInit {
   errorMessage = '';
   searchingPlayers = false;
   searchCompleted = false;
+  readonly mode = this.route.snapshot.queryParamMap.get('mode') || 'daily';
+  readonly ranked = this.mode === 'ranked';
+  readonly practice = this.mode === 'practice';
 
   get clueSlots(): number[] { return Array.from({ length: this.round?.totalTeams ?? 4 }, (_, index) => index); }
 
@@ -83,11 +87,14 @@ export class TeamHistoryComponent implements OnInit {
     this.suggestions = [];
     this.activeSuggestionIndex = -1;
     this.searchTerms.next('');
-    this.api.startDailyTeamHistory().pipe(finalize(() => {
+    const request: Observable<TeamHistoryRound | DailyTeamHistoryAttempt> = this.practice
+      ? this.api.startTeamHistoryGame()
+      : this.api.startDailyTeamHistory(this.ranked);
+    request.pipe(finalize(() => {
       this.loading = false;
       this.changeDetector.markForCheck();
     })).subscribe({
-      next: attempt => this.applyAttempt(attempt),
+      next: value => this.practice ? this.applyPracticeRound(value as TeamHistoryRound) : this.applyAttempt(value as DailyTeamHistoryAttempt),
       error: () => this.errorMessage = 'The game could not be started. Make sure player and club data has been imported.'
     });
   }
@@ -155,7 +162,7 @@ export class TeamHistoryComponent implements OnInit {
   }
 
   private submitGuess(playerId: number | undefined, skip: boolean): void {
-    if (!this.round || !this.dailyAttempt || this.loading || this.restoring || this.round.completed) return;
+    if (!this.round || (!this.practice && !this.dailyAttempt) || this.loading || this.restoring || this.round.completed) return;
     this.errorMessage = '';
     this.answerFeedback = '';
     this.searchingPlayers = false;
@@ -166,7 +173,14 @@ export class TeamHistoryComponent implements OnInit {
     this.activeSuggestionIndex = -1;
     this.searchTerms.next('');
     this.loading = true;
-    this.api.guessDailyTeamHistory(this.dailyAttempt.challengeId, createGuestUuid(), playerId, skip).pipe(finalize(() => {
+    if (this.practice) {
+      this.api.guessTeamHistory(this.round.roundId, playerId, skip).pipe(finalize(() => {
+        this.loading = false; this.focusSearch(); this.changeDetector.markForCheck();
+      })).subscribe({ next: round => this.applyPracticeRound(round), error: () => this.errorMessage = 'The answer could not be checked.' });
+      return;
+    }
+    const challengeId = this.dailyAttempt!.challengeId;
+    this.api.guessDailyTeamHistory(challengeId, createGuestUuid(), playerId, skip, this.ranked).pipe(finalize(() => {
       this.loading = false;
       this.focusSearch();
       this.changeDetector.markForCheck();
@@ -175,7 +189,7 @@ export class TeamHistoryComponent implements OnInit {
       error: () => {
         this.restoring = true;
         this.errorMessage = 'Your answer could not be confirmed. Restoring saved progress…';
-        this.api.startDailyTeamHistory().pipe(finalize(() => {
+        this.api.startDailyTeamHistory(this.ranked).pipe(finalize(() => {
           this.restoring = false; this.focusSearch(); this.changeDetector.markForCheck();
         })).subscribe({
           next: attempt => { this.applyAttempt(attempt); this.changeDetector.markForCheck(); },
@@ -197,6 +211,12 @@ export class TeamHistoryComponent implements OnInit {
     this.activeSuggestionIndex = -1;
     this.selectedPlayer = null;
     this.searchTerms.next('');
+  }
+
+  private applyPracticeRound(round: TeamHistoryRound): void {
+    this.dailyAttempt = null; this.round = round; this.answerFeedback = '';
+    this.errorMessage = ''; this.searchTerm = ''; this.searchCompleted = false; this.searchingPlayers = false;
+    this.suggestions = []; this.activeSuggestionIndex = -1; this.selectedPlayer = null; this.searchTerms.next('');
   }
 
   private focusSearch(): void {

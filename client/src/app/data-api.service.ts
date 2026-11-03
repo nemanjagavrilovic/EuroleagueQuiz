@@ -207,17 +207,17 @@ export class DataApiService {
     return { 'X-Guest-Id': this.guestId };
   }
 
-  startDailyGrid(difficulty: string): Observable<DailyGridAttempt> {
-    return this.http.post<DailyGridAttempt>(`${this.baseUrl}/grid/daily/start`, {}, { params: { difficulty }, headers: this.guestHeaders() });
+  startDailyGrid(difficulty: string, ranked = false): Observable<DailyGridAttempt> {
+    return this.http.post<DailyGridAttempt>(`${this.baseUrl}/grid/daily/start`, {}, { params: { difficulty, ranked }, headers: this.guestHeaders() });
   }
-  guessDailyGrid(challengeId: number, playerId: number, commandId: string): Observable<DailyGridAttempt> {
-    return this.http.post<DailyGridAttempt>(`${this.baseUrl}/grid/daily/guess`, { challengeId, playerId, commandId }, { headers: this.guestHeaders() });
+  guessDailyGrid(challengeId: number, playerId: number, commandId: string, ranked = false): Observable<DailyGridAttempt> {
+    return this.http.post<DailyGridAttempt>(`${this.baseUrl}/grid/daily/guess`, { challengeId, playerId, commandId }, { params: { ranked }, headers: this.guestHeaders() });
   }
-  placeDailyGrid(challengeId: number, row: number, column: number): Observable<DailyGridAttempt> {
-    return this.http.post<DailyGridAttempt>(`${this.baseUrl}/grid/daily/place`, { challengeId, row, column }, { headers: this.guestHeaders() });
+  placeDailyGrid(challengeId: number, row: number, column: number, ranked = false): Observable<DailyGridAttempt> {
+    return this.http.post<DailyGridAttempt>(`${this.baseUrl}/grid/daily/place`, { challengeId, row, column }, { params: { ranked }, headers: this.guestHeaders() });
   }
-  revealDailyGrid(challengeId: number): Observable<DailyGridAttempt> {
-    return this.http.post<DailyGridAttempt>(`${this.baseUrl}/grid/daily/reveal`, { challengeId }, { headers: this.guestHeaders() });
+  revealDailyGrid(challengeId: number, ranked = false): Observable<DailyGridAttempt> {
+    return this.http.post<DailyGridAttempt>(`${this.baseUrl}/grid/daily/reveal`, { challengeId }, { params: { ranked }, headers: this.guestHeaders() });
   }
 
   getTeams(): Observable<Team[]> {
@@ -252,52 +252,52 @@ export class DataApiService {
     return this.http.post<TeamHistoryRound>(`${this.baseUrl}/team-history/start`, {});
   }
 
-  startDailyTeamHistory(): Observable<DailyTeamHistoryAttempt> {
-    return this.http.post<DailyTeamHistoryAttempt>(`${this.baseUrl}/team-history/daily/start`, {}, { headers: this.guestHeaders() });
+  startDailyTeamHistory(ranked = false): Observable<DailyTeamHistoryAttempt> {
+    return this.http.post<DailyTeamHistoryAttempt>(`${this.baseUrl}/team-history/daily/start`, {}, { params: { ranked }, headers: this.guestHeaders() });
   }
 
-  startDailyMissingClub(): Observable<DailyMissingClubAttempt> {
-    return this.http.post<DailyMissingClubAttempt>(`${this.baseUrl}/career-games/missing-club/daily/start`, {}, { headers: this.guestHeaders() });
+  startDailyMissingClub(ranked = false): Observable<DailyMissingClubAttempt> {
+    return this.http.post<DailyMissingClubAttempt>(`${this.baseUrl}/career-games/missing-club/daily/start`, {}, { params: { ranked }, headers: this.guestHeaders() });
   }
 
-  startDailyCareerOrder(): Observable<DailyCareerOrderAttempt> {
-    return this.http.post<DailyCareerOrderAttempt>(`${this.baseUrl}/career-games/career-order/daily/start`, {}, { headers: this.guestHeaders() });
+  startDailyCareerOrder(ranked = false): Observable<DailyCareerOrderAttempt> {
+    return this.http.post<DailyCareerOrderAttempt>(`${this.baseUrl}/career-games/career-order/daily/start`, {}, { params: { ranked }, headers: this.guestHeaders() });
   }
 
-  startDailyMysteryPlayer(): Observable<DailyMysteryPlayerAttempt> {
-    return this.http.post<DailyMysteryPlayerAttempt>(`${this.baseUrl}/career-games/mystery-player/daily/start`, {}, { headers: this.guestHeaders() });
+  startDailyMysteryPlayer(ranked = false): Observable<DailyMysteryPlayerAttempt> {
+    return this.http.post<DailyMysteryPlayerAttempt>(`${this.baseUrl}/career-games/mystery-player/daily/start`, {}, { params: { ranked }, headers: this.guestHeaders() });
   }
 
-  startDailyFivePlayer(): Observable<DailyFivePlayerAttempt> {
-    return this.http.post<DailyFivePlayerAttempt>(`${this.baseUrl}/five-player/daily/start`, {}, { headers: this.guestHeaders() });
+  startDailyFivePlayer(ranked = false): Observable<DailyFivePlayerAttempt> {
+    return this.http.post<DailyFivePlayerAttempt>(`${this.baseUrl}/five-player/daily/start`, {}, { params: { ranked }, headers: this.guestHeaders() });
   }
 
-  guessDailyFivePlayer(challengeId: number, roundNumber: number, commandId: string, playerId?: number, skip = false): Observable<DailyFivePlayerAttempt> {
-    return this.http.post<DailyFivePlayerAttempt>(`${this.baseUrl}/five-player/daily/guess`, { challengeId, roundNumber, commandId, playerId, skip }, { headers: this.guestHeaders() });
+  guessDailyFivePlayer(challengeId: number, roundNumber: number, commandId: string, playerId?: number, skip = false, ranked = false): Observable<DailyFivePlayerAttempt> {
+    return this.http.post<DailyFivePlayerAttempt>(`${this.baseUrl}/five-player/daily/guess`, { challengeId, roundNumber, commandId, playerId, skip }, { params: { ranked }, headers: this.guestHeaders() });
   }
 
-  nextDailyFivePlayer(challengeId: number, roundNumber: number, commandId: string): Observable<DailyFivePlayerAttempt> {
-    return this.http.post<DailyFivePlayerAttempt>(`${this.baseUrl}/five-player/daily/next`, { challengeId, roundNumber, commandId }, { headers: this.guestHeaders() });
+  nextDailyFivePlayer(challengeId: number, roundNumber: number, commandId: string, ranked = false): Observable<DailyFivePlayerAttempt> {
+    return this.http.post<DailyFivePlayerAttempt>(`${this.baseUrl}/five-player/daily/next`, { challengeId, roundNumber, commandId }, { params: { ranked }, headers: this.guestHeaders() });
   }
 
-  guessDailyMysteryPlayer(challengeId: number, commandId: string, playerId?: number, skip = false): Observable<DailyMysteryPlayerAttempt> {
-    return this.http.post<DailyMysteryPlayerAttempt>(`${this.baseUrl}/career-games/mystery-player/daily/guess`, { challengeId, commandId, playerId, skip }, { headers: this.guestHeaders() });
+  guessDailyMysteryPlayer(challengeId: number, commandId: string, playerId?: number, skip = false, ranked = false): Observable<DailyMysteryPlayerAttempt> {
+    return this.http.post<DailyMysteryPlayerAttempt>(`${this.baseUrl}/career-games/mystery-player/daily/guess`, { challengeId, commandId, playerId, skip }, { params: { ranked }, headers: this.guestHeaders() });
   }
 
-  saveDailyCareerOrder(challengeId: number, commandId: string, teamIds: number[]): Observable<DailyCareerOrderAttempt> {
-    return this.http.post<DailyCareerOrderAttempt>(`${this.baseUrl}/career-games/career-order/daily/draft`, { challengeId, commandId, teamIds }, { headers: this.guestHeaders() });
+  saveDailyCareerOrder(challengeId: number, commandId: string, teamIds: number[], ranked = false): Observable<DailyCareerOrderAttempt> {
+    return this.http.post<DailyCareerOrderAttempt>(`${this.baseUrl}/career-games/career-order/daily/draft`, { challengeId, commandId, teamIds }, { params: { ranked }, headers: this.guestHeaders() });
   }
 
-  submitDailyCareerOrder(challengeId: number, commandId: string, teamIds: number[]): Observable<DailyCareerOrderAttempt> {
-    return this.http.post<DailyCareerOrderAttempt>(`${this.baseUrl}/career-games/career-order/daily/submit`, { challengeId, commandId, teamIds }, { headers: this.guestHeaders() });
+  submitDailyCareerOrder(challengeId: number, commandId: string, teamIds: number[], ranked = false): Observable<DailyCareerOrderAttempt> {
+    return this.http.post<DailyCareerOrderAttempt>(`${this.baseUrl}/career-games/career-order/daily/submit`, { challengeId, commandId, teamIds }, { params: { ranked }, headers: this.guestHeaders() });
   }
 
-  guessDailyMissingClub(challengeId: number, commandId: string, teamId?: number, skip = false): Observable<DailyMissingClubAttempt> {
-    return this.http.post<DailyMissingClubAttempt>(`${this.baseUrl}/career-games/missing-club/daily/guess`, { challengeId, commandId, teamId, skip }, { headers: this.guestHeaders() });
+  guessDailyMissingClub(challengeId: number, commandId: string, teamId?: number, skip = false, ranked = false): Observable<DailyMissingClubAttempt> {
+    return this.http.post<DailyMissingClubAttempt>(`${this.baseUrl}/career-games/missing-club/daily/guess`, { challengeId, commandId, teamId, skip }, { params: { ranked }, headers: this.guestHeaders() });
   }
 
-  guessDailyTeamHistory(challengeId: number, commandId: string, playerId?: number, skip = false): Observable<DailyTeamHistoryAttempt> {
-    return this.http.post<DailyTeamHistoryAttempt>(`${this.baseUrl}/team-history/daily/guess`, { challengeId, commandId, playerId, skip }, { headers: this.guestHeaders() });
+  guessDailyTeamHistory(challengeId: number, commandId: string, playerId?: number, skip = false, ranked = false): Observable<DailyTeamHistoryAttempt> {
+    return this.http.post<DailyTeamHistoryAttempt>(`${this.baseUrl}/team-history/daily/guess`, { challengeId, commandId, playerId, skip }, { params: { ranked }, headers: this.guestHeaders() });
   }
 
   guessTeamHistory(roundId: string, playerId?: number, skip = false): Observable<TeamHistoryRound> {

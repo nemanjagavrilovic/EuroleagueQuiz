@@ -1,6 +1,6 @@
 import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostListener, Injector, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, Subscription, catchError, debounceTime, finalize, interval, map, of, switchMap } from 'rxjs';
 import { DailyFivePlayerAttempt, DataApiService, FivePlayerGameRound, Player } from './data-api.service';
 import { createGuestUuid } from './guest-identity';
@@ -21,6 +21,7 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   private readonly injector = inject(Injector);
   private readonly api = inject(DataApiService);
   private readonly detector = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
   private readonly searchTerms = new Subject<string>();
   private timer?: Subscription;
   private searchSubscription?: Subscription;
@@ -43,7 +44,12 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   secondsRemaining = 24;
   readonly answerSlots = [0, 1, 2, 3, 4];
   readonly revealedPlayerIds = new Set<number>();
+  private readonly practiceGuessedPlayerIds = new Set<number>();
+  private practiceRoundNumber = 0;
   private timeoutSubmitted = false;
+  readonly mode = this.route.snapshot.queryParamMap.get('mode') || 'daily';
+  readonly ranked = this.mode === 'ranked';
+  readonly practice = this.mode === 'practice';
 
   get roundGuesses(): number { return this.round?.players.filter(player => !this.revealedPlayerIds.has(player.id)).length ?? 0; }
   get timePercent(): number { return Math.min(100, Math.max(0, this.secondsRemaining / (this.round?.secondsPerRound || 24) * 100)); }
@@ -85,7 +91,14 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
     this.clearSearch();
     this.timer?.unsubscribe();
     const sentAt = performance.now();
-    this.api.startDailyFivePlayer().pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
+    if (this.practice) {
+      this.api.startFivePlayerGame().pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
+        next: round => this.applyPracticeRound(round),
+        error: () => this.errorMessage = 'The practice game could not be started.'
+      });
+      return;
+    }
+    this.api.startDailyFivePlayer(this.ranked).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
       next: attempt => this.applyAttempt(attempt, sentAt),
       error: () => this.errorMessage = 'The game could not be started. Import player and club data first.'
     });
@@ -137,25 +150,45 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   }
 
   submitGuess(skip = false): void {
-    if (!this.round || !this.dailyAttempt || this.round.completed || this.loading || this.restoring || (!skip && (!this.selectedPlayer || this.secondsRemaining <= 0))) return;
+    if (!this.round || (!this.practice && !this.dailyAttempt) || this.round.completed || this.loading || this.restoring || (!skip && (!this.selectedPlayer || this.secondsRemaining <= 0))) return;
     this.errorMessage = '';
     this.feedback = '';
     this.loading = true;
     const playerId = this.selectedPlayer?.id;
     this.clearSearch();
     const sentAt = performance.now();
-    this.api.guessDailyFivePlayer(this.dailyAttempt.challengeId, this.round.roundNumber, createGuestUuid(), playerId, skip).pipe(finalize(() => { this.loading = false; this.focusSearch(); this.detector.markForCheck(); })).subscribe({
+    if (this.practice) {
+      this.api.guessFivePlayer(this.round.roundId, playerId, skip).pipe(finalize(() => {
+        this.loading = false; this.focusSearch(); this.detector.markForCheck();
+      })).subscribe({
+        next: round => {
+          if (round.lastGuessCorrect && playerId) this.practiceGuessedPlayerIds.add(playerId);
+          this.applyPracticeRound(round);
+        },
+        error: () => this.errorMessage = 'The answer could not be checked.'
+      });
+      return;
+    }
+    const challengeId = this.dailyAttempt!.challengeId;
+    this.api.guessDailyFivePlayer(challengeId, this.round.roundNumber, createGuestUuid(), playerId, skip, this.ranked).pipe(finalize(() => { this.loading = false; this.focusSearch(); this.detector.markForCheck(); })).subscribe({
       next: attempt => this.applyAttempt(attempt, sentAt),
       error: () => { this.errorMessage = 'The answer could not be confirmed. Restoring saved progress…'; this.syncAttempt(); }
     });
   }
 
   nextRound(): void {
-    if (!this.round || !this.dailyAttempt || !this.round.completed || this.round.gameCompleted || this.loading || this.restoring) return;
+    if (!this.round || (!this.practice && !this.dailyAttempt) || !this.round.completed || this.round.gameCompleted || this.loading || this.restoring) return;
     this.loading = true;
     this.errorMessage = '';
     const sentAt = performance.now();
-    this.api.nextDailyFivePlayer(this.dailyAttempt.challengeId, this.round.roundNumber, createGuestUuid()).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
+    if (this.practice) {
+      this.api.nextFivePlayerRound(this.round.roundId).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
+        next: round => this.applyPracticeRound(round), error: () => this.errorMessage = 'The next practice round could not be loaded.'
+      });
+      return;
+    }
+    const challengeId = this.dailyAttempt!.challengeId;
+    this.api.nextDailyFivePlayer(challengeId, this.round.roundNumber, createGuestUuid(), this.ranked).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
       next: attempt => this.applyAttempt(attempt, sentAt),
       error: () => { this.errorMessage = 'The next round could not be confirmed. Restoring saved progress…'; this.syncAttempt(); }
     });
@@ -187,7 +220,7 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
           this.timeoutSubmitted = true;
           this.suggestions = [];
           // Synchronize the server deadline; a client clock must not surrender a round.
-          this.syncAttempt();
+          if (this.practice) this.submitGuess(true); else this.syncAttempt();
         }
         this.detector.markForCheck();
       });
@@ -197,14 +230,14 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   @HostListener('window:focus')
   @HostListener('document:visibilitychange')
   onResume(): void {
-    if (document.visibilityState === 'visible' && this.round && !this.round.gameCompleted && !this.loading && !this.restoring) this.syncAttempt();
+    if (!this.practice && document.visibilityState === 'visible' && this.round && !this.round.gameCompleted && !this.loading && !this.restoring) this.syncAttempt();
   }
 
   private syncAttempt(): void {
     if (this.destroyed || this.restoring) return;
     this.restoring = true;
     const sentAt = performance.now();
-    this.api.startDailyFivePlayer().pipe(finalize(() => {
+    this.api.startDailyFivePlayer(this.ranked).pipe(finalize(() => {
       this.restoring = false; this.focusSearch(); this.detector.markForCheck();
     })).subscribe({
       next: attempt => this.applyAttempt(attempt, sentAt),
@@ -213,6 +246,26 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
         this.nextSyncAt = performance.now() + 5000;
         this.errorMessage = 'Saved progress could not be loaded. Check your connection; the round clock continues on the server.';
       }
+    });
+  }
+
+  private applyPracticeRound(round: FivePlayerGameRound): void {
+    if (this.destroyed) return;
+    if (round.roundNumber !== this.practiceRoundNumber) {
+      this.practiceRoundNumber = round.roundNumber;
+      this.practiceGuessedPlayerIds.clear();
+    }
+    this.dailyAttempt = null; this.round = round; this.revealedPlayerIds.clear();
+    if (round.completed) {
+      round.players.filter(player => !this.practiceGuessedPlayerIds.has(player.id)).forEach(player => this.revealedPlayerIds.add(player.id));
+    }
+    this.secondsRemaining = round.completed ? 0 : round.secondsRemaining;
+    this.localDeadline = performance.now() + this.secondsRemaining * 1000;
+    this.feedback = ''; this.errorMessage = ''; this.clearSearch(); this.timer?.unsubscribe();
+    if (!round.completed) this.timer = interval(250).subscribe(() => {
+      this.secondsRemaining = Math.max(0, Math.ceil((this.localDeadline - performance.now()) / 1000));
+      if (this.secondsRemaining === 0 && !this.loading) this.submitGuess(true);
+      this.detector.markForCheck();
     });
   }
 

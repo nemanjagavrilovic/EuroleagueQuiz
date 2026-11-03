@@ -10,16 +10,16 @@ public sealed class DailyMissingClubService(IDailyGameRepository repository, ICa
 {
     public const string Game = "missing-club";
 
-    public Task<DailyMissingClubDto> StartAsync(Guid guestId, CancellationToken ct) => ExecuteAsync(guestId, null, ct);
-    public Task<DailyMissingClubDto> GuessAsync(Guid guestId, DailyMissingClubGuessRequest request, CancellationToken ct) => ExecuteAsync(guestId, request, ct);
+    public Task<DailyMissingClubDto> StartAsync(DailyAttemptIdentity identity, CancellationToken ct) => ExecuteAsync(identity, null, ct);
+    public Task<DailyMissingClubDto> GuessAsync(DailyAttemptIdentity identity, DailyMissingClubGuessRequest request, CancellationToken ct) => ExecuteAsync(identity, request, ct);
 
-    private Task<DailyMissingClubDto> ExecuteAsync(Guid guestId, DailyMissingClubGuessRequest? request, CancellationToken ct)
+    private Task<DailyMissingClubDto> ExecuteAsync(DailyAttemptIdentity identity, DailyMissingClubGuessRequest? request, CancellationToken ct)
     {
-        if (guestId == Guid.Empty) throw new ArgumentException("A guest identifier is required.");
+        if (identity.GuestId == Guid.Empty) throw new ArgumentException("A guest identifier is required.");
         var date = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
-        return repository.WithLockAsync($"daily-attempt:{Game}:{date:yyyy-MM-dd}:{guestId}", async () =>
+        return repository.WithLockAsync($"daily-attempt:{Game}:{date:yyyy-MM-dd}:{identity.AttemptId}", async () =>
         {
-            var attempt = await repository.FindAttemptAsync(Game, guestId, date, ct);
+            var attempt = await repository.FindOrClaimAsync(Game, identity, date, ct);
             if (attempt is null)
             {
                 if (request is not null) throw new ArgumentException("Start today's Missing Club challenge first.");
@@ -33,7 +33,8 @@ public sealed class DailyMissingClubService(IDailyGameRepository repository, ICa
                         throw new InvalidOperationException("Missing Club needs three distinct clues and four valid options.");
                     return JsonSerializer.Serialize(definition);
                 }, ct);
-                attempt = new() { Game = Game, GuestId = guestId, Date = date, Challenge = challenge, ChallengeId = challenge.Id, StateJson = JsonSerializer.Serialize(new AttemptState()) };
+                attempt = new() { Game = Game, Date = date, Challenge = challenge, ChallengeId = challenge.Id, StateJson = JsonSerializer.Serialize(new AttemptState()) };
+                identity.Initialize(attempt);
                 repository.Add(attempt);
             }
             var definition = JsonSerializer.Deserialize<MissingClubChallengeDto>(attempt.Challenge.DefinitionJson)!;
@@ -60,7 +61,7 @@ public sealed class DailyMissingClubService(IDailyGameRepository repository, ICa
             var round = new MissingClubRoundDto(attempt.Id, definition.Player, definition.KnownTeams, definition.Options,
                 state.Completed, state.Completed ? state.Correct : null, state.Completed ? definition.CorrectTeam : null);
             return new DailyMissingClubDto(attempt.ChallengeId, date, date.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc), round,
-                state.Score, false, state.SelectedTeamId, state.Feedback);
+                state.Score, attempt.LeaderboardEligible, state.SelectedTeamId, state.Feedback);
         }, ct);
     }
 

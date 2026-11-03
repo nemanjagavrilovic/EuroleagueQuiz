@@ -13,6 +13,8 @@ public sealed class DailyGameAttempt
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid GuestId { get; set; }
+    public Guid? UserId { get; set; }
+    public bool LeaderboardEligible { get; set; }
     public string Game { get; set; } = "";
     public DateOnly Date { get; set; }
     public long ChallengeId { get; set; }

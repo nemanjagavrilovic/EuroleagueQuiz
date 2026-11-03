@@ -1,0 +1,17 @@
+<main class="mode-shell">
+  <a class="back" routerLink="/">← All games</a>
+  <header><p class="eyebrow">{{ title }}</p><h1>Choose how to play</h1><p>Practice without limits or put today’s score on the line.</p></header>
+  <div class="mode-grid">
+    <a class="mode-card practice" [routerLink]="destination" [queryParams]="{ mode: 'practice' }">
+      <span class="mode-icon" aria-hidden="true">∞</span><span class="mode-label">TRAINING COURT</span><h2>Practice</h2>
+      <p>Play fresh random combinations as often as you want. Practice scores never enter the leaderboard.</p>
+      <strong>Start practice <span aria-hidden="true">→</span></strong>
+    </a>
+    <a class="mode-card ranked" [routerLink]="destination" [queryParams]="{ mode: 'ranked' }">
+      <span class="mode-icon" aria-hidden="true">★</span><span class="mode-label">DAILY COMPETITION</span><h2>Ranked</h2>
+      <p>One challenge per UTC day. Your saved score is eligible for the leaderboard.</p>
+      <strong>Play today’s challenge <span aria-hidden="true">→</span></strong>
+    </a>
+  </div>
+  <p class="mode-note">If you already viewed today’s challenge as a guest, it remains unranked until the next daily reset.</p>
+</main>

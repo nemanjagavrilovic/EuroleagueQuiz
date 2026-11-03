@@ -8,11 +8,11 @@ namespace EuroleagueQuiz.Application.Services;
 
 public sealed class DailyGridService(IDailyGridRepository repository, IGridService grids, IPlayerService players, TimeProvider clock) : IDailyGridService
 {
-    public Task<DailyGridAttemptDto> StartAsync(Guid guestId, GridDifficulty difficulty, CancellationToken ct) =>
-        ExecuteAsync(guestId, difficulty, null, ct);
+    public Task<DailyGridAttemptDto> StartAsync(DailyAttemptIdentity identity, GridDifficulty difficulty, CancellationToken ct) =>
+        ExecuteAsync(identity, difficulty, null, ct);
 
-    public Task<DailyGridAttemptDto> GuessAsync(Guid guestId, DailyGridGuessRequest request, CancellationToken ct) =>
-        ExecuteAsync(guestId, null, async (state, definition) =>
+    public Task<DailyGridAttemptDto> GuessAsync(DailyAttemptIdentity identity, DailyGridGuessRequest request, CancellationToken ct) =>
+        ExecuteAsync(identity, null, async (state, definition) =>
         {
             if (request.CommandId == Guid.Empty) throw new ArgumentException("A command ID is required.");
             if (state.Completed || state.Commands.Contains(request.CommandId)) return;
@@ -46,8 +46,8 @@ public sealed class DailyGridService(IDailyGridRepository repository, IGridServi
             }
         }, ct, request.ChallengeId);
 
-    public Task<DailyGridAttemptDto> PlaceAsync(Guid guestId, DailyGridPlaceRequest request, CancellationToken ct) =>
-        ExecuteAsync(guestId, null, (state, definition) =>
+    public Task<DailyGridAttemptDto> PlaceAsync(DailyAttemptIdentity identity, DailyGridPlaceRequest request, CancellationToken ct) =>
+        ExecuteAsync(identity, null, (state, definition) =>
         {
             if (state.Completed || state.PendingPlayer is null) return Task.CompletedTask;
             var cell = state.PendingCells.FirstOrDefault(x => x.Row == request.Row && x.Column == request.Column)
@@ -60,20 +60,20 @@ public sealed class DailyGridService(IDailyGridRepository repository, IGridServi
             return Task.CompletedTask;
         }, ct, request.ChallengeId);
 
-    public Task<DailyGridAttemptDto> RevealAsync(Guid guestId, DailyGridRevealRequest request, CancellationToken ct) =>
-        ExecuteAsync(guestId, null, (state, definition) =>
+    public Task<DailyGridAttemptDto> RevealAsync(DailyAttemptIdentity identity, DailyGridRevealRequest request, CancellationToken ct) =>
+        ExecuteAsync(identity, null, (state, definition) =>
         {
             if (!state.Completed) { state.Revealed = true; Complete(state, definition); state.Feedback = "Grid revealed. Your earned points are kept."; }
             return Task.CompletedTask;
         }, ct, request.ChallengeId);
 
-    private async Task<DailyGridAttemptDto> ExecuteAsync(Guid guestId, GridDifficulty? difficulty, Func<AttemptState, Definition, Task>? action, CancellationToken ct, long? challengeId = null)
+    private async Task<DailyGridAttemptDto> ExecuteAsync(DailyAttemptIdentity identity, GridDifficulty? difficulty, Func<AttemptState, Definition, Task>? action, CancellationToken ct, long? challengeId = null)
     {
-        if (guestId == Guid.Empty) throw new ArgumentException("A guest identifier is required.");
+        if (identity.GuestId == Guid.Empty) throw new ArgumentException("A guest identifier is required.");
         var date = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
-        return await repository.WithLockAsync($"grid-attempt:{date:yyyy-MM-dd}:{guestId}", async () =>
+        return await repository.WithLockAsync($"grid-attempt:{date:yyyy-MM-dd}:{identity.AttemptId}", async () =>
         {
-            var attempt = await repository.FindAttemptAsync(guestId, date, ct);
+            var attempt = await repository.FindOrClaimAsync(identity, date, ct);
             if (attempt is null)
             {
                 if (difficulty is null) throw new ArgumentException("Start today's grid first.");
@@ -88,7 +88,8 @@ public sealed class DailyGridService(IDailyGridRepository repository, IGridServi
                     if (candidates.Any(x => x.Count == 0)) throw new InvalidOperationException("The daily grid has an empty intersection.");
                     return JsonSerializer.Serialize(new Definition(grid, candidates));
                 }, ct);
-                attempt = new DailyGridAttempt { GuestId = guestId, Date = date, Challenge = challenge, ChallengeId = challenge.Id, StateJson = JsonSerializer.Serialize(new AttemptState()) };
+                attempt = new DailyGridAttempt { Date = date, Challenge = challenge, ChallengeId = challenge.Id, StateJson = JsonSerializer.Serialize(new AttemptState()) };
+                identity.Initialize(attempt);
                 repository.Add(attempt);
             }
             if (challengeId is not null && challengeId != attempt.ChallengeId) throw new ArgumentException("This challenge has changed. Refresh to load today's grid.");
@@ -107,7 +108,7 @@ public sealed class DailyGridService(IDailyGridRepository repository, IGridServi
             await repository.SaveAsync(ct);
             var correct = state.Answers.Count(x => !x.Revealed);
             return new DailyGridAttemptDto(attempt.ChallengeId, date, date.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc), definition.Grid,
-                correct * 10 + (correct == 9 ? 10 : 0), state.GuessesUsed, state.Completed, state.Revealed, false,
+                correct * 10 + (correct == 9 ? 10 : 0), state.GuessesUsed, state.Completed, state.Revealed, attempt.LeaderboardEligible,
                 state.Answers, state.PendingPlayer, state.PendingCells, state.UsedPlayerIds.ToList(), state.Feedback);
         }, ct);
     }

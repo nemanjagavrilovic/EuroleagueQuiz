@@ -11,17 +11,17 @@ public sealed class DailyFivePlayerService(IDailyGameRepository repository, IFiv
     public const string Game = "five-player";
     private const int TotalRounds = 5;
     private const int SecondsPerRound = 24;
-    public Task<DailyFivePlayerDto> StartAsync(Guid guestId, CancellationToken ct) => ExecuteAsync(guestId, null, false, ct);
-    public Task<DailyFivePlayerDto> GuessAsync(Guid guestId, DailyFivePlayerRequest request, CancellationToken ct) => ExecuteAsync(guestId, request, false, ct);
-    public Task<DailyFivePlayerDto> NextAsync(Guid guestId, DailyFivePlayerRequest request, CancellationToken ct) => ExecuteAsync(guestId, request, true, ct);
+    public Task<DailyFivePlayerDto> StartAsync(DailyAttemptIdentity identity, CancellationToken ct) => ExecuteAsync(identity, null, false, ct);
+    public Task<DailyFivePlayerDto> GuessAsync(DailyAttemptIdentity identity, DailyFivePlayerRequest request, CancellationToken ct) => ExecuteAsync(identity, request, false, ct);
+    public Task<DailyFivePlayerDto> NextAsync(DailyAttemptIdentity identity, DailyFivePlayerRequest request, CancellationToken ct) => ExecuteAsync(identity, request, true, ct);
 
-    private Task<DailyFivePlayerDto> ExecuteAsync(Guid guestId, DailyFivePlayerRequest? request, bool next, CancellationToken ct)
+    private Task<DailyFivePlayerDto> ExecuteAsync(DailyAttemptIdentity identity, DailyFivePlayerRequest? request, bool next, CancellationToken ct)
     {
-        if (guestId == Guid.Empty) throw new ArgumentException("A guest identifier is required.");
+        if (identity.GuestId == Guid.Empty) throw new ArgumentException("A guest identifier is required.");
         var date = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
-        return repository.WithLockAsync($"daily-attempt:{Game}:{date:yyyy-MM-dd}:{guestId}", async () =>
+        return repository.WithLockAsync($"daily-attempt:{Game}:{date:yyyy-MM-dd}:{identity.AttemptId}", async () =>
         {
-            var attempt = await repository.FindAttemptAsync(Game, guestId, date, ct);
+            var attempt = await repository.FindOrClaimAsync(Game, identity, date, ct);
             if (attempt is null)
             {
                 if (request is not null) throw new ArgumentException("Start today's Starting Five challenge first.");
@@ -33,8 +33,9 @@ public sealed class DailyFivePlayerService(IDailyGameRepository repository, IFiv
                         throw new InvalidOperationException("Starting Five needs five distinct clubs with at least five historical players each.");
                     return JsonSerializer.Serialize(definition);
                 }, ct);
-                attempt = new() { Game = Game, GuestId = guestId, Date = date, ChallengeId = challenge.Id, Challenge = challenge,
+                attempt = new() { Game = Game, Date = date, ChallengeId = challenge.Id, Challenge = challenge,
                     StateJson = JsonSerializer.Serialize(new AttemptState { Rounds = [NewRound()] }) };
+                identity.Initialize(attempt);
                 repository.Add(attempt);
             }
             var definition = JsonSerializer.Deserialize<FivePlayerChallengeDto>(attempt.Challenge.DefinitionJson)!;
@@ -103,7 +104,7 @@ public sealed class DailyFivePlayerService(IDailyGameRepository repository, IFiv
                 round.GuessedPlayerIds.Concat(round.RevealedPlayerIds).Select(id => playersById[id]).ToList(), round.Completed,
                 round.Completed ? round.GuessedPlayerIds.Count == 5 : null, round.Completed && state.Rounds.Count == TotalRounds, correctGuesses, round.LastGuessCorrect);
             return new DailyFivePlayerDto(attempt.ChallengeId, date, date.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc), dto,
-                correctGuesses * 4, correctGuesses, false, now, round.Completed ? null : round.DeadlineUtc, round.RevealedPlayerIds, state.Feedback);
+                correctGuesses * 4, correctGuesses, attempt.LeaderboardEligible, now, round.Completed ? null : round.DeadlineUtc, round.RevealedPlayerIds, state.Feedback);
         }, ct);
     }
 
