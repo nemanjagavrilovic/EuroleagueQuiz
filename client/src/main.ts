@@ -17,6 +17,7 @@ import { AuthService } from './app/auth.service';
 import { authInterceptor } from './app/auth.interceptor';
 import { GameModeComponent } from './app/game-mode.component';
 import { LeaderboardComponent } from './app/leaderboard.component';
+import { NotFoundComponent } from './app/not-found.component';
 
 const signedInGuard: CanActivateFn = (_route, state) => inject(AuthService).user()
   ? true
@@ -42,7 +43,7 @@ const routes: Routes = [
   { path: 'game/five-player', component: FivePlayerGameComponent },
   { path: 'game/history', component: TeamHistoryComponent },
   { path: 'game/:game', component: CareerGamesComponent },
-  { path: '**', redirectTo: '' }
+  { path: '**', component: NotFoundComponent }
 ];
 
 bootstrapApplication(AppComponent, {
