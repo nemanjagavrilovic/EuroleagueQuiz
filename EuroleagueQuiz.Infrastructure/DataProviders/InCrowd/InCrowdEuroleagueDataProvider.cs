@@ -67,7 +67,9 @@ public sealed class InCrowdEuroleagueDataProvider : IBasketballDataProvider
     private static IEnumerable<JsonElement> ReadItems(JsonElement root)
     {
         if (root.ValueKind == JsonValueKind.Array) return root.EnumerateArray();
-        return root.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array
+        return root.ValueKind == JsonValueKind.Object
+            && root.TryGetProperty("data", out var data)
+            && data.ValueKind == JsonValueKind.Array
             ? data.EnumerateArray() : Enumerable.Empty<JsonElement>();
     }
 
@@ -79,14 +81,25 @@ public sealed class InCrowdEuroleagueDataProvider : IBasketballDataProvider
 
     private static ProviderPlayer ToPlayer(JsonElement element)
     {
-        var person = element.TryGetProperty("person", out var nested) ? nested : element;
+        var person = element;
+        if (element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty("person", out var nested)
+            && nested.ValueKind == JsonValueKind.Object)
+        {
+            person = nested;
+        }
+
         var firstName = ReadString(person, "firstName", "FirstName", "passportName", "PassportName");
         var lastName = ReadString(person, "lastName", "LastName", "passportSurname", "PassportSurname");
         var displayName = ReadString(person, "displayName", "DisplayName", "name", "Name") ?? $"{firstName} {lastName}".Trim();
         var personCode = ReadString(person, "code", "Code", "id", "Id");
         var providerExternalId = ReadString(element, "externalId", "ExternalId");
         var externalId = personCode ?? providerExternalId ?? string.Empty;
-        var country = person.TryGetProperty("country", out var countryElement) ? countryElement : default;
+        var country = person.ValueKind == JsonValueKind.Object
+            && person.TryGetProperty("country", out var countryElement)
+            && countryElement.ValueKind == JsonValueKind.Object
+                ? countryElement
+                : default;
         return new ProviderPlayer(
             externalId,
             displayName,
@@ -107,6 +120,8 @@ public sealed class InCrowdEuroleagueDataProvider : IBasketballDataProvider
 
     private static string? ReadString(JsonElement element, params string[] names)
     {
+        if (element.ValueKind != JsonValueKind.Object) return null;
+
         foreach (var name in names)
         {
             if (!element.TryGetProperty(name, out var value)) continue;
@@ -117,10 +132,16 @@ public sealed class InCrowdEuroleagueDataProvider : IBasketballDataProvider
     }
 
     private static string? ReadNestedString(JsonElement element, string property, params string[] names) =>
-        element.TryGetProperty(property, out var nested) && nested.ValueKind == JsonValueKind.Object ? ReadString(nested, names) : null;
+        element.ValueKind == JsonValueKind.Object
+        && element.TryGetProperty(property, out var nested)
+        && nested.ValueKind == JsonValueKind.Object
+            ? ReadString(nested, names)
+            : null;
 
     private static bool ReadBoolean(JsonElement element, params string[] names)
     {
+        if (element.ValueKind != JsonValueKind.Object) return false;
+
         foreach (var name in names)
         {
             if (!element.TryGetProperty(name, out var value)) continue;
@@ -132,6 +153,8 @@ public sealed class InCrowdEuroleagueDataProvider : IBasketballDataProvider
 
     private static int? ReadInt32(JsonElement element, params string[] names)
     {
+        if (element.ValueKind != JsonValueKind.Object) return null;
+
         foreach (var name in names)
         {
             if (!element.TryGetProperty(name, out var value)) continue;
