@@ -9,6 +9,8 @@ h1 { font-size: clamp(34px, 4.2vw, 60px); font-weight: 800; letter-spacing: -.04
 h1 br { display: none; }
 h1 span { display: inline-block; margin-left: .15em; color: #ff8a32; }
 .intro { color: #b2c1d0; font-size: 16px; line-height: 1.6; margin: 0; }
+.data-coverage { display: flex; align-items: center; gap: 8px; width: fit-content; margin: 14px 0 0; color: #cbd5df; font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+.data-coverage span { width: 7px; height: 7px; border-radius: 50%; background: #ff8a32; box-shadow: 0 0 0 4px #ff8a321c; }
 .section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 20px; }
 .section-heading h2 { font-size: 26px; letter-spacing: -.03em; margin: 0; }
 .section-heading > span { color: #8fa3b6; font-size: 12px; }
@@ -38,7 +40,7 @@ h1 span { display: inline-block; margin-left: .15em; color: #ff8a32; }
 .how-to-play li strong { display: block; color: #f2f6fa; margin-bottom: 6px; }
 .how-to-play li > span { color: #b2c1d0; line-height: 1.7; }
 @media (max-width: 1050px) { .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } h1 br { display: block; } h1 span { margin-left: 0; } .hero-copy { max-width: 70%; } }
-@media (max-width: 600px) { .home-shell { padding: 0 16px 24px; } .hero { margin: 0 -16px 20px; padding: 30px 16px; min-height: 260px; } .hero-copy { max-width: 90%; } .hero-image { opacity: .55; object-position: 68% 20%; } .hero::after { background: linear-gradient(90deg, #07131fee, #07131f66), linear-gradient(0deg, #07131f, transparent 30%); } .intro { font-size: 14px; max-width: 270px; } .section-heading h2 { font-size: 23px; } .section-heading > span { display: none; } .games-grid { gap: 12px; } .game-copy { padding: 10px 12px 14px; } .game-copy h3 { font-size: 16px; } .game-copy > p { font-size: 12px; min-height: 58px; } .game-visual { padding: 2px 4px 0; } .how-to-play ol { grid-template-columns: 1fr; gap: 20px; } .level-links a { min-height: 40px; font-size: 11px; } }
+@media (max-width: 600px) { .home-shell { padding: 0 16px 24px; } .hero { margin: 0 -16px 20px; padding: 30px 16px; min-height: 260px; } .hero-copy { max-width: 90%; } .hero-image { opacity: .55; object-position: 68% 20%; } .hero::after { background: linear-gradient(90deg, #07131fee, #07131f66), linear-gradient(0deg, #07131f, transparent 30%); } .intro { font-size: 14px; max-width: 270px; } .data-coverage { font-size: 11px; } .section-heading h2 { font-size: 23px; } .section-heading > span { display: none; } .games-grid { gap: 12px; } .game-copy { padding: 10px 12px 14px; } .game-copy h3 { font-size: 16px; } .game-copy > p { font-size: 12px; min-height: 58px; } .game-visual { padding: 2px 4px 0; } .how-to-play ol { grid-template-columns: 1fr; gap: 20px; } .level-links a { min-height: 40px; font-size: 11px; } }
 @media (max-width: 360px) { .games-grid { grid-template-columns: 1fr; } .game-copy > p { min-height: 0; } }
 @media (prefers-reduced-motion: reduce) { .game-card { transition: none; } .game-card:hover, .game-card:focus-within { transform: none; } }
 

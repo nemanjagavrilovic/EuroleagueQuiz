@@ -32,6 +32,7 @@ nav a.active { box-shadow: 0 2px #f97316; }
 .footer-brand span { display: none; }
 .footer-inner p { font-size: 13px; margin: 8px 0 0; }
 .footer-bottom { padding-top: 16px; padding-bottom: 20px; border-top: 1px solid #273244; font-size: 11px; line-height: 1.6; }
+.footer-notes { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
 .skip-link { position: fixed; top: -100px; left: 12px; z-index: 2000; padding: 12px; background: white; color: #111827; border-radius: 8px; }
 .skip-link:focus { top: 10px; }
 @media (max-width: 600px) {
@@ -48,4 +49,5 @@ nav a.active { box-shadow: 0 2px #f97316; }
   nav { gap: 16px; flex-wrap: wrap; }
   nav a { font-size: 12px; }
   .footer-inner, .footer-bottom { align-items: flex-start; flex-direction: column; }
+  .footer-notes { align-items: flex-start; text-align: left; }
 }
