@@ -56,31 +56,22 @@ public sealed class CareerGamesService : ICareerGamesService
 
     public async Task<CareerOrderRoundDto> StartCareerOrderAsync(CancellationToken cancellationToken)
     {
-        var candidates = (await GetCatalogAsync(cancellationToken)).Where(x => x.Teams.Count >= 4).ToList();
-        EnsureCandidates(candidates);
-        var career = candidates[Random.Shared.Next(candidates.Count)];
-        var selected = career.Teams.OrderBy(_ => Random.Shared.Next()).Take(4).ToList();
-        var correct = selected.OrderBy(x => x.StartYear).ThenBy(x => x.EndYear).ToList();
-        var state = new CareerOrderState(Guid.NewGuid(), career.Player, selected, correct);
+        var challenge = await CreateCareerOrderChallengeAsync(cancellationToken);
+        var state = new CareerOrderState(Guid.NewGuid(), challenge.Player, challenge.Clubs, challenge.CorrectOrder);
         OrderRounds[state.Id] = state;
         return ToDto(state);
     }
 
     public async Task<CareerOrderChallengeDto> CreateCareerOrderChallengeAsync(CancellationToken cancellationToken)
     {
-        // Season-level data cannot distinguish two first appearances in the same
-        // season. Use different first seasons so scored pairs have a clear order.
         var candidates = (await GetCatalogAsync(cancellationToken))
-            .Where(x => x.Teams.Select(t => t.StartYear).Distinct().Count() >= 4).ToList();
+            .Where(x => x.OrderWindows.Count > 0).ToList();
         EnsureCandidates(candidates);
         var career = candidates[Random.Shared.Next(candidates.Count)];
-        var selected = career.Teams.GroupBy(x => x.StartYear)
-            .Select(group => group.OrderBy(_ => Random.Shared.Next()).First())
-            .OrderBy(_ => Random.Shared.Next()).Take(4).ToList();
-        var correct = selected.OrderBy(x => x.StartYear).ToList();
-        if (selected.Select(x => x.Team.Id).SequenceEqual(correct.Select(x => x.Team.Id))) selected.Reverse();
-        static CareerOrderClubDto Club(TeamCareer team) => new(team.Team.Id, team.Team.Name, team.Team.ImageUrl);
-        return new(career.Player, selected.Select(Club).ToList(), correct.Select(Club).ToList());
+        var correct = career.OrderWindows[Random.Shared.Next(career.OrderWindows.Count)];
+        var selected = correct.OrderBy(_ => Random.Shared.Next()).ToList();
+        if (selected.Select(x => x.Id).SequenceEqual(correct.Select(x => x.Id))) selected.Reverse();
+        return new(career.Player, selected, correct, CareerOrderRules.CurrentVersion);
     }
 
     public Task<CareerOrderRoundDto> GuessCareerOrderAsync(CareerOrderGuessRequest request, CancellationToken cancellationToken)
@@ -88,8 +79,11 @@ public sealed class CareerGamesService : ICareerGamesService
         if (!OrderRounds.TryGetValue(request.RoundId, out var state)) throw new KeyNotFoundException("The round was not found.");
         if (!state.Completed)
         {
+            if (request.TeamIds.Count != 4 || request.TeamIds.Distinct().Count() != 4 ||
+                !request.TeamIds.ToHashSet().SetEquals(state.Clubs.Select(x => x.Id)))
+                throw new ArgumentException("Submit each of the four offered clubs exactly once.");
             state.Completed = true;
-            state.Correct = request.TeamIds.SequenceEqual(state.CorrectOrder.Select(x => x.Team.Id));
+            state.Correct = request.TeamIds.SequenceEqual(state.CorrectOrder.Select(x => x.Id));
         }
         return Task.FromResult(ToDto(state));
     }
@@ -156,7 +150,8 @@ public sealed class CareerGamesService : ICareerGamesService
                 group.GroupBy(x => x.TeamId).Select(team => new TeamCareer(
                     TeamDto.FromEntity(team.First().Team),
                     team.Min(x => x.Season.StartYear),
-                    team.Max(x => x.Season.EndYear))).ToList())).ToList();
+                    team.Max(x => x.Season.EndYear))).ToList(),
+                CareerOrderRules.FindConsecutiveClubWindows(group))).ToList();
             return Catalog;
         }
         finally { CatalogLock.Release(); }
@@ -168,18 +163,19 @@ public sealed class CareerGamesService : ICareerGamesService
     }
 
     private static MissingClubRoundDto ToDto(MissingClubState x) => new(x.Id, x.Player, x.KnownTeams, x.Options, x.Completed, x.Correct, x.Completed ? x.CorrectTeam : null);
-    private static CareerOrderRoundDto ToDto(CareerOrderState x) => new(x.Id, x.Player, x.Clubs.Select(y => new CareerOrderClubDto(y.Team.Id, y.Team.Name, y.Team.ImageUrl)).ToList(), x.Completed, x.Correct, x.Completed ? x.CorrectOrder.Select(y => new CareerOrderClubDto(y.Team.Id, y.Team.Name, y.Team.ImageUrl)).ToList() : null);
+    private static CareerOrderRoundDto ToDto(CareerOrderState x) => new(x.Id, x.Player, x.Clubs, x.Completed, x.Correct, x.Completed ? x.CorrectOrder : null);
     private static MysteryPlayerRoundDto ToDto(MysteryState x) => new(x.Id, x.Clues.Take(x.RevealedClueCount).ToList(), x.RevealedClueCount, x.Clues.Count, x.Completed, x.Correct, x.Completed ? x.Player : null);
 
-    private sealed record PlayerCareer(PlayerDto Player, IReadOnlyList<TeamCareer> Teams);
+    private sealed record PlayerCareer(PlayerDto Player, IReadOnlyList<TeamCareer> Teams,
+        IReadOnlyList<IReadOnlyList<CareerOrderClubDto>> OrderWindows);
     private sealed record TeamCareer(TeamDto Team, int StartYear, int EndYear);
     private sealed class MissingClubState(Guid id, PlayerDto player, IReadOnlyList<TeamDto> knownTeams, IReadOnlyList<TeamDto> options, TeamDto correctTeam)
     {
         public Guid Id { get; } = id; public PlayerDto Player { get; } = player; public IReadOnlyList<TeamDto> KnownTeams { get; } = knownTeams; public IReadOnlyList<TeamDto> Options { get; } = options; public TeamDto CorrectTeam { get; } = correctTeam; public bool Completed { get; set; } public bool? Correct { get; set; }
     }
-    private sealed class CareerOrderState(Guid id, PlayerDto player, IReadOnlyList<TeamCareer> clubs, IReadOnlyList<TeamCareer> correctOrder)
+    private sealed class CareerOrderState(Guid id, PlayerDto player, IReadOnlyList<CareerOrderClubDto> clubs, IReadOnlyList<CareerOrderClubDto> correctOrder)
     {
-        public Guid Id { get; } = id; public PlayerDto Player { get; } = player; public IReadOnlyList<TeamCareer> Clubs { get; } = clubs; public IReadOnlyList<TeamCareer> CorrectOrder { get; } = correctOrder; public bool Completed { get; set; } public bool? Correct { get; set; }
+        public Guid Id { get; } = id; public PlayerDto Player { get; } = player; public IReadOnlyList<CareerOrderClubDto> Clubs { get; } = clubs; public IReadOnlyList<CareerOrderClubDto> CorrectOrder { get; } = correctOrder; public bool Completed { get; set; } public bool? Correct { get; set; }
     }
     private sealed class MysteryState(Guid id, PlayerDto player, IReadOnlyList<string> clues)
     {

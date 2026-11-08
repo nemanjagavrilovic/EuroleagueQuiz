@@ -15,6 +15,9 @@ public sealed class DailyGameAttempt
     public Guid GuestId { get; set; }
     public Guid? UserId { get; set; }
     public bool LeaderboardEligible { get; set; }
+    public int Score { get; set; }
+    public bool Completed { get; set; }
+    public DateTime? CompletedAtUtc { get; set; }
     public string Game { get; set; } = "";
     public DateOnly Date { get; set; }
     public long ChallengeId { get; set; }

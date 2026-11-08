@@ -68,8 +68,12 @@ public sealed class DailyMysteryPlayerService(IDailyGameRepository repository, I
                     }
                 }
             }
+            var now = clock.GetUtcNow().UtcDateTime;
             attempt.StateJson = JsonSerializer.Serialize(state);
-            attempt.UpdatedAtUtc = clock.GetUtcNow().UtcDateTime;
+            attempt.Score = state.Score;
+            attempt.Completed = state.Completed;
+            if (state.Completed && attempt.CompletedAtUtc is null) attempt.CompletedAtUtc = now;
+            attempt.UpdatedAtUtc = now;
             await repository.SaveAsync(ct);
             var round = new MysteryPlayerRoundDto(attempt.Id, definition.Clues.Take(state.RevealedCount).ToList(), state.RevealedCount, 5,
                 state.Completed, state.Correct, state.Completed ? definition.Player : null);

@@ -1,0 +1,42 @@
+<main class="profile-shell">
+  <a routerLink="/" class="back">← All games</a>
+  <section class="profile-card" *ngIf="auth.user() as user; else signedOut">
+    <p class="eyebrow">MY PROFILE</p>
+    <header class="profile-heading">
+      <div class="avatar" aria-hidden="true">{{ user.displayName.charAt(0).toUpperCase() }}</div>
+      <div class="profile-identity"><h1>{{ user.displayName }}</h1><span class="plan">{{ user.subscriptionPlan }} plan</span></div>
+    </header>
+
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <h2>Personal details</h2>
+      <p class="section-note">Your name appears on your profile and the leaderboard.</p>
+      <div class="name-fields">
+        <label for="profile-first-name">First name
+          <input id="profile-first-name" formControlName="firstName" autocomplete="given-name" maxlength="50" [attr.aria-invalid]="form.controls.firstName.touched && form.controls.firstName.invalid" aria-describedby="first-name-error">
+          <small id="first-name-error" class="field-error" *ngIf="form.controls.firstName.touched && form.controls.firstName.invalid">Enter your first name (up to 50 characters).</small>
+        </label>
+        <label for="profile-last-name">Last name
+          <input id="profile-last-name" formControlName="lastName" autocomplete="family-name" maxlength="50" [attr.aria-invalid]="form.controls.lastName.touched && form.controls.lastName.invalid" aria-describedby="last-name-error">
+          <small id="last-name-error" class="field-error" *ngIf="form.controls.lastName.touched && form.controls.lastName.invalid">Enter your last name (up to 50 characters).</small>
+        </label>
+      </div>
+      <label class="email-label" for="profile-email">Email address <span>Read only</span>
+        <input id="profile-email" type="email" [value]="user.email" readonly autocomplete="email" aria-describedby="email-note">
+      </label>
+      <p id="email-note" class="section-note">Your email address cannot be changed.</p>
+      <p class="status success" *ngIf="profileMessage()" role="status">{{ profileMessage() }}</p>
+      <p class="status error" *ngIf="profileError()" role="alert">{{ profileError() }}</p>
+      <button class="primary" type="submit" [disabled]="saving() || sendingReset()">{{ saving() ? 'Saving…' : 'Save changes' }}</button>
+    </form>
+
+    <section class="password-section" aria-labelledby="password-heading">
+      <h2 id="password-heading">Password</h2>
+        <p class="section-note">{{ user.hasPassword ? "We'll send a secure reset link to your account email so you can choose a new password." : "You sign in with Google. We'll email a link to create a portal password so you can use either sign-in option." }}</p>
+        <p class="status success" *ngIf="passwordMessage()" role="status">{{ passwordMessage() }}</p>
+        <p class="status error" *ngIf="passwordError()" role="alert">{{ passwordError() }}</p>
+        <button type="button" (click)="sendPasswordReset()" [disabled]="sendingReset() || saving()">{{ sendingReset() ? 'Sending…' : user.hasPassword ? 'Send password reset link' : 'Create a portal password' }}</button>
+    </section>
+    <div class="sign-out"><button type="button" (click)="auth.logout()" [disabled]="saving() || sendingReset()">Sign out</button></div>
+  </section>
+  <ng-template #signedOut><section class="profile-card signed-out"><h1>Sign in to view your profile</h1><a class="primary" routerLink="/login">Sign in</a></section></ng-template>
+</main>

@@ -4,6 +4,7 @@ public interface IAccountEmailSender
 {
     Task SendConfirmationAsync(string email, string displayName, string confirmationUrl, CancellationToken cancellationToken);
     Task SendPasswordResetAsync(string email, string displayName, string resetUrl, CancellationToken cancellationToken);
+    Task SendPasswordSetupAsync(string email, string displayName, string setupUrl, CancellationToken cancellationToken);
 }
 
 public sealed class AccountEmailDeliveryException : Exception

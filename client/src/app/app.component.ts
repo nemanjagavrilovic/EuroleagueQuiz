@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, ViewChild, inject } from '@angular/core';
 import { SeoService } from './seo.service';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { NgIf } from '@angular/common';
@@ -13,7 +13,25 @@ import { AuthService } from './auth.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppComponent {
+  @ViewChild('accountMenu') private accountMenu?: ElementRef<HTMLElement>;
   private readonly seo = inject(SeoService);
   readonly year = new Date().getFullYear();
   readonly auth = inject(AuthService);
+  profileMenuOpen = false;
+
+  toggleProfileMenu(): void { this.profileMenuOpen = !this.profileMenuOpen; }
+  closeProfileMenu(): void { this.profileMenuOpen = false; }
+
+  logout(): void {
+    this.closeProfileMenu();
+    this.auth.logout();
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeProfileMenuFromOutside(event: MouseEvent): void {
+    if (this.profileMenuOpen && !this.accountMenu?.nativeElement.contains(event.target as Node)) this.closeProfileMenu();
+  }
+
+  @HostListener('document:keydown.escape')
+  closeProfileMenuFromKeyboard(): void { this.closeProfileMenu(); }
 }

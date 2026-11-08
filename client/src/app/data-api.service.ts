@@ -134,8 +134,9 @@ export interface DailyCareerOrderAttempt {
   resetsAtUtc: string;
   round: CareerOrderRound;
   score: number;
-  correctPairs: number | null;
-  totalPairs: number;
+  correctTransfers: number | null;
+  totalTransfers: number;
+  scoringVersion: number;
   leaderboardEligible: boolean;
 }
 
@@ -188,6 +189,30 @@ export interface DailyFivePlayerAttempt {
   deadlineUtc: string | null;
   revealedPlayerIds: number[];
   feedback: string | null;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  displayName: string;
+  score: number;
+  gamesPlayed: number;
+  completedGames: number;
+  perfectGames: number;
+  isCurrentUser: boolean;
+}
+
+export interface LeaderboardResponse {
+  period: string;
+  game: string;
+  fromDate: string | null;
+  toDate: string;
+  maximumScore: number | null;
+  entries: LeaderboardEntry[];
+  currentUser: LeaderboardEntry | null;
+  page: number;
+  pageSize: number;
+  totalEntries: number;
+  totalPages: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -317,4 +342,9 @@ export class DataApiService {
   startFivePlayerGame(): Observable<FivePlayerGameRound> { return this.http.post<FivePlayerGameRound>(`${this.baseUrl}/five-player/start`, {}); }
   guessFivePlayer(roundId: string, playerId?: number, skip = false): Observable<FivePlayerGameRound> { return this.http.post<FivePlayerGameRound>(`${this.baseUrl}/five-player/guess`, { roundId, playerId, skip }); }
   nextFivePlayerRound(roundId: string): Observable<FivePlayerGameRound> { return this.http.post<FivePlayerGameRound>(`${this.baseUrl}/five-player/next`, {}, { params: { roundId } }); }
+  getLeaderboard(period = 'today', game = 'all', page = 1, pageSize = 20): Observable<LeaderboardResponse> {
+    return this.http.get<LeaderboardResponse>(`${this.baseUrl}/leaderboard`, {
+      params: { period, game, page, pageSize }
+    });
+  }
 }

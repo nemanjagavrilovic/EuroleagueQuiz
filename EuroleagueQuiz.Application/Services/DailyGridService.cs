@@ -103,12 +103,18 @@ public sealed class DailyGridService(IDailyGridRepository repository, IGridServi
                 state.Feedback = "Keep going — you have unlimited guesses.";
             }
             if (action is not null) await action(state, definition);
-            attempt.StateJson = JsonSerializer.Serialize(state);
-            attempt.UpdatedAtUtc = clock.GetUtcNow().UtcDateTime;
-            await repository.SaveAsync(ct);
             var correct = state.Answers.Count(x => !x.Revealed);
+            var score = correct * 10 + (correct == 9 ? 10 : 0);
+            var now = clock.GetUtcNow().UtcDateTime;
+            attempt.StateJson = JsonSerializer.Serialize(state);
+            attempt.Score = score;
+            attempt.Completed = state.Completed;
+            if (state.Completed && attempt.CompletedAtUtc is null) attempt.CompletedAtUtc = now;
+            if (!state.Completed) attempt.CompletedAtUtc = null;
+            attempt.UpdatedAtUtc = now;
+            await repository.SaveAsync(ct);
             return new DailyGridAttemptDto(attempt.ChallengeId, date, date.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc), definition.Grid,
-                correct * 10 + (correct == 9 ? 10 : 0), state.GuessesUsed, state.Completed, state.Revealed, attempt.LeaderboardEligible,
+                score, state.GuessesUsed, state.Completed, state.Revealed, attempt.LeaderboardEligible,
                 state.Answers, state.PendingPlayer, state.PendingCells, state.UsedPlayerIds.ToList(), state.Feedback);
         }, ct);
     }

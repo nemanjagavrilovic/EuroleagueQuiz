@@ -26,6 +26,7 @@
     <ProjectReference Include="..\EuroleagueQuiz.Domain\EuroleagueQuiz.Domain.csproj" />
     <ProjectReference Include="..\EuroleagueQuiz.Application\EuroleagueQuiz.Application.csproj" />
     <ProjectReference Include="..\EuroleagueQuiz.Infrastructure\EuroleagueQuiz.Infrastructure.csproj" />
+    <ProjectReference Include="..\EuroleagueQuiz.Api\EuroleagueQuiz.Api.csproj" />
   </ItemGroup>
 
 </Project>

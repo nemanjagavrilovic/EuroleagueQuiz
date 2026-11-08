@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IFivePlayerGameService, FivePlayerGameService>();
         services.AddScoped<IDailyFivePlayerService, DailyFivePlayerService>();
         services.AddScoped<IContactService, ContactService>();
+        services.AddScoped<ILeaderboardService, LeaderboardService>();
         return services;
     }
 }

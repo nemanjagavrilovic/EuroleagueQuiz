@@ -26,7 +26,8 @@ public sealed class AuthController(
     IOptions<GoogleOptions> googleOptions,
     IOptions<IdentityBootstrapOptions> bootstrapOptions,
     IWebHostEnvironment environment,
-    TimeProvider timeProvider) : ControllerBase
+    TimeProvider timeProvider,
+    PasswordSetupService passwordSetup) : ControllerBase
 {
     private const string RefreshCookie = "pickandroll.refresh";
 
@@ -106,6 +107,78 @@ public sealed class AuthController(
         return user is null ? Unauthorized() : Ok(await UserResponseAsync(user));
     }
 
+    [Authorize]
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile(UpdateProfileRequest request)
+    {
+        var user = await userManager.GetUserAsync(User);
+        if (user is null) return Unauthorized();
+        var firstName = request.FirstName.Trim();
+        var lastName = request.LastName.Trim();
+        if (firstName.Length is < 1 or > 50 || lastName.Length is < 1 or > 50)
+            return BadRequest(new { message = "Enter a first and last name of up to 50 characters each." });
+
+        user.FirstName = firstName;
+        user.LastName = lastName;
+        user.DisplayName = $"{firstName} {lastName}";
+        var result = await userManager.UpdateAsync(user);
+        return result.Succeeded ? Ok(await UserResponseAsync(user)) : Validation(result);
+    }
+
+    [Authorize]
+    [HttpPost("password-reset-link")]
+    public async Task<IActionResult> RequestPasswordResetLink(CancellationToken cancellationToken)
+    {
+        var user = await userManager.GetUserAsync(User);
+        if (user is null) return Unauthorized();
+        if (!await userManager.HasPasswordAsync(user))
+            return BadRequest(new { message = "No portal password is set. Choose Create a portal password first." });
+        if (!await userManager.IsEmailConfirmedAsync(user))
+            return BadRequest(new { message = "Confirm your email before resetting your password." });
+
+        try { await SendPasswordResetAsync(user, cancellationToken); }
+        catch (AccountEmailDeliveryException)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new { message = "The password reset email could not be sent. Please try again shortly." });
+        }
+        return Ok(new { message = "A password reset link has been sent to your email. Check your inbox and spam folder." });
+    }
+
+    [Authorize]
+    [HttpPost("password-setup-link")]
+    public async Task<IActionResult> RequestPasswordSetupLink(CancellationToken cancellationToken)
+    {
+        var user = await userManager.GetUserAsync(User);
+        if (user is null) return Unauthorized();
+        if (await userManager.HasPasswordAsync(user))
+            return Conflict(new { message = "A portal password is already set. Use password reset to change it." });
+        if (!await userManager.IsEmailConfirmedAsync(user))
+            return BadRequest(new { message = "Confirm your email before creating a password." });
+
+        try { await SendPasswordSetupAsync(user, cancellationToken); }
+        catch (AccountEmailDeliveryException)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new { message = "The password creation email could not be sent. Please try again shortly." });
+        }
+        return Ok(new { message = "A link to create your portal password has been sent to your email. Google sign-in will remain available." });
+    }
+
+    [HttpPost("set-password")]
+    public async Task<IActionResult> SetPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByEmailAsync(request.Email.Trim());
+        var token = DecodeToken(request.Token);
+        if (user is null || token is null)
+            return BadRequest(new { message = "Invalid or expired password creation link. Request a new password email." });
+        var result = await passwordSetup.SetPasswordAsync(user, token, request.NewPassword);
+        if (!result.Succeeded) return Validation(result);
+        await tokens.RevokeAllAsync(user.Id, cancellationToken);
+        DeleteRefreshCookie();
+        return Ok(new { message = "Your portal password has been created. Sign in with Google or with your email and new password." });
+    }
+
     [HttpPost("logout")]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
@@ -142,6 +215,8 @@ public sealed class AuthController(
             {
                 Id = Guid.NewGuid(), UserName = email, Email = email, EmailConfirmed = true,
                 DisplayName = string.IsNullOrWhiteSpace(displayName) ? email.Split('@')[0] : displayName,
+                FirstName = OptionalName(external.Principal.FindFirstValue(ClaimTypes.GivenName)),
+                LastName = OptionalName(external.Principal.FindFirstValue(ClaimTypes.Surname)),
                 SubscriptionPlan = SubscriptionPlans.Free, CreatedAtUtc = timeProvider.GetUtcNow().UtcDateTime
             };
             var create = await userManager.CreateAsync(user);
@@ -192,24 +267,29 @@ public sealed class AuthController(
     public async Task<IActionResult> ForgotPassword(EmailRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
-        if (user is not null && await userManager.IsEmailConfirmedAsync(user) && await userManager.HasPasswordAsync(user))
+        if (user is not null && await userManager.IsEmailConfirmedAsync(user))
         {
-            var token = EncodeToken(await userManager.GeneratePasswordResetTokenAsync(user));
-            var url = ClientUrl($"/reset-password?email={Uri.EscapeDataString(user.Email!)}&token={Uri.EscapeDataString(token)}");
-            try { await emailSender.SendPasswordResetAsync(user.Email!, user.DisplayName, url, cancellationToken); }
+            try
+            {
+                if (await userManager.HasPasswordAsync(user)) await SendPasswordResetAsync(user, cancellationToken);
+                else await SendPasswordSetupAsync(user, cancellationToken);
+            }
             catch (AccountEmailDeliveryException) { }
         }
-        return Ok(new { message = "If a local account exists for that email, a reset link has been sent." });
+        return Ok(new { message = "If an eligible account exists for that email, a password email has been sent." });
     }
 
     [HttpPost("reset-password")]
-    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
         var decoded = DecodeToken(request.Token);
         if (user is null || decoded is null) return BadRequest(new { message = "Invalid or expired password reset link." });
         var result = await userManager.ResetPasswordAsync(user, decoded, request.NewPassword);
-        return result.Succeeded ? Ok(new { message = "Password updated. You can now sign in." }) : Validation(result);
+        if (!result.Succeeded) return Validation(result);
+        await tokens.RevokeAllAsync(user.Id, cancellationToken);
+        DeleteRefreshCookie();
+        return Ok(new { message = "Password updated. You can now sign in." });
     }
 
     private async Task<IActionResult> CompleteLoginAsync(ApplicationUser user, CancellationToken cancellationToken)
@@ -228,11 +308,24 @@ public sealed class AuthController(
         user = await UserResponseAsync(user)
     };
 
-    private async Task<object> UserResponseAsync(ApplicationUser user) => new
+    private async Task<AuthUserResponse> UserResponseAsync(ApplicationUser user) => new(
+        user.Id, user.Email, user.DisplayName, user.FirstName, user.LastName,
+        (await userManager.GetRolesAsync(user)).ToArray(), user.SubscriptionPlan,
+        await userManager.HasPasswordAsync(user));
+
+    private async Task SendPasswordResetAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
-        id = user.Id, email = user.Email, displayName = user.DisplayName,
-        roles = await userManager.GetRolesAsync(user), subscriptionPlan = user.SubscriptionPlan
-    };
+        var token = EncodeToken(await userManager.GeneratePasswordResetTokenAsync(user));
+        var url = ClientUrl($"/reset-password?email={Uri.EscapeDataString(user.Email!)}&token={Uri.EscapeDataString(token)}");
+        await emailSender.SendPasswordResetAsync(user.Email!, user.DisplayName, url, cancellationToken);
+    }
+
+    private async Task SendPasswordSetupAsync(ApplicationUser user, CancellationToken cancellationToken)
+    {
+        var token = EncodeToken(await passwordSetup.GenerateTokenAsync(user));
+        var url = ClientUrl($"/set-password?email={Uri.EscapeDataString(user.Email!)}&token={Uri.EscapeDataString(token)}");
+        await emailSender.SendPasswordSetupAsync(user.Email!, user.DisplayName, url, cancellationToken);
+    }
 
     private async Task SendConfirmationAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
@@ -250,6 +343,7 @@ public sealed class AuthController(
     private bool IsConfiguredAdmin(string email) => bootstrapOptions.Value.AdminEmails
         .Any(value => string.Equals(value?.Trim(), email.Trim(), StringComparison.OrdinalIgnoreCase));
     private static string SafeReturnUrl(string? value) => !string.IsNullOrWhiteSpace(value) && value.StartsWith('/') && !value.StartsWith("//") ? value : "/";
+    private static string? OptionalName(string? value) => value?.Trim() is { Length: > 0 and <= 50 } name ? name : null;
     private static string EncodeToken(string value) => WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(value));
     private static string? DecodeToken(string value) { try { return Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(value)); } catch { return null; } }
     private static IActionResult UnauthorizedMessage() => new UnauthorizedObjectResult(new { message = "Invalid email or password." });
@@ -265,3 +359,8 @@ public sealed record LoginRequest([Required, EmailAddress] string Email, [Requir
 public sealed record EmailRequest([Required, EmailAddress] string Email);
 public sealed record ResetPasswordRequest([Required, EmailAddress] string Email, [Required] string Token,
     [Required, StringLength(128, MinimumLength = 8)] string NewPassword);
+public sealed record UpdateProfileRequest(
+    [Required, StringLength(50)] string FirstName,
+    [Required, StringLength(50)] string LastName);
+public sealed record AuthUserResponse(Guid Id, string? Email, string DisplayName, string? FirstName, string? LastName,
+    IReadOnlyList<string> Roles, string SubscriptionPlan, bool HasPassword);

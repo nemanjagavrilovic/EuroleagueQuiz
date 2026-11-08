@@ -70,8 +70,12 @@ public sealed class DailyTeamHistoryService(IDailyGameRepository repository, ITe
                     }
                 }
             }
+            var now = clock.GetUtcNow().UtcDateTime;
             attempt.StateJson = JsonSerializer.Serialize(state);
-            attempt.UpdatedAtUtc = clock.GetUtcNow().UtcDateTime;
+            attempt.Score = state.Score;
+            attempt.Completed = state.Completed;
+            if (state.Completed && attempt.CompletedAtUtc is null) attempt.CompletedAtUtc = now;
+            attempt.UpdatedAtUtc = now;
             await repository.SaveAsync(ct);
             var round = new TeamHistoryRoundDto(attempt.Id, definition.Teams.Take(state.RevealedCount).ToList(), state.RevealedCount, 4,
                 state.Completed, state.Correct, state.Attempts, state.Completed ? definition.Player : null);

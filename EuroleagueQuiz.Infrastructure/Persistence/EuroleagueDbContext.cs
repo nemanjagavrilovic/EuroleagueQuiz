@@ -27,7 +27,9 @@ public sealed class EuroleagueDbContext : IdentityDbContext<ApplicationUser, Ide
 
         modelBuilder.Entity<ApplicationUser>(entity =>
         {
-            entity.Property(x => x.DisplayName).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.DisplayName).HasMaxLength(101).IsRequired();
+            entity.Property(x => x.FirstName).HasMaxLength(50);
+            entity.Property(x => x.LastName).HasMaxLength(50);
             entity.Property(x => x.SubscriptionPlan).HasMaxLength(30).IsRequired();
             entity.HasIndex(x => x.DisplayName);
         });
@@ -54,6 +56,7 @@ public sealed class EuroleagueDbContext : IdentityDbContext<ApplicationUser, Ide
             entity.Property(x => x.StateJson).HasColumnType("jsonb").IsRequired();
             entity.HasIndex(x => new { x.GuestId, x.Game, x.Date }).IsUnique();
             entity.HasIndex(x => new { x.UserId, x.Game, x.Date }).IsUnique().HasFilter("\"UserId\" IS NOT NULL");
+            entity.HasIndex(x => new { x.Game, x.Date, x.UserId }).HasFilter("\"LeaderboardEligible\" AND \"UserId\" IS NOT NULL");
             entity.HasOne(x => x.Challenge).WithMany().HasForeignKey(x => x.ChallengeId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
         });
@@ -69,6 +72,7 @@ public sealed class EuroleagueDbContext : IdentityDbContext<ApplicationUser, Ide
             entity.HasKey(x => x.Id);
             entity.HasIndex(x => new { x.GuestId, x.Date }).IsUnique();
             entity.HasIndex(x => new { x.UserId, x.Date }).IsUnique().HasFilter("\"UserId\" IS NOT NULL");
+            entity.HasIndex(x => new { x.Date, x.UserId }).HasFilter("\"LeaderboardEligible\" AND \"UserId\" IS NOT NULL");
             entity.Property(x => x.StateJson).HasColumnType("jsonb").IsRequired();
             entity.HasOne(x => x.Challenge).WithMany().HasForeignKey(x => x.ChallengeId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);

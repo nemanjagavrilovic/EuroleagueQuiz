@@ -93,18 +93,23 @@ public sealed class DailyFivePlayerService(IDailyGameRepository repository, IFiv
                     state.Commands.Add(request.CommandId);
                 }
             }
+            var correctGuesses = state.Rounds.Sum(x => x.GuessedPlayerIds.Count);
+            var completed = round.Completed && state.Rounds.Count == TotalRounds;
+            var score = correctGuesses * 4;
             attempt.StateJson = JsonSerializer.Serialize(state);
-            attempt.UpdatedAtUtc = clock.GetUtcNow().UtcDateTime;
+            attempt.Score = score;
+            attempt.Completed = completed;
+            if (completed && attempt.CompletedAtUtc is null) attempt.CompletedAtUtc = now;
+            attempt.UpdatedAtUtc = now;
             await repository.SaveAsync(ct);
             now = clock.GetUtcNow().UtcDateTime;
-            var correctGuesses = state.Rounds.Sum(x => x.GuessedPlayerIds.Count);
             var playersById = club.Players.ToDictionary(x => x.Id);
             var remaining = round.Completed ? 0 : Math.Clamp((int)Math.Ceiling((round.DeadlineUtc - now).TotalSeconds), 0, SecondsPerRound);
             var dto = new FivePlayerGameRoundDto(attempt.Id, state.Rounds.Count, TotalRounds, SecondsPerRound, remaining, club.Team,
                 round.GuessedPlayerIds.Concat(round.RevealedPlayerIds).Select(id => playersById[id]).ToList(), round.Completed,
                 round.Completed ? round.GuessedPlayerIds.Count == 5 : null, round.Completed && state.Rounds.Count == TotalRounds, correctGuesses, round.LastGuessCorrect);
             return new DailyFivePlayerDto(attempt.ChallengeId, date, date.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc), dto,
-                correctGuesses * 4, correctGuesses, attempt.LeaderboardEligible, now, round.Completed ? null : round.DeadlineUtc, round.RevealedPlayerIds, state.Feedback);
+                score, correctGuesses, attempt.LeaderboardEligible, now, round.Completed ? null : round.DeadlineUtc, round.RevealedPlayerIds, state.Feedback);
         }, ct);
     }
 

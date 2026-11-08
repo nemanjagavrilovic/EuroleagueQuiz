@@ -47,6 +47,7 @@ builder.Services.Configure<JwtOptions>(options =>
     options.RefreshTokenDays = jwtOptions.RefreshTokenDays;
 });
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<PasswordSetupService>();
 
 var authentication = builder.Services.AddAuthentication(options =>
 {
@@ -76,6 +77,7 @@ var authentication = builder.Services.AddAuthentication(options =>
     options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
 });
 var googleOptions = builder.Configuration.GetSection(GoogleOptions.SectionName).Get<GoogleOptions>() ?? new GoogleOptions();
+var clientBaseUrl = (builder.Configuration["Client:BaseUrl"] ?? "http://localhost:4200").TrimEnd('/');
 if (!string.IsNullOrWhiteSpace(googleOptions.ClientId) && !string.IsNullOrWhiteSpace(googleOptions.ClientSecret))
     authentication.AddGoogle("Google", options =>
     {
@@ -83,6 +85,14 @@ if (!string.IsNullOrWhiteSpace(googleOptions.ClientId) && !string.IsNullOrWhiteS
         options.ClientId = googleOptions.ClientId;
         options.ClientSecret = googleOptions.ClientSecret;
         options.CallbackPath = "/api/signin-google";
+        options.Events.OnRemoteFailure = context =>
+        {
+            context.HandleResponse();
+            var cancelled = string.Equals(context.Request.Query["error"], "access_denied", StringComparison.OrdinalIgnoreCase);
+            var error = cancelled ? "google-cancelled" : "google";
+            context.Response.Redirect($"{clientBaseUrl}/login?error={error}");
+            return Task.CompletedTask;
+        };
     });
 builder.Services.AddAuthorization();
 builder.Services.AddRateLimiter(options =>

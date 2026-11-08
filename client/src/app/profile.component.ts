@@ -1,12 +1,96 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { NgFor, NgIf } from '@angular/common';
+import { ChangeDetectionStrategy, Component, HostListener, effect, inject, signal } from '@angular/core';
+import { NgIf } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 import { AuthService } from './auth.service';
 
 @Component({
-  selector: 'app-profile', standalone: true, imports: [NgIf, NgFor, RouterLink],
-  template: `<main class="profile-shell"><a routerLink="/" class="back">← All games</a><section *ngIf="auth.user() as user; else signedOut"><p class="eyebrow">MY PROFILE</p><div class="avatar">{{ user.displayName.charAt(0).toUpperCase() }}</div><h1>{{ user.displayName }}</h1><p class="email">{{ user.email }}</p><div class="details"><div><span>Plan</span><strong>{{ user.subscriptionPlan }}</strong></div><div><span>Role</span><strong>{{ user.roles.join(', ') }}</strong></div><div><span>Ranked play</span><strong>Daily</strong></div></div><button type="button" (click)="auth.logout()">Sign out</button></section><ng-template #signedOut><section><h1>Sign in to view your profile</h1><a class="primary" routerLink="/login">Sign in</a></section></ng-template></main>`,
-  styles: [`.profile-shell{width:min(760px,calc(100% - 32px));min-height:60vh;margin:40px auto}.back{color:var(--muted);text-decoration:none;font-size:13px}section{margin-top:24px;padding:clamp(24px,5vw,46px);text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:16px}.eyebrow{color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.15em}.avatar{display:grid;place-items:center;width:80px;height:80px;margin:20px auto 12px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:34px;font-weight:800}h1{margin:0;font-size:34px}.email{color:var(--muted)}.details{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:30px 0}.details div{padding:16px;border:1px solid var(--border);border-radius:9px;background:var(--deep)}.details span,.details strong{display:block}.details span{margin-bottom:6px;color:var(--muted);font-size:11px;text-transform:uppercase}.details strong{font-size:14px}button,.primary{display:inline-block;padding:12px 22px;border:1px solid var(--border-strong);border-radius:8px;background:transparent;color:var(--text);font-weight:800;text-decoration:none;cursor:pointer}@media(max-width:560px){.details{grid-template-columns:1fr}}`],
+  selector: 'app-profile',
+  standalone: true,
+  imports: [NgIf, ReactiveFormsModule, RouterLink],
+  templateUrl: './profile.component.html',
+  styleUrl: './profile.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ProfileComponent { readonly auth = inject(AuthService); }
+export class ProfileComponent {
+  readonly auth = inject(AuthService);
+  private readonly fb = inject(FormBuilder);
+  readonly saving = signal(false);
+  readonly sendingReset = signal(false);
+  readonly profileMessage = signal('');
+  readonly profileError = signal('');
+  readonly passwordMessage = signal('');
+  readonly passwordError = signal('');
+  readonly form = this.fb.nonNullable.group({
+    firstName: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/\S/)]],
+    lastName: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/\S/)]]
+  });
+
+  constructor() {
+    effect(() => {
+      const user = this.auth.user();
+      if (user && !this.form.dirty) {
+        this.form.patchValue({ firstName: user.firstName ?? '', lastName: user.lastName ?? '' });
+      }
+    });
+  }
+
+  save(): void {
+    if (this.saving() || this.sendingReset()) return;
+    this.profileMessage.set('');
+    this.profileError.set('');
+    this.form.markAllAsTouched();
+    if (this.form.invalid) return;
+    const { firstName, lastName } = this.form.getRawValue();
+    this.saving.set(true);
+    this.auth.updateProfile(firstName.trim(), lastName.trim()).pipe(
+      finalize(() => this.saving.set(false))
+    ).subscribe({
+      next: user => {
+        this.form.reset({ firstName: user.firstName ?? '', lastName: user.lastName ?? '' });
+        this.profileMessage.set('Your profile has been updated.');
+      },
+      error: (error: HttpErrorResponse) => this.profileError.set(this.errorMessage(error, 'Your profile could not be saved. Please try again.'))
+    });
+  }
+
+  @HostListener('window:focus')
+  refreshProfile(): void {
+    const current = this.auth.user();
+    if (!current) return;
+    this.auth.refreshUser().subscribe({
+      next: user => {
+        if (user.hasPassword !== current.hasPassword) {
+          this.passwordMessage.set('');
+          this.passwordError.set('');
+        }
+      },
+      error: () => { /* Keep the existing profile during temporary connectivity problems. */ }
+    });
+  }
+
+  sendPasswordReset(): void {
+    const user = this.auth.user();
+    if (this.sendingReset() || this.saving() || !user) return;
+    this.passwordMessage.set('');
+    this.passwordError.set('');
+    this.sendingReset.set(true);
+    const request = user.hasPassword ? this.auth.requestPasswordResetLink() : this.auth.requestPasswordSetupLink();
+    request.pipe(
+      finalize(() => this.sendingReset.set(false))
+    ).subscribe({
+      next: response => this.passwordMessage.set(response.message),
+      error: (error: HttpErrorResponse) => this.passwordError.set(this.errorMessage(error, 'The password email could not be sent. Please try again.'))
+    });
+  }
+
+  private errorMessage(error: HttpErrorResponse, fallback: string): string {
+    const body = error.error as { message?: string; errors?: { description?: string }[] | Record<string, string[]> } | null;
+    const details = Array.isArray(body?.errors)
+      ? body.errors.map(item => item.description).filter(Boolean).join(' ')
+      : body?.errors ? Object.values(body.errors).flat().join(' ') : '';
+    return details || body?.message || fallback;
+  }
+}

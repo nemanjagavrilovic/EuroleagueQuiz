@@ -4,19 +4,28 @@
 .header-inner, .footer-inner, .footer-bottom { width: min(1400px, 100%); margin: auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .header-inner { min-height: 72px; }
 .brand { display: flex; align-items: center; gap: 10px; color: white; text-decoration: none; font-size: 20px; font-weight: 800; letter-spacing: -.7px; white-space: nowrap; }
-.brand-logo { display: block; width: 72px; height: 48px; object-fit: contain; flex-shrink: 0; }
+.brand-logo { display: block; width: 48px; height: 48px; object-fit: contain; flex-shrink: 0; }
 .brand-amp { color: #f97316; }
 nav { display: flex; gap: 24px; }
 nav a { color: #cbd5e1; text-decoration: none; font-size: 13px; font-weight: 700; padding: 10px 0; }
 nav a:hover, nav a.active { color: #ff8a32; }
 nav a.active { box-shadow: 0 2px #f97316; }
 .header-tag { font-size: 10px; font-weight: 800; letter-spacing: .16em; color: #94a3b8; }
-.account-nav { display: flex; align-items: center; gap: 9px; }
+.account-nav { position: relative; display: flex; align-items: center; gap: 9px; }
 .account-nav a { color: var(--text-secondary); text-decoration: none; font-size: 12px; font-weight: 800; padding: 10px 13px; border-radius: 7px; }
 .account-nav a:hover { color: white; background: var(--surface-raised); }
 .account-nav .create-account { background: var(--accent); color: var(--on-accent); }
-.profile-link { display: flex; align-items: center; gap: 8px; }
 .mini-avatar { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
+.profile-trigger { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 10px 6px 7px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.profile-trigger:hover, .profile-trigger[aria-expanded="true"] { color: white; background: var(--surface-raised); border-color: var(--border); }
+.profile-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.profile-chevron { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; transition: transform .16s ease; }
+.profile-trigger[aria-expanded="true"] .profile-chevron { transform: rotate(180deg); }
+.profile-menu { position: absolute; z-index: 1000; top: calc(100% + 8px); right: 0; width: 178px; padding: 7px; border: 1px solid #2b4153; border-radius: 10px; background: #0d2030; box-shadow: 0 18px 45px #0008; }
+.profile-menu a, .profile-menu button { box-sizing: border-box; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 9px 10px; border: 0; border-radius: 7px; background: transparent; color: #d9e4ed; font: inherit; font-size: 13px; font-weight: 700; text-align: left; cursor: pointer; }
+.profile-menu a:hover, .profile-menu button:hover, .profile-menu a:focus-visible, .profile-menu button:focus-visible { color: white; background: #173247; outline: none; }
+.profile-menu svg { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.profile-menu button { border-top: 1px solid #243b4d; border-radius: 0 0 7px 7px; color: #ffb08a; }
 .site-footer { background: #07131f; color: #9bafc2; margin-top: 16px; border-top: 1px solid #203344; }
 .footer-inner { padding-top: 22px; padding-bottom: 22px; }
 .footer-brand { display: inline-flex; align-items: center; gap: 10px; color: white; text-decoration: none; font-size: 18px; font-weight: 800; letter-spacing: -.5px; }
@@ -29,10 +38,13 @@ nav a.active { box-shadow: 0 2px #f97316; }
   .header-inner, .footer-inner, .footer-bottom { padding-left: 16px; padding-right: 16px; gap: 16px; }
   .header-inner { min-height: 64px; flex-wrap: wrap; padding-top: 10px; padding-bottom: 10px; row-gap: 6px; }
   .brand { font-size: 15px; gap: 7px; }
-  .brand-logo { width: 48px; height: 32px; }
+  .brand-logo { width: 38px; height: 38px; }
   .header-tag { display: none; }
   .account-nav a { padding: 8px; font-size: 11px; }
   .account-nav .create-account { display: none; }
+  .profile-trigger { padding-right: 7px; }
+  .profile-name { display: none; }
+  .profile-menu { position: fixed; top: 66px; right: 12px; width: min(220px, calc(100vw - 24px)); }
   nav { gap: 16px; flex-wrap: wrap; }
   nav a { font-size: 12px; }
   .footer-inner, .footer-bottom { align-items: flex-start; flex-direction: column; }

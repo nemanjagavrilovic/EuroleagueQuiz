@@ -16,6 +16,7 @@ import { ProfileComponent } from './app/profile.component';
 import { AuthService } from './app/auth.service';
 import { authInterceptor } from './app/auth.interceptor';
 import { GameModeComponent } from './app/game-mode.component';
+import { LeaderboardComponent } from './app/leaderboard.component';
 
 const signedInGuard: CanActivateFn = (_route, state) => inject(AuthService).user()
   ? true
@@ -32,9 +33,11 @@ const routes: Routes = [
   { path: 'forgot-password', component: AuthPageComponent, data: { mode: 'forgot' } },
   { path: 'resend-confirmation', component: AuthPageComponent, data: { mode: 'resend' } },
   { path: 'reset-password', component: AuthPageComponent, data: { mode: 'reset' } },
+  { path: 'set-password', component: AuthPageComponent, data: { mode: 'setup' } },
   { path: 'confirm-email', component: ConfirmEmailComponent },
   { path: 'auth/callback', component: AuthCallbackComponent },
   { path: 'profile', component: ProfileComponent },
+  { path: 'leaderboard', component: LeaderboardComponent },
   { path: 'play/:game', component: GameModeComponent, canActivate: [signedInGuard] },
   { path: 'game/five-player', component: FivePlayerGameComponent },
   { path: 'game/history', component: TeamHistoryComponent },

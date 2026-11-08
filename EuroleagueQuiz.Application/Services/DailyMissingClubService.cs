@@ -55,8 +55,12 @@ public sealed class DailyMissingClubService(IDailyGameRepository repository, ICa
                     state.Feedback = state.Correct ? "You found the missing connection." : request.Skip ? "The missing club is revealed." : "That wasn't the missing club. The answer is now revealed.";
                 }
             }
+            var now = clock.GetUtcNow().UtcDateTime;
             attempt.StateJson = JsonSerializer.Serialize(state);
-            attempt.UpdatedAtUtc = clock.GetUtcNow().UtcDateTime;
+            attempt.Score = state.Score;
+            attempt.Completed = state.Completed;
+            if (state.Completed && attempt.CompletedAtUtc is null) attempt.CompletedAtUtc = now;
+            attempt.UpdatedAtUtc = now;
             await repository.SaveAsync(ct);
             var round = new MissingClubRoundDto(attempt.Id, definition.Player, definition.KnownTeams, definition.Options,
                 state.Completed, state.Completed ? state.Correct : null, state.Completed ? definition.CorrectTeam : null);

@@ -5,6 +5,8 @@ namespace EuroleagueQuiz.Infrastructure.Identity;
 public sealed class ApplicationUser : IdentityUser<Guid>
 {
     public string DisplayName { get; set; } = string.Empty;
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
     public string SubscriptionPlan { get; set; } = SubscriptionPlans.Free;
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? LastLoginAtUtc { get; set; }

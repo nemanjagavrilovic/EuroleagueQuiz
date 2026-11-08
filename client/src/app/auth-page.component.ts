@@ -6,7 +6,7 @@ import { finalize } from 'rxjs';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 
-type AuthMode = 'login' | 'register' | 'forgot' | 'reset' | 'resend';
+type AuthMode = 'login' | 'register' | 'forgot' | 'reset' | 'resend' | 'setup';
 
 @Component({
   selector: 'app-auth-page', standalone: true,
@@ -24,27 +24,39 @@ export class AuthPageComponent implements OnInit {
   readonly message = signal('');
   readonly error = signal('');
   readonly showResend = signal(false);
+  readonly invalidSetupLink = signal(false);
   readonly form = this.fb.nonNullable.group({
     displayName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(8)]],
+    password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
     confirmPassword: ['']
   });
 
   ngOnInit(): void {
     this.mode.set((this.route.snapshot.data['mode'] as AuthMode) || 'login');
     this.form.patchValue({ email: this.route.snapshot.queryParamMap.get('email') || '' });
-    if (this.route.snapshot.queryParamMap.get('error')) this.error.set('Google sign-in could not be completed. Please try again.');
+    if (this.mode() === 'setup' && (!this.route.snapshot.queryParamMap.get('token') || this.form.controls.email.invalid)) {
+      this.invalidSetupLink.set(true);
+      this.error.set('This password creation link is incomplete. Request a new password email.');
+    }
+    const googleError = this.route.snapshot.queryParamMap.get('error');
+    if (googleError === 'google-cancelled') this.error.set('Google sign-in was cancelled. Try again or sign in with email.');
+    else if (googleError === 'google-email') this.error.set('Your Google account did not provide an email address. Sign in with email or choose another Google account.');
+    else if (googleError) this.error.set('Google sign-in could not be completed. Please try again.');
   }
 
   submit(): void {
+    if (this.loading() || this.invalidSetupLink()) return;
     this.message.set(''); this.error.set(''); this.showResend.set(false);
     const mode = this.mode();
     const { displayName, email, password, confirmPassword } = this.form.getRawValue();
-    if (!email || this.form.controls.email.invalid || ((mode === 'login' || mode === 'register' || mode === 'reset') && !password)) {
+    if (!email || this.form.controls.email.invalid || ((mode === 'login' || mode === 'register' || mode === 'reset' || mode === 'setup') && !password)) {
       this.form.markAllAsTouched(); return;
     }
-    if ((mode === 'register' || mode === 'reset') && password !== confirmPassword) {
+    if ((mode === 'register' || mode === 'reset' || mode === 'setup') && this.form.controls.password.invalid) {
+      this.error.set('Use a password between 8 and 128 characters.'); return;
+    }
+    if ((mode === 'register' || mode === 'reset' || mode === 'setup') && password !== confirmPassword) {
       this.error.set('Passwords do not match.'); return;
     }
     this.loading.set(true);
@@ -52,6 +64,7 @@ export class AuthPageComponent implements OnInit {
       : mode === 'register' ? this.auth.register(displayName, email, password)
       : mode === 'forgot' ? this.auth.forgotPassword(email)
       : mode === 'resend' ? this.auth.resendConfirmation(email)
+      : mode === 'setup' ? this.auth.setPassword(email, this.route.snapshot.queryParamMap.get('token') || '', password)
       : this.auth.resetPassword(email, this.route.snapshot.queryParamMap.get('token') || '', password);
     request.pipe(finalize(() => this.loading.set(false))).subscribe({
       next: (response: unknown) => {
@@ -59,9 +72,10 @@ export class AuthPageComponent implements OnInit {
         else {
           this.message.set(this.responseMessage(response));
           if (mode === 'register') this.showResend.set(true);
+          if (mode === 'setup' || mode === 'reset') this.form.patchValue({ password: '', confirmPassword: '' });
         }
       },
-      error: (response: { status?: number; error?: { message?: string; errors?: { description?: string }[] } }) => {
+      error: (response: { status?: number; error?: { message?: string; errors?: { description?: string }[] | Record<string, string[]> } }) => {
         if (mode === 'register' && response.status === 503) {
           this.message.set(response.error?.message || 'Your account was created, but the confirmation email could not be sent.');
           this.showResend.set(true);
@@ -72,7 +86,9 @@ export class AuthPageComponent implements OnInit {
           this.showResend.set(true);
           return;
         }
-        const details = response.error?.errors?.map(item => item.description).filter(Boolean).join(' ');
+        const errors = response.error?.errors;
+        const details = Array.isArray(errors) ? errors.map(item => item.description).filter(Boolean).join(' ')
+          : errors ? Object.values(errors).flat().join(' ') : '';
         this.error.set(details || response.error?.message || 'Something went wrong. Please try again.');
       }
     });

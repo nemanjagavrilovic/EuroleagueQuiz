@@ -53,25 +53,40 @@ public sealed class DailyCareerOrderService(IDailyGameRepository repository, ICa
                     state.Commands.Add(request.CommandId);
                     if (submit)
                     {
-                        var ranks = puzzle.CorrectOrder.Select((club, index) => (club.Id, index)).ToDictionary(x => x.Id, x => x.index);
-                        var correctPairs = 0;
-                        for (var i = 0; i < state.TeamIds.Count; i++)
-                        for (var j = i + 1; j < state.TeamIds.Count; j++)
-                            if (ranks[state.TeamIds[i]] < ranks[state.TeamIds[j]]) correctPairs++;
-                        state.CorrectPairs = correctPairs;
-                        state.Score = (int)Math.Round(correctPairs * 100m / 6, MidpointRounding.AwayFromZero);
+                        if (puzzle.HistoryVersion >= CareerOrderRules.CurrentVersion)
+                        {
+                            state.CorrectTransfers = CareerOrderRules.CountCorrectTransfers(state.TeamIds, puzzle.CorrectOrder.Select(x => x.Id).ToList());
+                            state.Score = (int)Math.Round(state.CorrectTransfers * 100m / 3, MidpointRounding.AwayFromZero);
+                        }
+                        else
+                        {
+                            // Saved daily questions may have skipped intermediate
+                            // clubs. Preserve their original rules until UTC reset.
+                            var ranks = puzzle.CorrectOrder.Select((club, index) => (club.Id, index)).ToDictionary(x => x.Id, x => x.index);
+                            var correctPairs = 0;
+                            for (var i = 0; i < state.TeamIds.Count; i++)
+                            for (var j = i + 1; j < state.TeamIds.Count; j++)
+                                if (ranks[state.TeamIds[i]] < ranks[state.TeamIds[j]]) correctPairs++;
+                            state.CorrectPairs = correctPairs;
+                            state.Score = (int)Math.Round(correctPairs * 100m / 6, MidpointRounding.AwayFromZero);
+                        }
                         state.Completed = true;
                     }
                 }
             }
+            var now = clock.GetUtcNow().UtcDateTime;
             attempt.StateJson = JsonSerializer.Serialize(state);
-            attempt.UpdatedAtUtc = clock.GetUtcNow().UtcDateTime;
+            attempt.Score = state.Score;
+            attempt.Completed = state.Completed;
+            if (state.Completed && attempt.CompletedAtUtc is null) attempt.CompletedAtUtc = now;
+            attempt.UpdatedAtUtc = now;
             await repository.SaveAsync(ct);
             var clubs = puzzle.Clubs.ToDictionary(x => x.Id);
             var round = new CareerOrderRoundDto(attempt.Id, puzzle.Player, state.TeamIds.Select(id => clubs[id]).ToList(),
                 state.Completed, state.Completed ? state.Score == 100 : null, state.Completed ? puzzle.CorrectOrder : null);
             return new DailyCareerOrderDto(attempt.ChallengeId, date, date.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
-                round, state.Score, state.Completed ? state.CorrectPairs : null, 6, attempt.LeaderboardEligible);
+                round, state.Score, state.Completed && puzzle.HistoryVersion >= CareerOrderRules.CurrentVersion ? state.CorrectTransfers : null,
+                3, attempt.LeaderboardEligible, puzzle.HistoryVersion >= CareerOrderRules.CurrentVersion ? CareerOrderRules.CurrentVersion : 1);
         }, ct);
     }
 
@@ -81,6 +96,7 @@ public sealed class DailyCareerOrderService(IDailyGameRepository repository, ICa
         public HashSet<Guid> Commands { get; set; } = [];
         public bool Completed { get; set; }
         public int CorrectPairs { get; set; }
+        public int CorrectTransfers { get; set; }
         public int Score { get; set; }
     }
 }

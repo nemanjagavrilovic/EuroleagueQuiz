@@ -2,15 +2,30 @@
 <header class="site-header">
   <div class="header-inner">
     <a class="brand" routerLink="/" aria-label="Pick and Roll home">
-      <img class="brand-logo" src="assets/branding/pick-and-roll-playmaker-nav.png" width="72" height="48" alt="">
+      <img class="brand-logo" src="assets/branding/pick-and-roll-hoop-badge.svg" width="48" height="48" alt="">
       <span>PICK <span class="brand-amp">&</span> ROLL</span>
     </a>
     <nav aria-label="Main navigation">
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Games</a>
+      <a routerLink="/leaderboard" routerLinkActive="active">Leaderboard</a>
       <a routerLink="/" fragment="how-to-play">How to play</a>
     </nav>
-    <div class="account-nav" *ngIf="auth.user() as user; else signedOut">
-      <a routerLink="/profile" class="profile-link"><span class="mini-avatar">{{ user.displayName.charAt(0).toUpperCase() }}</span>{{ user.displayName }}</a>
+    <div class="account-nav" *ngIf="auth.user() as user; else signedOut" #accountMenu>
+      <button class="profile-trigger" type="button" (click)="toggleProfileMenu()" [attr.aria-expanded]="profileMenuOpen" aria-haspopup="menu" aria-controls="profile-menu">
+        <span class="mini-avatar">{{ user.displayName.charAt(0).toUpperCase() }}</span>
+        <span class="profile-name">{{ user.displayName }}</span>
+        <svg class="profile-chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7.5 5 5 5-5"/></svg>
+      </button>
+      <div *ngIf="profileMenuOpen" id="profile-menu" class="profile-menu" role="menu">
+        <a routerLink="/profile" role="menuitem" (click)="closeProfileMenu()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/></svg>
+          Profile
+        </a>
+        <button type="button" role="menuitem" (click)="logout()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5m5 5H3m11-8h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5"/></svg>
+          Logout
+        </button>
+      </div>
     </div>
     <ng-template #signedOut><div class="account-nav"><a routerLink="/login">Sign in</a><a class="create-account" routerLink="/register">Create account</a></div></ng-template>
   </div>
@@ -18,8 +33,8 @@
 <div id="main-content" class="page-content" tabindex="-1"><router-outlet></router-outlet></div>
 <footer class="site-footer">
   <div class="footer-inner">
-    <div><a class="footer-brand" routerLink="/" aria-label="Pick and Roll home"><img class="brand-logo" src="assets/branding/pick-and-roll-playmaker-nav.png" width="72" height="48" alt="" loading="lazy">PICK & ROLL</a><p>Big basketball knowledge. One more game.</p></div>
-    <nav aria-label="Footer navigation"><a routerLink="/">All games</a><a routerLink="/" fragment="how-to-play">How to play</a><a routerLink="/contact">Contact us</a></nav>
+    <div><a class="footer-brand" routerLink="/" aria-label="Pick and Roll home"><img class="brand-logo" src="assets/branding/pick-and-roll-hoop-badge.svg" width="48" height="48" alt="" loading="lazy">PICK & ROLL</a><p>Big basketball knowledge. One more game.</p></div>
+    <nav aria-label="Footer navigation"><a routerLink="/">All games</a><a routerLink="/leaderboard">Leaderboard</a><a routerLink="/" fragment="how-to-play">How to play</a><a routerLink="/contact">Contact us</a></nav>
   </div>
   <div class="footer-bottom"><span>© {{ year }} Pick & Roll</span><span>Independent fan project. Not affiliated with EuroLeague.</span></div>
 </footer>

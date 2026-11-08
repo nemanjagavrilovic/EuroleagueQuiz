@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, catchError, firstValueFrom, of, tap } from 'rxjs';
+import { Observable, catchError, firstValueFrom, of, tap, throwError } from 'rxjs';
 import { environment } from '../environments/environment';
 import { AuthSessionStore, AuthUser } from './auth-session.store';
 
@@ -43,7 +43,36 @@ export class AuthService {
   }
 
   resetPassword(email: string, token: string, newPassword: string): Observable<MessageResponse> {
-    return this.http.post<MessageResponse>(`${this.baseUrl}/auth/reset-password`, { email, token, newPassword });
+    return this.http.post<MessageResponse>(`${this.baseUrl}/auth/reset-password`, { email, token, newPassword })
+      .pipe(tap(() => this.clearSession()));
+  }
+
+  setPassword(email: string, token: string, newPassword: string): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.baseUrl}/auth/set-password`, { email, token, newPassword })
+      .pipe(tap(() => this.clearSession()));
+  }
+
+  requestPasswordSetupLink(): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.baseUrl}/auth/password-setup-link`, {});
+  }
+
+  refreshUser(): Observable<AuthUser> {
+    return this.http.get<AuthUser>(`${this.baseUrl}/auth/me`).pipe(
+      tap(user => this.store.updateUser(user)),
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 401) this.clearSession();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  updateProfile(firstName: string, lastName: string): Observable<AuthUser> {
+    return this.http.put<AuthUser>(`${this.baseUrl}/auth/profile`, { firstName, lastName })
+      .pipe(tap(user => this.store.updateUser(user)));
+  }
+
+  requestPasswordResetLink(): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.baseUrl}/auth/password-reset-link`, {});
   }
 
   beginGoogleLogin(returnUrl = '/'): void {

@@ -1,0 +1,51 @@
+<main class="leaderboard-shell">
+  <header class="leaderboard-header">
+    <a class="back-link" routerLink="/">← All games</a>
+    <p class="eyebrow">RANKED COMPETITION</p>
+    <div class="header-row">
+      <div><h1>Leaderboard</h1><p>Six games. One daily score. See who knows EuroLeague best.</p></div>
+      <div class="maximum" *ngIf="board?.maximumScore as maximum"><span>MAXIMUM</span><strong>{{ maximum }}</strong><small>points</small></div>
+    </div>
+  </header>
+
+  <section class="filters" aria-label="Leaderboard filters">
+    <div class="period-tabs" role="tablist" aria-label="Time period"><button *ngFor="let item of periods" type="button" role="tab" [class.active]="period === item.id" [attr.aria-selected]="period === item.id" (click)="selectPeriod(item.id)">{{ item.label }}</button></div>
+    <label class="game-filter"><span>Game</span><select [value]="game" (change)="selectGame($event)"><option *ngFor="let item of games" [value]="item.id">{{ item.label }}</option></select></label>
+  </section>
+
+  <div class="board-meta"><span>{{ dateLabel }}</span><span>Ranked scores only · UTC</span></div>
+  <app-basketball-loader *ngIf="loading && !board" message="Loading standings ..."></app-basketball-loader>
+  <p class="board-error" *ngIf="errorMessage" role="alert">{{ errorMessage }}</p>
+
+  <ng-container *ngIf="board">
+    <section class="empty-board" *ngIf="!board.totalEntries && !loading">
+      <div class="empty-ball-art" aria-hidden="true">
+        <img src="assets/loader/basketball.png" width="48" height="48" alt="" decoding="async">
+      </div>
+      <h2>No ranked scores yet</h2>
+      <p>Play today’s Ranked challenges and become the first name on the board.</p>
+      <a routerLink="/">Choose a game</a>
+    </section>
+
+    <section class="standings-card" *ngIf="board.totalEntries" [class.refreshing]="loading" aria-label="Leaderboard standings" aria-live="polite">
+      <div class="table-heading"><h2>Standings</h2><span>{{ board.totalEntries }} ranked {{ board.totalEntries === 1 ? 'player' : 'players' }}</span></div>
+      <div class="standing table-labels"><span>Rank</span><span>Player</span><span>Points</span></div>
+      <div class="standing" *ngFor="let entry of board.entries" [class.current]="entry.isCurrentUser">
+        <strong class="rank">#{{ entry.rank }}</strong>
+        <div class="player"><span class="small-avatar">{{ entry.displayName.charAt(0).toUpperCase() }}</span><strong>{{ entry.displayName }}</strong><small *ngIf="entry.isCurrentUser">You</small></div>
+        <strong class="score">{{ entry.score }}</strong>
+      </div>
+
+      <nav class="pagination" *ngIf="board.totalPages > 1" aria-label="Leaderboard pages">
+        <button type="button" class="page-step" [disabled]="page === 1 || loading" (click)="goToPage(page - 1)" aria-label="Previous page">← <span>Previous</span></button>
+        <div class="page-numbers"><button *ngFor="let pageNumber of pageNumbers" type="button" [class.active]="pageNumber === page" [disabled]="loading" [attr.aria-current]="pageNumber === page ? 'page' : null" (click)="goToPage(pageNumber)">{{ pageNumber }}</button></div>
+        <button type="button" class="page-step" [disabled]="page === board.totalPages || loading" (click)="goToPage(page + 1)" aria-label="Next page"><span>Next</span> →</button>
+      </nav>
+    </section>
+
+    <section class="your-rank" *ngIf="currentUserOutsideTop as entry" aria-label="Your leaderboard position">
+      <span class="your-rank-label">Your position</span>
+      <div class="standing current"><strong class="rank">#{{ entry.rank }}</strong><div class="player"><span class="small-avatar">{{ entry.displayName.charAt(0).toUpperCase() }}</span><strong>{{ entry.displayName }}</strong><small>You</small></div><strong class="score">{{ entry.score }}</strong></div>
+    </section>
+  </ng-container>
+</main>

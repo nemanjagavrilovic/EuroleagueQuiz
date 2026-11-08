@@ -27,7 +27,9 @@ input { width: 100%; min-height: 48px; border: 1px solid var(--border-strong); b
 .auth-links a { color: var(--accent-soft); text-decoration: none; font-weight: 700; }
 .auth-side { position: relative; display: flex; flex-direction: column; justify-content: flex-end; padding: 48px 38px; overflow: hidden; background: radial-gradient(circle at 70% 20%, #ff8a3238, transparent 32%), linear-gradient(150deg, #142c3e, #07131f 75%); border-left: 1px solid var(--border); }
 .auth-side::before { content: ''; position: absolute; width: 310px; height: 310px; right: -120px; top: -70px; border: 36px solid #ffffff09; border-radius: 50%; }
-.score { position: relative; color: var(--accent); font-size: 72px; font-weight: 800; letter-spacing: -.08em; }
-.auth-side h2 { position: relative; margin: 8px 0 12px; font-size: 30px; line-height: 1.1; letter-spacing: -.04em; }
-.auth-side p { position: relative; margin: 0; color: var(--text-secondary); line-height: 1.7; }
+.auth-side::after { content: ''; position: absolute; inset: 34px 14px auto; height: 310px; background: url('../assets/home/pick-and-roll-basic.jpg') center top / 320px auto no-repeat; filter: invert(1); mix-blend-mode: screen; opacity: .15; pointer-events: none; }
+.auth-side > * { position: relative; z-index: 1; }
+.ranked-label { align-self: flex-start; padding: 7px 10px; border: 1px solid #f9731666; border-radius: 999px; background: #f9731617; color: var(--accent-soft); font-size: 11px; font-weight: 900; letter-spacing: .14em; }
+.auth-side h2 { margin: 8px 0 12px; font-size: 30px; line-height: 1.1; letter-spacing: -.04em; }
+.auth-side p { margin: 0; color: var(--text-secondary); line-height: 1.7; }
 @media (max-width: 760px) { .auth-shell { min-height: 0; margin: 20px auto; grid-template-columns: 1fr; } .auth-side { display: none; } .auth-card { padding: 28px 22px 34px; } .eyebrow { margin-top: 30px; } }

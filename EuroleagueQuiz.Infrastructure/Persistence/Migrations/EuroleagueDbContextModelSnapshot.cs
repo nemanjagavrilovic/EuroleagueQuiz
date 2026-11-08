@@ -31,6 +31,12 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.Property<long>("ChallengeId")
                         .HasColumnType("bigint");
 
+                    b.Property<bool>("Completed")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
@@ -45,6 +51,9 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.Property<bool>("LeaderboardEligible")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
                     b.Property<string>("StateJson")
                         .IsRequired()
                         .HasColumnType("jsonb");
@@ -58,6 +67,9 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ChallengeId");
+
+                    b.HasIndex("Game", "Date", "UserId")
+                        .HasFilter("\"LeaderboardEligible\" AND \"UserId\" IS NOT NULL");
 
                     b.HasIndex("GuestId", "Game", "Date")
                         .IsUnique();
@@ -111,6 +123,12 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.Property<long>("ChallengeId")
                         .HasColumnType("bigint");
 
+                    b.Property<bool>("Completed")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
@@ -119,6 +137,9 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
 
                     b.Property<bool>("LeaderboardEligible")
                         .HasColumnType("boolean");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
 
                     b.Property<string>("StateJson")
                         .IsRequired()
@@ -133,6 +154,9 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ChallengeId");
+
+                    b.HasIndex("Date", "UserId")
+                        .HasFilter("\"LeaderboardEligible\" AND \"UserId\" IS NOT NULL");
 
                     b.HasIndex("GuestId", "Date")
                         .IsUnique();
@@ -485,8 +509,8 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)");
+                        .HasMaxLength(101)
+                        .HasColumnType("character varying(101)");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -495,8 +519,16 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("FirstName")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<DateTime?>("LastLoginAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastName")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");

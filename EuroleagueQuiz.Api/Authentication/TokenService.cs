@@ -82,4 +82,11 @@ public sealed class TokenService(
     }
 
     private static string Hash(string token) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+
+    public async Task RevokeAllAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        await db.UserRefreshTokens.Where(token => token.UserId == userId && token.RevokedAtUtc == null)
+            .ExecuteUpdateAsync(update => update.SetProperty(token => token.RevokedAtUtc, now), cancellationToken);
+    }
 }
