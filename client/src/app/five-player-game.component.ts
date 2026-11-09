@@ -1,7 +1,7 @@
 import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostListener, Injector, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Subject, Subscription, catchError, debounceTime, finalize, interval, map, of, switchMap } from 'rxjs';
+import { Subject, Subscription, catchError, debounceTime, finalize, interval, map, of, switchMap, take } from 'rxjs';
 import { DailyFivePlayerAttempt, DataApiService, FivePlayerGameRound, Player } from './data-api.service';
 import { createGuestUuid } from './guest-identity';
 import { BasketballLoaderComponent } from './basketball-loader.component';
@@ -24,6 +24,7 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly searchTerms = new Subject<string>();
   private timer?: Subscription;
+  private countdownTimer?: Subscription;
   private searchSubscription?: Subscription;
   private destroyed = false;
 
@@ -39,6 +40,9 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   feedback = '';
   errorMessage = '';
   loading = false;
+  showStartModal = true;
+  showDetailedInstructions = true;
+  countdown: number | null = null;
   searchingPlayers = false;
   searchCompleted = false;
   secondsRemaining = 24;
@@ -55,6 +59,8 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
   get timePercent(): number { return Math.min(100, Math.max(0, this.secondsRemaining / (this.round?.secondsPerRound || 24) * 100)); }
 
   ngOnInit(): void {
+    try { this.showDetailedInstructions = localStorage.getItem('pickandroll-starting-five-intro-seen') !== 'true'; }
+    catch { this.showDetailedInstructions = true; }
     this.searchSubscription = this.searchTerms.pipe(
       debounceTime(180),
       switchMap(term => term.trim().length < 2 ? of({ term, players: [] as Player[] }) : this.api.searchPlayers(term.trim()).pipe(
@@ -72,13 +78,48 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
       this.activeSuggestionIndex = -1;
       this.detector.markForCheck();
     });
-    this.start();
   }
 
   ngOnDestroy(): void {
     this.destroyed = true;
     this.timer?.unsubscribe();
+    this.countdownTimer?.unsubscribe();
     this.searchSubscription?.unsubscribe();
+  }
+
+  beginGame(): void {
+    if (this.loading || this.countdown !== null) return;
+    this.errorMessage = '';
+    this.showStartModal = false;
+    this.countdown = 3;
+    try { localStorage.setItem('pickandroll-starting-five-intro-seen', 'true'); }
+    catch { /* The game still works when storage is unavailable. */ }
+
+    this.countdownTimer?.unsubscribe();
+    this.countdownTimer = interval(1000).pipe(take(3)).subscribe({
+      next: step => {
+        this.countdown = 2 - step;
+        this.detector.markForCheck();
+      },
+      complete: () => {
+        this.countdown = null;
+        this.start();
+        this.detector.markForCheck();
+      }
+    });
+  }
+
+  prepareNewGame(): void {
+    if (this.loading || this.restoring) return;
+    this.timer?.unsubscribe();
+    this.round = null;
+    this.dailyAttempt = null;
+    this.feedback = '';
+    this.errorMessage = '';
+    this.showDetailedInstructions = false;
+    this.showStartModal = true;
+    this.countdown = null;
+    this.clearSearch();
   }
 
   start(): void {
@@ -94,13 +135,19 @@ export class FivePlayerGameComponent implements OnInit, OnDestroy {
     if (this.practice) {
       this.api.startFivePlayerGame().pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
         next: round => this.applyPracticeRound(round),
-        error: () => this.errorMessage = 'The practice game could not be started.'
+        error: () => {
+          this.errorMessage = 'The practice game could not be started.';
+          this.showStartModal = true;
+        }
       });
       return;
     }
     this.api.startDailyFivePlayer(this.ranked).pipe(finalize(() => { this.loading = false; this.detector.markForCheck(); })).subscribe({
       next: attempt => this.applyAttempt(attempt, sentAt),
-      error: () => this.errorMessage = 'The game could not be started. Import player and club data first.'
+      error: () => {
+        this.errorMessage = 'The game could not be started. Import player and club data first.';
+        this.showStartModal = true;
+      }
     });
   }
 

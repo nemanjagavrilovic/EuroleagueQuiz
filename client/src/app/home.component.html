@@ -5,7 +5,7 @@
     <figure class="playbook"><img src="assets/home/pick-and-roll-basic.jpg" width="300" height="285" alt="Basketball diagram showing a ball handler using a teammate’s screen and passing to the player rolling toward the basket."><figcaption><span class="playbook-label">THE PLAY BEHIND THE NAME</span><p>A screen. A roll. A connection.</p></figcaption></figure>
   </header>
   <section class="games-section" aria-labelledby="games-title">
-    <div class="section-heading"><h2 id="games-title">Choose your game</h2><span>Free to play. No sign-up needed.</span></div>
+    <div class="section-heading"><h2 id="games-title">Choose your game</h2></div>
     <div class="games-grid">
       <article class="game-card" *ngFor="let game of games" [class.featured]="game.art === 'grid'">
         <div class="game-visual"><app-game-art [game]="game.art"></app-game-art></div>
