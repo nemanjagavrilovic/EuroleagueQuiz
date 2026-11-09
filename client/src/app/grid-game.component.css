@@ -185,3 +185,36 @@ button, input { font: inherit; }
   .panel-heading { gap: 8px; }
   .grid-guide h2 { font-size: 25px; }
 }
+
+/* Mobile play mode: keep the answer control above the keyboard and remove page chrome. */
+@media (max-width: 600px) {
+  .shell.grid-page { padding-top: 10px; padding-bottom: 126px; }
+  .grid-page .game-header { margin-bottom: 10px; }
+  .grid-page .game-header .title-row,
+  .grid-page .game-header .intro,
+  .grid-page .game-header .daily-status { display: none; }
+  .grid-page .grid-guide { display: none; }
+  .grid-page .grid-caption { display: none; }
+  .grid-page .search-panel.active-search { display: contents; }
+  .grid-page .search-panel.active-search > .eyebrow,
+  .grid-page .search-panel.active-search > h2,
+  .grid-page .search-panel.active-search > .guest-score-note,
+  .grid-page .search-panel.active-search > .daily-return { display: none; }
+  .grid-page .search-panel.active-search .answer-section {
+    position: fixed;
+    z-index: 1200;
+    left: 50%;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    box-sizing: border-box;
+    width: min(calc(100vw - 24px), 576px);
+    padding: 10px 12px 6px;
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 -10px 35px #0009;
+  }
+  .grid-page .search-panel.active-search .feedback-slot { min-height: 28px; padding: 7px 2px 0; }
+  .grid-page .search-panel.active-search .feedback-slot p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .grid-page .search-panel.active-search .suggestions { max-height: min(250px, 34svh); }
+}

@@ -17,7 +17,7 @@
       <p class="career-caption">One player connects these clubs. Every clue brings you closer.</p>
       <div class="club-actions" *ngIf="!round.completed"><span>{{ round.revealedTeamCount < round.totalTeams ? 'Need another connection?' : 'All clubs revealed' }}</span><button class="secondary" type="button" (click)="skip()" [disabled]="loading || restoring">{{ round.revealedTeamCount < round.totalTeams ? 'Reveal next club' : 'Reveal player' }}</button></div>
     </section>
-    <section class="history-search-panel" aria-label="Find the player">
+    <section class="history-search-panel" [class.active-search]="!round.completed" aria-label="Find the player">
       <p class="eyebrow">MAKE THE CONNECTION</p><h2>{{ round.completed ? (round.correct ? 'Player found' : 'Answer revealed') : 'Who’s the player?' }}</h2>
       <div *ngIf="!round.completed" class="answer-area">
         <div class="search-wrap"><label class="search-label" for="history-search">Search players</label>

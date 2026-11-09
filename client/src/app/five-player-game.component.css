@@ -147,3 +147,43 @@ button:disabled { opacity: .5; cursor: default; }
   .player-slots strong { font-size: 13px; }
   .five-guide h2 { font-size: 25px; }
 }
+
+/* Mobile play mode: keep player search available throughout the timed round. */
+@media (max-width: 600px) {
+  .game-shell.five-page { padding-top: 10px; padding-bottom: 126px; }
+  .five-page .five-header { margin-bottom: 10px; }
+  .five-page .five-header > *:not(.back-link) { display: none; }
+  .five-page .five-guide { display: none; }
+  .five-page .five-card { padding: 12px; }
+  .five-page .scoreboard { padding: 8px 4px; }
+  .five-page .scoreboard strong { font-size: 20px; }
+  .five-page .timer app-shot-clock { width: 76px; }
+  .five-page .club-heading { margin: 12px 0; }
+  .five-page .club-heading img { width: 42px; height: 42px; }
+  .five-page .club-heading h2 { font-size: 18px; }
+  .five-page .player-slots { gap: 5px; }
+  .five-page .player-slots li { min-height: 38px; padding: 6px 8px; }
+  .five-page .round-actions { margin-top: 10px; padding-top: 10px; }
+  .five-page .round-actions > span { display: none; }
+  .five-page .five-search-panel.active-search { display: contents; }
+  .five-page .five-search-panel.active-search > .eyebrow,
+  .five-page .five-search-panel.active-search > h2,
+  .five-page .five-search-panel.active-search > .five-guest-note { display: none; }
+  .five-page .five-search-panel.active-search .answer-area {
+    position: fixed;
+    z-index: 1200;
+    left: 50%;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    box-sizing: border-box;
+    width: min(calc(100vw - 24px), 576px);
+    padding: 10px 12px 6px;
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 -10px 35px #0009;
+  }
+  .five-page .five-search-panel.active-search .feedback-slot { min-height: 28px; padding: 7px 2px 0; }
+  .five-page .five-search-panel.active-search .feedback-slot p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .five-page .five-search-panel.active-search .suggestions { max-height: min(250px, 34svh); }
+}

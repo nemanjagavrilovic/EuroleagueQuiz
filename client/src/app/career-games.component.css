@@ -376,3 +376,68 @@ h2 { margin-top: 28px; }
   .mystery-page .mystery-clues p { font-size: 14px; }
   .mystery-page .missing-guide h2 { font-size: 25px; }
 }
+
+/* Compact phone layouts keep the puzzle and its answer controls in one viewport. */
+@media (max-width: 600px) {
+  .game-shell.missing-page,
+  .game-shell.mystery-page { padding-top: 10px; }
+  .missing-page .missing-header,
+  .mystery-page .missing-header { display: none; }
+  .missing-page .missing-guide,
+  .mystery-page .missing-guide { display: none; }
+
+  .missing-page .missing-layout { gap: 10px; margin-top: 10px; }
+  .missing-page .missing-card,
+  .missing-page .missing-choice-panel { padding: 12px; }
+  .missing-page .missing-daily-score,
+  .missing-page .career-note,
+  .missing-page .choice-intro,
+  .missing-page .missing-choice-panel > .eyebrow,
+  .missing-page .missing-guest-note { display: none; }
+  .missing-page .player-heading { margin-bottom: 8px; }
+  .missing-page .player-heading > img { width: 42px; height: 42px; }
+  .missing-page .player-heading .eyebrow { margin: 0 0 3px; font-size: 8px; }
+  .missing-page .player-heading h2 { font-size: 18px; }
+  .missing-page .career-clues { margin: 8px 0; gap: 6px; }
+  .missing-page .career-club { min-height: 92px; padding: 7px 5px; gap: 5px; }
+  .missing-page .career-club img { width: 32px; height: 32px; }
+  .missing-page .career-club strong { font-size: 10px; line-height: 1.25; }
+  .missing-page .clue-label { display: none; }
+  .missing-page .question-mark { font-size: 28px; }
+  .missing-page .career-assist { padding-top: 8px; }
+  .missing-page .missing-choice-panel > h2 { margin-bottom: 10px; font-size: 19px; }
+  .missing-page .club-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .missing-page .club-options button { min-height: 64px; padding: 7px 6px; gap: 6px; }
+  .missing-page .club-options img { width: 30px; height: 30px; }
+  .missing-page .club-options button > span:last-child { font-size: 10px; line-height: 1.25; }
+  .missing-page .option-letter { width: 21px; height: 21px; font-size: 10px; }
+  .missing-page .missing-feedback { min-height: 36px; }
+
+  .game-shell.mystery-page { padding-bottom: 126px; }
+  .mystery-page .missing-layout { gap: 10px; margin-top: 10px; }
+  .mystery-page .mystery-card { padding: 12px; }
+  .mystery-page .next-clue { display: none; }
+  .mystery-page .mystery-clues li { padding: 9px; }
+  .mystery-page .mystery-actions { margin-top: 10px; padding-top: 10px; }
+  .mystery-page .mystery-search-panel.active-search { display: contents; }
+  .mystery-page .mystery-search-panel.active-search > .eyebrow,
+  .mystery-page .mystery-search-panel.active-search > h2,
+  .mystery-page .mystery-search-panel.active-search > .mystery-guest-note { display: none; }
+  .mystery-page .mystery-search-panel.active-search .mystery-answer {
+    position: fixed;
+    z-index: 1200;
+    left: 50%;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    box-sizing: border-box;
+    width: min(calc(100vw - 24px), 576px);
+    padding: 10px 12px 6px;
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 -10px 35px #0009;
+  }
+  .mystery-page .mystery-search-panel.active-search .missing-feedback { min-height: 28px; padding-top: 7px; }
+  .mystery-page .mystery-search-panel.active-search .missing-feedback p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mystery-page .mystery-search-panel.active-search .suggestions { max-height: min(250px, 34svh); }
+}

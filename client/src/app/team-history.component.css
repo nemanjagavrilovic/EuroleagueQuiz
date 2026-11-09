@@ -148,3 +148,39 @@ button:disabled { opacity: .5; cursor: default; }
   .history-guide h2 { font-size: 25px; }
   .club-actions { gap: 10px; }
 }
+
+/* Mobile play mode: the search dock remains visible while the club clues scroll. */
+@media (max-width: 600px) {
+  .history-shell.history-page { padding-top: 10px; padding-bottom: 126px; }
+  .history-page .game-header { margin-bottom: 10px; }
+  .history-page .game-header > *:not(.back-link) { display: none; }
+  .history-page .history-guide { display: none; }
+  .history-page .history-card { padding: 12px; }
+  .history-page .career-caption { display: none; }
+  .history-page .clue-progress { margin: 10px 0 12px; }
+  .history-page .team-list { margin-bottom: 10px; }
+  .history-page .team-chip { min-height: 112px; padding: 8px 6px; }
+  .history-page .team-chip img { width: 38px; height: 38px; }
+  .history-page .club-actions { padding-top: 10px; }
+  .history-page .history-search-panel.active-search { display: contents; }
+  .history-page .history-search-panel.active-search > .eyebrow,
+  .history-page .history-search-panel.active-search > h2,
+  .history-page .history-search-panel.active-search > .history-guest-note { display: none; }
+  .history-page .history-search-panel.active-search .answer-area {
+    position: fixed;
+    z-index: 1200;
+    left: 50%;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    box-sizing: border-box;
+    width: min(calc(100vw - 24px), 576px);
+    padding: 10px 12px 6px;
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 -10px 35px #0009;
+  }
+  .history-page .history-search-panel.active-search .feedback-slot { min-height: 28px; padding: 7px 2px 0; }
+  .history-page .history-search-panel.active-search .feedback-slot p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .history-page .history-search-panel.active-search .suggestions { max-height: min(250px, 34svh); }
+}

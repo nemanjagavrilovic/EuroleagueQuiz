@@ -38,7 +38,7 @@
       <p class="grid-caption">Find a player for each club intersection.</p>
     </section>
 
-    <section class="search-panel" aria-label="Find a player">
+    <section class="search-panel" [class.active-search]="!attemptCompleted" aria-label="Find a player">
       <p class="eyebrow">MAKE THE CONNECTION</p>
       <h2>{{ gridRevealed ? 'Answers revealed' : isGridComplete() ? 'Grid complete' : attemptCompleted ? 'Daily attempt complete' : 'Who’s the connection?' }}</h2>
       <div class="completion-message" *ngIf="isGridComplete()" role="status"><div><strong>Nothing but net.</strong><span>You found all nine connections!</span></div><a routerLink="/">Explore games →</a></div>
