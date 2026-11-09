@@ -26,8 +26,8 @@ export class AuthService {
       .pipe(tap(response => this.accept(response)));
   }
 
-  register(displayName: string, email: string, password: string): Observable<MessageResponse> {
-    return this.http.post<MessageResponse>(`${this.baseUrl}/auth/register`, { displayName, email, password });
+  register(firstName: string, lastName: string, phoneNumber: string, email: string, password: string): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.baseUrl}/auth/register`, { firstName, lastName, phoneNumber, email, password });
   }
 
   confirmEmail(userId: string, token: string): Observable<MessageResponse> {
@@ -71,8 +71,8 @@ export class AuthService {
     );
   }
 
-  updateProfile(firstName: string, lastName: string): Observable<AuthUser> {
-    return this.http.put<AuthUser>(`${this.baseUrl}/auth/profile`, { firstName, lastName })
+  updateProfile(firstName: string, lastName: string, phoneNumber: string): Observable<AuthUser> {
+    return this.http.put<AuthUser>(`${this.baseUrl}/auth/profile`, { firstName, lastName, phoneNumber })
       .pipe(tap(user => this.store.updateUser(user)));
   }
 

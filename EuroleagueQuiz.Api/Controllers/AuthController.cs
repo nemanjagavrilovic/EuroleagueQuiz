@@ -35,10 +35,14 @@ public sealed class AuthController(
     public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
     {
         var email = request.Email.Trim();
+        var firstName = request.FirstName.Trim();
+        var lastName = request.LastName.Trim();
+        var phoneNumber = request.PhoneNumber.Trim();
         var user = new ApplicationUser
         {
             Id = Guid.NewGuid(), UserName = email, Email = email,
-            DisplayName = request.DisplayName.Trim(), SubscriptionPlan = SubscriptionPlans.Free,
+            FirstName = firstName, LastName = lastName, DisplayName = $"{firstName} {lastName}",
+            PhoneNumber = phoneNumber, SubscriptionPlan = SubscriptionPlans.Free,
             CreatedAtUtc = timeProvider.GetUtcNow().UtcDateTime
         };
         var result = await userManager.CreateAsync(user, request.Password);
@@ -126,12 +130,20 @@ public sealed class AuthController(
         if (user is null) return Unauthorized();
         var firstName = request.FirstName.Trim();
         var lastName = request.LastName.Trim();
+        var phoneNumber = request.PhoneNumber.Trim();
         if (firstName.Length is < 1 or > 50 || lastName.Length is < 1 or > 50)
             return BadRequest(new { message = "Enter a first and last name of up to 50 characters each." });
+        if (phoneNumber.Length is < 7 or > 30 || !new PhoneAttribute().IsValid(phoneNumber))
+            return BadRequest(new { message = "Enter a valid phone number of up to 30 characters." });
 
         user.FirstName = firstName;
         user.LastName = lastName;
         user.DisplayName = $"{firstName} {lastName}";
+        if (!string.Equals(user.PhoneNumber, phoneNumber, StringComparison.Ordinal))
+        {
+            user.PhoneNumber = phoneNumber;
+            user.PhoneNumberConfirmed = false;
+        }
         var result = await userManager.UpdateAsync(user);
         return result.Succeeded ? Ok(await UserResponseAsync(user)) : Validation(result);
     }
@@ -350,7 +362,7 @@ public sealed class AuthController(
     };
 
     private async Task<AuthUserResponse> UserResponseAsync(ApplicationUser user) => new(
-        user.Id, user.Email, user.DisplayName, user.FirstName, user.LastName,
+        user.Id, user.Email, user.DisplayName, user.FirstName, user.LastName, user.PhoneNumber,
         (await userManager.GetRolesAsync(user)).ToArray(), user.SubscriptionPlan,
         await userManager.HasPasswordAsync(user));
 
@@ -393,7 +405,9 @@ public sealed class AuthController(
 }
 
 public sealed record RegisterRequest(
-    [Required, StringLength(80, MinimumLength = 2)] string DisplayName,
+    [Required, StringLength(50, MinimumLength = 1)] string FirstName,
+    [Required, StringLength(50, MinimumLength = 1)] string LastName,
+    [Required, Phone, StringLength(30, MinimumLength = 7)] string PhoneNumber,
     [Required, EmailAddress, StringLength(254)] string Email,
     [Required, StringLength(128, MinimumLength = 8)] string Password);
 public sealed record LoginRequest([Required, EmailAddress] string Email, [Required] string Password);
@@ -402,6 +416,7 @@ public sealed record ResetPasswordRequest([Required, EmailAddress] string Email,
     [Required, StringLength(128, MinimumLength = 8)] string NewPassword);
 public sealed record UpdateProfileRequest(
     [Required, StringLength(50)] string FirstName,
-    [Required, StringLength(50)] string LastName);
-public sealed record AuthUserResponse(Guid Id, string? Email, string DisplayName, string? FirstName, string? LastName,
+    [Required, StringLength(50)] string LastName,
+    [Required, Phone, StringLength(30, MinimumLength = 7)] string PhoneNumber);
+public sealed record AuthUserResponse(Guid Id, string? Email, string DisplayName, string? FirstName, string? LastName, string? PhoneNumber,
     IReadOnlyList<string> Roles, string SubscriptionPlan, bool HasPassword);

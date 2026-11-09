@@ -15,7 +15,8 @@ label { display: block; color: var(--text-secondary); font-size: 12px; font-weig
 input { display: block; width: 100%; min-width: 0; min-height: 46px; margin-top: 8px; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--deep); color: var(--text); font-size: 16px; }
 input[readonly] { color: var(--muted); border-color: var(--border); }
 input[aria-invalid="true"] { border-color: var(--error-border); }
-.email-label > span { margin-left: 6px; color: var(--muted); font-size: 10px; font-weight: 500; }
+.phone-label { margin-bottom: 18px; }
+.phone-label > span, .email-label > span { margin-left: 6px; color: var(--muted); font-size: 10px; font-weight: 500; }
 #email-note { margin: 7px 0 20px; font-size: 11px; }
 .field-error { display: block; margin-top: 7px; color: var(--error-text); font-size: 11px; line-height: 1.5; }
 button, .primary { display: inline-block; padding: 11px 18px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--deep); color: var(--text); font-size: 13px; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; }

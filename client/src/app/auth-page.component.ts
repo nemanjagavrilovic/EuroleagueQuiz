@@ -26,7 +26,9 @@ export class AuthPageComponent implements OnInit {
   readonly showResend = signal(false);
   readonly invalidSetupLink = signal(false);
   readonly form = this.fb.nonNullable.group({
-    displayName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
+    firstName: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/\S/)]],
+    lastName: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/\S/)]],
+    phoneNumber: ['', [Validators.required, Validators.minLength(7), Validators.maxLength(30), Validators.pattern(/^\+?[0-9 ()-]+$/)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
     confirmPassword: ['']
@@ -50,19 +52,23 @@ export class AuthPageComponent implements OnInit {
     if (this.loading() || this.invalidSetupLink()) return;
     this.message.set(''); this.error.set(''); this.showResend.set(false);
     const mode = this.mode();
-    const { displayName, email, password, confirmPassword } = this.form.getRawValue();
+    const { firstName, lastName, phoneNumber, email, password, confirmPassword } = this.form.getRawValue();
     if (!email || this.form.controls.email.invalid || ((mode === 'login' || mode === 'register' || mode === 'reset' || mode === 'setup' || mode === 'temporary') && !password)) {
       this.form.markAllAsTouched(); return;
     }
     if ((mode === 'register' || mode === 'reset' || mode === 'setup' || mode === 'temporary') && this.form.controls.password.invalid) {
       this.error.set('Use a password between 8 and 128 characters.'); return;
     }
+    if (mode === 'register' && (this.form.controls.firstName.invalid || this.form.controls.lastName.invalid || this.form.controls.phoneNumber.invalid)) {
+      this.form.markAllAsTouched();
+      this.error.set('Enter your first name, last name and a valid phone number.'); return;
+    }
     if ((mode === 'register' || mode === 'reset' || mode === 'setup' || mode === 'temporary') && password !== confirmPassword) {
       this.error.set('Passwords do not match.'); return;
     }
     this.loading.set(true);
     const request: Observable<unknown> = mode === 'login' ? this.auth.login(email, password)
-      : mode === 'register' ? this.auth.register(displayName, email, password)
+      : mode === 'register' ? this.auth.register(firstName.trim(), lastName.trim(), phoneNumber.trim(), email, password)
       : mode === 'forgot' ? this.auth.forgotPassword(email)
       : mode === 'resend' ? this.auth.resendConfirmation(email)
       : mode === 'setup' ? this.auth.setPassword(email, this.route.snapshot.queryParamMap.get('token') || '', password)

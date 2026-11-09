@@ -20,6 +20,10 @@
           <small id="last-name-error" class="field-error" *ngIf="form.controls.lastName.touched && form.controls.lastName.invalid">Enter your last name (up to 50 characters).</small>
         </label>
       </div>
+      <label class="phone-label" for="profile-phone">Phone number
+        <input id="profile-phone" formControlName="phoneNumber" type="tel" autocomplete="tel" maxlength="30" placeholder="+381 60 123 4567" [attr.aria-invalid]="form.controls.phoneNumber.touched && form.controls.phoneNumber.invalid" aria-describedby="phone-error">
+        <small id="phone-error" class="field-error" *ngIf="form.controls.phoneNumber.touched && form.controls.phoneNumber.invalid">Enter a valid phone number of up to 30 characters.</small>
+      </label>
       <label class="email-label" for="profile-email">Email address <span>Read only</span>
         <input id="profile-email" type="email" [value]="user.email" readonly autocomplete="email" aria-describedby="email-note">
       </label>

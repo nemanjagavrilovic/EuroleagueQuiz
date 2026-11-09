@@ -6,6 +6,7 @@ export interface AuthUser {
   displayName: string;
   firstName: string | null;
   lastName: string | null;
+  phoneNumber: string | null;
   hasPassword: boolean;
   roles: string[];
   subscriptionPlan: string;

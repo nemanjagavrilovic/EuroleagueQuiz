@@ -21,7 +21,11 @@
     <div *ngIf="mode() === 'login' || mode() === 'register'" class="divider"><span>or use email</span></div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <label *ngIf="mode() === 'register'">Display name<input formControlName="displayName" autocomplete="name" placeholder="How players will see you"></label>
+      <div class="registration-name-fields" *ngIf="mode() === 'register'">
+        <label>First name<input formControlName="firstName" autocomplete="given-name" maxlength="50" placeholder="First name"></label>
+        <label>Last name<input formControlName="lastName" autocomplete="family-name" maxlength="50" placeholder="Last name"></label>
+      </div>
+      <label *ngIf="mode() === 'register'">Phone number<input formControlName="phoneNumber" type="tel" autocomplete="tel" maxlength="30" placeholder="+381 60 123 4567"></label>
       <label *ngIf="(mode() !== 'setup' && mode() !== 'temporary') || !message()">Email<input formControlName="email" type="email" autocomplete="email" placeholder="you@example.com" [readOnly]="mode() === 'setup' || mode() === 'temporary'"></label>
       <label *ngIf="mode() === 'login' || mode() === 'register' || mode() === 'reset' || ((mode() === 'setup' || mode() === 'temporary') && !message())">{{ mode() === 'temporary' ? 'New password' : 'Password' }}<input formControlName="password" type="password" [autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'" placeholder="At least 8 characters" maxlength="128"></label>
       <small class="password-hint" *ngIf="mode() === 'register' || mode() === 'reset' || ((mode() === 'setup' || mode() === 'temporary') && !message())">Use at least 8 characters with uppercase, lowercase and a number.</small>

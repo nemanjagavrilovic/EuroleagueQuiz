@@ -25,14 +25,15 @@ export class ProfileComponent {
   readonly passwordError = signal('');
   readonly form = this.fb.nonNullable.group({
     firstName: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/\S/)]],
-    lastName: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/\S/)]]
+    lastName: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/\S/)]],
+    phoneNumber: ['', [Validators.required, Validators.minLength(7), Validators.maxLength(30), Validators.pattern(/^\+?[0-9 ()-]+$/)]]
   });
 
   constructor() {
     effect(() => {
       const user = this.auth.user();
       if (user && !this.form.dirty) {
-        this.form.patchValue({ firstName: user.firstName ?? '', lastName: user.lastName ?? '' });
+        this.form.patchValue({ firstName: user.firstName ?? '', lastName: user.lastName ?? '', phoneNumber: user.phoneNumber ?? '' });
       }
     });
   }
@@ -43,13 +44,13 @@ export class ProfileComponent {
     this.profileError.set('');
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
-    const { firstName, lastName } = this.form.getRawValue();
+    const { firstName, lastName, phoneNumber } = this.form.getRawValue();
     this.saving.set(true);
-    this.auth.updateProfile(firstName.trim(), lastName.trim()).pipe(
+    this.auth.updateProfile(firstName.trim(), lastName.trim(), phoneNumber.trim()).pipe(
       finalize(() => this.saving.set(false))
     ).subscribe({
       next: user => {
-        this.form.reset({ firstName: user.firstName ?? '', lastName: user.lastName ?? '' });
+        this.form.reset({ firstName: user.firstName ?? '', lastName: user.lastName ?? '', phoneNumber: user.phoneNumber ?? '' });
         this.profileMessage.set('Your profile has been updated.');
       },
       error: (error: HttpErrorResponse) => this.profileError.set(this.errorMessage(error, 'Your profile could not be saved. Please try again.'))

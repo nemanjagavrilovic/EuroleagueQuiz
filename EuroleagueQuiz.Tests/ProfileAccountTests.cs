@@ -17,6 +17,24 @@ namespace EuroleagueQuiz.Tests;
 public sealed class ProfileAccountTests
 {
     [Fact]
+    public async Task Registration_stores_names_phone_and_derived_display_name()
+    {
+        using var manager = new StubUserManager(Account());
+        var controller = Controller(manager, new RecordingEmailSender(), signedIn: false);
+
+        var result = await controller.Register(new(
+            " Nemanja ", " Gavrilović ", "+381 60 123 4567", "new@example.test", "Password1"), default);
+
+        var created = Assert.IsType<ApplicationUser>(manager.CreatedUser);
+        Assert.IsType<ObjectResult>(result);
+        Assert.Equal("Nemanja", created.FirstName);
+        Assert.Equal("Gavrilović", created.LastName);
+        Assert.Equal("Nemanja Gavrilović", created.DisplayName);
+        Assert.Equal("+381 60 123 4567", created.PhoneNumber);
+        Assert.Contains(AppRoles.Free, manager.AddedRoles);
+    }
+
+    [Fact]
     public async Task Profile_update_changes_only_the_authenticated_users_names()
     {
         var user = Account();
@@ -24,7 +42,8 @@ public sealed class ProfileAccountTests
         var controller = Controller(manager, new RecordingEmailSender());
         var request = JsonSerializer.Deserialize<UpdateProfileRequest>("""
             {"firstName":"  Nemanja  ","lastName":"Gavrilović  ","email":"other@example.test",
-             "id":"00000000-0000-0000-0000-000000000001","roles":["Admin"],"subscriptionPlan":"Paid"}
+             "phoneNumber":"+381 60 123 4567","id":"00000000-0000-0000-0000-000000000001",
+             "roles":["Admin"],"subscriptionPlan":"Paid"}
             """, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
 
         var result = Assert.IsType<OkObjectResult>(await controller.UpdateProfile(request));
@@ -33,6 +52,9 @@ public sealed class ProfileAccountTests
         Assert.Equal("Nemanja", response.FirstName);
         Assert.Equal("Gavrilović", response.LastName);
         Assert.Equal("Nemanja Gavrilović", response.DisplayName);
+        Assert.Equal("+381 60 123 4567", response.PhoneNumber);
+        Assert.Equal("+381 60 123 4567", user.PhoneNumber);
+        Assert.False(user.PhoneNumberConfirmed);
         Assert.Equal(user.Id, response.Id);
         Assert.Equal("player+test@example.test", user.Email);
         Assert.Equal("player+test@example.test", user.UserName);
@@ -49,11 +71,24 @@ public sealed class ProfileAccountTests
     {
         var user = Account();
         using var manager = new StubUserManager(user);
-        var result = await Controller(manager, new RecordingEmailSender()).UpdateProfile(new(firstName, lastName));
+        var result = await Controller(manager, new RecordingEmailSender()).UpdateProfile(new(firstName, lastName, "+38160123456"));
 
         Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal(0, manager.Updates);
         Assert.Equal("Player", user.DisplayName);
+    }
+
+    [Fact]
+    public async Task Invalid_phone_number_is_rejected_without_updating_the_user()
+    {
+        var user = Account();
+        using var manager = new StubUserManager(user);
+
+        var result = await Controller(manager, new RecordingEmailSender()).UpdateProfile(new("Jane", "Doe", "invalid"));
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal(0, manager.Updates);
+        Assert.Equal("+38160111222", user.PhoneNumber);
     }
 
     [Fact]
@@ -63,7 +98,7 @@ public sealed class ProfileAccountTests
         var email = new RecordingEmailSender();
         var controller = Controller(manager, email, signedIn: false);
 
-        Assert.IsType<UnauthorizedResult>(await controller.UpdateProfile(new("Jane", "Doe")));
+        Assert.IsType<UnauthorizedResult>(await controller.UpdateProfile(new("Jane", "Doe", "+38160123456")));
         Assert.IsType<UnauthorizedResult>(await controller.RequestPasswordResetLink(default));
         Assert.Equal(0, manager.Updates);
         Assert.Empty(email.Messages);
@@ -140,7 +175,8 @@ public sealed class ProfileAccountTests
     private static ApplicationUser Account() => new()
     {
         Id = Guid.NewGuid(), Email = "player+test@example.test", UserName = "player+test@example.test",
-        DisplayName = "Player", EmailConfirmed = true, PasswordHash = "test-hash"
+        DisplayName = "Player", PhoneNumber = "+38160111222", PhoneNumberConfirmed = true,
+        EmailConfirmed = true, PasswordHash = "test-hash"
     };
 
     private static AuthController Controller(StubUserManager manager, IAccountEmailSender sender, bool signedIn = true)
@@ -184,7 +220,19 @@ public sealed class ProfileAccountTests
     {
         public const string ResetToken = "identity-token/+&=with-special-characters";
         public ApplicationUser User { get; } = user;
+        public ApplicationUser? CreatedUser { get; private set; }
+        public List<string> AddedRoles { get; } = [];
         public int Updates { get; private set; }
+        public override Task<IdentityResult> CreateAsync(ApplicationUser value, string password)
+        {
+            CreatedUser = value;
+            return Task.FromResult(IdentityResult.Success);
+        }
+        public override Task<IdentityResult> AddToRoleAsync(ApplicationUser value, string role)
+        {
+            AddedRoles.Add(role);
+            return Task.FromResult(IdentityResult.Success);
+        }
         public override Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal principal) => Task.FromResult(
             principal.Identity?.IsAuthenticated == true && principal.FindFirstValue(ClaimTypes.NameIdentifier) == User.Id.ToString() ? User : null);
         public override Task<IdentityResult> UpdateAsync(ApplicationUser value) { Updates++; return Task.FromResult(IdentityResult.Success); }
@@ -192,6 +240,7 @@ public sealed class ProfileAccountTests
         public override Task<bool> HasPasswordAsync(ApplicationUser value) => Task.FromResult(value.PasswordHash is not null);
         public override Task<bool> IsEmailConfirmedAsync(ApplicationUser value) => Task.FromResult(value.EmailConfirmed);
         public override Task<string> GeneratePasswordResetTokenAsync(ApplicationUser value) => Task.FromResult(ResetToken);
+        public override Task<string> GenerateEmailConfirmationTokenAsync(ApplicationUser value) => Task.FromResult("confirmation-token");
         public override Task<string> GenerateUserTokenAsync(ApplicationUser value, string provider, string purpose) => Task.FromResult("password-setup-token/+&=");
         public override Task<ApplicationUser?> FindByEmailAsync(string email) => Task.FromResult<ApplicationUser?>(
             string.Equals(User.Email, email, StringComparison.OrdinalIgnoreCase) ? User : null);
