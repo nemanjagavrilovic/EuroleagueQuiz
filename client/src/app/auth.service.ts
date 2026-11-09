@@ -47,6 +47,11 @@ export class AuthService {
       .pipe(tap(() => this.clearSession()));
   }
 
+  changeTemporaryPassword(email: string, token: string, newPassword: string): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.baseUrl}/auth/change-temporary-password`, { email, token, newPassword })
+      .pipe(tap(() => this.clearSession()));
+  }
+
   setPassword(email: string, token: string, newPassword: string): Observable<MessageResponse> {
     return this.http.post<MessageResponse>(`${this.baseUrl}/auth/set-password`, { email, token, newPassword })
       .pipe(tap(() => this.clearSession()));

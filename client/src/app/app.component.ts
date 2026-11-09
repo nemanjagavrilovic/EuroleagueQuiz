@@ -3,11 +3,12 @@ import { SeoService } from './seo.service';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { NgIf } from '@angular/common';
 import { AuthService } from './auth.service';
+import { ConfirmationModalComponent } from './shared/confirmation-modal/confirmation-modal.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [NgIf, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [NgIf, RouterOutlet, RouterLink, RouterLinkActive, ConfirmationModalComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

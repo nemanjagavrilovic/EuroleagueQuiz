@@ -175,6 +175,7 @@ public sealed class ProfileAccountTests
             SetupMessages.Add((email, setupUrl));
             return Task.CompletedTask;
         }
+        public Task SendTemporaryPasswordAsync(string email, string displayName, string temporaryPassword, string loginUrl, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class StubUserManager(ApplicationUser user) : UserManager<ApplicationUser>(

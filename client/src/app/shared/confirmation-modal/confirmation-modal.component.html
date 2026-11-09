@@ -1,0 +1,27 @@
+<div
+  *ngIf="confirmation.state() as modal"
+  class="confirmation-backdrop"
+  (mousedown)="cancelFromBackdrop($event)"
+>
+  <section
+    class="confirmation-dialog"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="confirmation-title"
+    aria-describedby="confirmation-message"
+    [class.danger]="modal.tone === 'danger'"
+  >
+    <div class="confirmation-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.8 2.2 18a2 2 0 0 0 1.7 3h16.2a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/></svg>
+    </div>
+    <div class="confirmation-copy">
+      <span class="confirmation-eyebrow">CONFIRM ACTION</span>
+      <h2 id="confirmation-title">{{ modal.title }}</h2>
+      <p id="confirmation-message">{{ modal.message }}</p>
+    </div>
+    <div class="confirmation-actions">
+      <button #cancelButton type="button" class="cancel" (click)="confirmation.cancel()">{{ modal.cancelLabel }}</button>
+      <button type="button" class="confirm" (click)="confirmation.accept()">{{ modal.confirmLabel }}</button>
+    </div>
+  </section>
+</div>

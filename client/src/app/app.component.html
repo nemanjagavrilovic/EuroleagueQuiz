@@ -17,6 +17,10 @@
         <svg class="profile-chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7.5 5 5 5-5"/></svg>
       </button>
       <div *ngIf="profileMenuOpen" id="profile-menu" class="profile-menu" role="menu">
+        <a *ngIf="user.roles.includes('Admin')" routerLink="/admin/users" role="menuitem" (click)="closeProfileMenu()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-2v6m3-3h-6"/></svg>
+          Manage users
+        </a>
         <a routerLink="/profile" role="menuitem" (click)="closeProfileMenu()">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/></svg>
           Profile
@@ -34,7 +38,17 @@
 <footer class="site-footer">
   <div class="footer-inner">
     <div><a class="footer-brand" routerLink="/" aria-label="Pick and Roll home"><img class="brand-logo" src="assets/branding/pick-and-roll-hoop-badge.svg" width="48" height="48" alt="" loading="lazy">PICK & ROLL</a><p>Big basketball knowledge. One more game.</p></div>
-    <nav aria-label="Footer navigation"><a routerLink="/">All games</a><a routerLink="/leaderboard">Leaderboard</a><a routerLink="/" fragment="how-to-play">How to play</a><a routerLink="/contact">Contact us</a></nav>
+    <nav aria-label="Footer navigation">
+      <a routerLink="/">All games</a>
+      <a routerLink="/leaderboard">Leaderboard</a>
+      <a routerLink="/" fragment="how-to-play">How to play</a>
+      <a routerLink="/contact">Contact us</a>
+      <a class="footer-social" href="https://www.instagram.com/pickandrollquiz" target="_blank" rel="noopener noreferrer" aria-label="Pick and Roll Quiz on Instagram">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle class="instagram-dot" cx="17.4" cy="6.7" r="1"/></svg>
+        <span>Instagram</span>
+      </a>
+    </nav>
   </div>
   <div class="footer-bottom"><span>© {{ year }} Pick & Roll</span><div class="footer-notes"><span>EuroLeague quiz data covers seasons from 2007 onward.</span><span>Independent fan project. Not affiliated with EuroLeague.</span></div></div>
 </footer>
+<app-confirmation-modal></app-confirmation-modal>

@@ -18,10 +18,15 @@ import { authInterceptor } from './app/auth.interceptor';
 import { GameModeComponent } from './app/game-mode.component';
 import { LeaderboardComponent } from './app/leaderboard.component';
 import { NotFoundComponent } from './app/not-found.component';
+import { AdminUsersComponent } from './app/admin-users.component';
 
 const signedInGuard: CanActivateFn = (_route, state) => inject(AuthService).user()
   ? true
   : inject(Router).createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+
+const adminGuard: CanActivateFn = () => inject(AuthService).user()?.roles.includes('Admin')
+  ? true
+  : inject(Router).createUrlTree(['/']);
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -35,10 +40,12 @@ const routes: Routes = [
   { path: 'resend-confirmation', component: AuthPageComponent, data: { mode: 'resend' } },
   { path: 'reset-password', component: AuthPageComponent, data: { mode: 'reset' } },
   { path: 'set-password', component: AuthPageComponent, data: { mode: 'setup' } },
+  { path: 'change-temporary-password', component: AuthPageComponent, data: { mode: 'temporary' } },
   { path: 'confirm-email', component: ConfirmEmailComponent },
   { path: 'auth/callback', component: AuthCallbackComponent },
   { path: 'profile', component: ProfileComponent },
   { path: 'leaderboard', component: LeaderboardComponent },
+  { path: 'admin/users', component: AdminUsersComponent, canActivate: [adminGuard] },
   { path: 'play/:game', component: GameModeComponent, canActivate: [signedInGuard] },
   { path: 'game/five-player', component: FivePlayerGameComponent },
   { path: 'game/history', component: TeamHistoryComponent },

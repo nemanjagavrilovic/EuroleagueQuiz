@@ -8,7 +8,9 @@
     <h1 *ngIf="mode() === 'reset'">Choose a new password</h1>
     <h1 *ngIf="mode() === 'resend'">Confirm your email</h1>
     <h1 *ngIf="mode() === 'setup'">Create a portal password</h1>
+    <h1 *ngIf="mode() === 'temporary'">Replace temporary password</h1>
     <p class="intro" *ngIf="mode() === 'setup'">Add a password to your existing account. You can keep signing in with Google or use your email and this password.</p>
+    <p class="intro" *ngIf="mode() === 'temporary'">Choose a private password before continuing to your account. Your temporary password will stop working.</p>
     <p class="intro" *ngIf="mode() === 'forgot'">We'll email a reset link, or a password creation link if you currently sign in only with Google.</p>
     <p class="intro" *ngIf="mode() === 'login'">Sign in to play ranked daily challenges and appear on the leaderboard.</p>
     <p class="intro" *ngIf="mode() === 'register'">Your guest attempts remain visible but unranked. Ranked play starts with a fresh daily challenge.</p>
@@ -20,15 +22,15 @@
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <label *ngIf="mode() === 'register'">Display name<input formControlName="displayName" autocomplete="name" placeholder="How players will see you"></label>
-      <label *ngIf="mode() !== 'setup' || !message()">Email<input formControlName="email" type="email" autocomplete="email" placeholder="you@example.com" [readOnly]="mode() === 'setup'"></label>
-      <label *ngIf="mode() === 'login' || mode() === 'register' || mode() === 'reset' || (mode() === 'setup' && !message())">Password<input formControlName="password" type="password" [autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'" placeholder="At least 8 characters" maxlength="128"></label>
-      <small class="password-hint" *ngIf="mode() === 'register' || mode() === 'reset' || (mode() === 'setup' && !message())">Use at least 8 characters with uppercase, lowercase and a number.</small>
-      <label *ngIf="mode() === 'register' || mode() === 'reset' || (mode() === 'setup' && !message())">Confirm password<input formControlName="confirmPassword" type="password" autocomplete="new-password" maxlength="128"></label>
+      <label *ngIf="(mode() !== 'setup' && mode() !== 'temporary') || !message()">Email<input formControlName="email" type="email" autocomplete="email" placeholder="you@example.com" [readOnly]="mode() === 'setup' || mode() === 'temporary'"></label>
+      <label *ngIf="mode() === 'login' || mode() === 'register' || mode() === 'reset' || ((mode() === 'setup' || mode() === 'temporary') && !message())">{{ mode() === 'temporary' ? 'New password' : 'Password' }}<input formControlName="password" type="password" [autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'" placeholder="At least 8 characters" maxlength="128"></label>
+      <small class="password-hint" *ngIf="mode() === 'register' || mode() === 'reset' || ((mode() === 'setup' || mode() === 'temporary') && !message())">Use at least 8 characters with uppercase, lowercase and a number.</small>
+      <label *ngIf="mode() === 'register' || mode() === 'reset' || ((mode() === 'setup' || mode() === 'temporary') && !message())">Confirm password<input formControlName="confirmPassword" type="password" autocomplete="new-password" maxlength="128"></label>
       <p class="form-error" *ngIf="error()" role="alert">{{ error() }}</p>
       <p class="form-success" *ngIf="message()" role="status">{{ message() }}</p>
       <button *ngIf="showResend()" class="resend-button" type="button" [disabled]="loading()" (click)="resend()">Resend confirmation email</button>
-      <button *ngIf="(mode() !== 'register' || !showResend()) && (mode() !== 'setup' || !message())" class="submit" type="submit" [disabled]="loading() || invalidSetupLink()">
-        {{ loading() ? 'Please wait…' : mode() === 'login' ? 'Sign in' : mode() === 'register' ? 'Create account' : mode() === 'forgot' ? 'Send reset link' : mode() === 'resend' ? 'Resend confirmation' : mode() === 'setup' ? 'Create password' : 'Update password' }}
+      <button *ngIf="(mode() !== 'register' || !showResend()) && ((mode() !== 'setup' && mode() !== 'temporary') || !message())" class="submit" type="submit" [disabled]="loading() || invalidSetupLink()">
+        {{ loading() ? 'Please wait…' : mode() === 'login' ? 'Sign in' : mode() === 'register' ? 'Create account' : mode() === 'forgot' ? 'Send reset link' : mode() === 'resend' ? 'Resend confirmation' : mode() === 'setup' ? 'Create password' : mode() === 'temporary' ? 'Save new password' : 'Update password' }}
       </button>
     </form>
 
@@ -37,7 +39,7 @@
       <a *ngIf="mode() === 'login'" routerLink="/resend-confirmation">Resend confirmation</a>
       <span *ngIf="mode() === 'login'">New here? <a routerLink="/register">Create account</a></span>
       <span *ngIf="mode() === 'register'">Already registered? <a routerLink="/login">Sign in</a></span>
-      <a *ngIf="mode() === 'forgot' || mode() === 'reset' || mode() === 'resend' || mode() === 'setup'" routerLink="/login">{{ mode() === 'setup' && message() ? 'Sign in to your account' : 'Back to sign in' }}</a>
+      <a *ngIf="mode() === 'forgot' || mode() === 'reset' || mode() === 'resend' || mode() === 'setup' || mode() === 'temporary'" routerLink="/login">{{ (mode() === 'setup' || mode() === 'temporary') && message() ? 'Sign in to your account' : 'Back to sign in' }}</a>
       <a *ngIf="mode() === 'setup'" routerLink="/forgot-password">Request a new password email</a>
     </div>
   </section>

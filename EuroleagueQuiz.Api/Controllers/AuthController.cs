@@ -69,7 +69,7 @@ public sealed class AuthController(
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
-        if (user is null) return UnauthorizedMessage();
+        if (user is null || user.IsDeleted) return UnauthorizedMessage();
         if (await userManager.IsLockedOutAsync(user))
             return StatusCode(StatusCodes.Status423Locked, new { message = "Account temporarily locked. Try again later." });
         if (!await userManager.CheckPasswordAsync(user, request.Password))
@@ -81,6 +81,17 @@ public sealed class AuthController(
             return StatusCode(StatusCodes.Status403Forbidden, new { message = "Confirm your email before signing in." });
 
         await userManager.ResetAccessFailedCountAsync(user);
+        if (user.MustChangePassword)
+        {
+            var token = EncodeToken(await userManager.GeneratePasswordResetTokenAsync(user));
+            return StatusCode(StatusCodes.Status428PreconditionRequired, new
+            {
+                message = "You must replace your temporary password before continuing.",
+                requiresPasswordChange = true,
+                email = user.Email,
+                token
+            });
+        }
         return await CompleteLoginAsync(user, cancellationToken);
     }
 
@@ -170,10 +181,12 @@ public sealed class AuthController(
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
         var token = DecodeToken(request.Token);
-        if (user is null || token is null)
+        if (user is null || user.IsDeleted || token is null)
             return BadRequest(new { message = "Invalid or expired password creation link. Request a new password email." });
         var result = await passwordSetup.SetPasswordAsync(user, token, request.NewPassword);
         if (!result.Succeeded) return Validation(result);
+        user.MustChangePassword = false;
+        await userManager.UpdateAsync(user);
         await tokens.RevokeAllAsync(user.Id, cancellationToken);
         DeleteRefreshCookie();
         return Ok(new { message = "Your portal password has been created. Sign in with Google or with your email and new password." });
@@ -224,6 +237,7 @@ public sealed class AuthController(
             await userManager.AddToRoleAsync(user, AppRoles.Free);
             if (IsConfiguredAdmin(email)) await userManager.AddToRoleAsync(user, AppRoles.Admin);
         }
+        if (user.IsDeleted) return Redirect(ClientUrl("/login?error=account-deleted"));
         if (!user.EmailConfirmed)
         {
             user.EmailConfirmed = true;
@@ -233,6 +247,13 @@ public sealed class AuthController(
         {
             var linked = await userManager.AddLoginAsync(user, new UserLoginInfo("Google", providerKey, "Google"));
             if (!linked.Succeeded) return Redirect(ClientUrl("/login?error=account"));
+        }
+
+        if (user.MustChangePassword)
+        {
+            var token = EncodeToken(await userManager.GeneratePasswordResetTokenAsync(user));
+            await HttpContext.SignOutAsync("External");
+            return Redirect(ClientUrl($"/change-temporary-password?email={Uri.EscapeDataString(user.Email!)}&token={Uri.EscapeDataString(token)}"));
         }
 
         var session = await tokens.IssueAsync(user, cancellationToken);
@@ -247,7 +268,7 @@ public sealed class AuthController(
     public async Task<IActionResult> ConfirmEmail([FromQuery] Guid userId, [FromQuery] string token)
     {
         var user = await userManager.FindByIdAsync(userId.ToString());
-        if (user is null) return BadRequest(new { message = "Invalid confirmation link." });
+        if (user is null || user.IsDeleted) return BadRequest(new { message = "Invalid confirmation link." });
         var decoded = DecodeToken(token);
         if (decoded is null) return BadRequest(new { message = "Invalid confirmation link." });
         var result = await userManager.ConfirmEmailAsync(user, decoded);
@@ -258,7 +279,7 @@ public sealed class AuthController(
     public async Task<IActionResult> ResendConfirmation(EmailRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
-        if (user is not null && !await userManager.IsEmailConfirmedAsync(user))
+        if (user is not null && !user.IsDeleted && !await userManager.IsEmailConfirmedAsync(user))
             try { await SendConfirmationAsync(user, cancellationToken); } catch (AccountEmailDeliveryException) { }
         return Ok(new { message = "If that account needs confirmation, a new email has been sent." });
     }
@@ -267,7 +288,7 @@ public sealed class AuthController(
     public async Task<IActionResult> ForgotPassword(EmailRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
-        if (user is not null && await userManager.IsEmailConfirmedAsync(user))
+        if (user is not null && !user.IsDeleted && await userManager.IsEmailConfirmedAsync(user))
         {
             try
             {
@@ -284,12 +305,32 @@ public sealed class AuthController(
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
         var decoded = DecodeToken(request.Token);
-        if (user is null || decoded is null) return BadRequest(new { message = "Invalid or expired password reset link." });
+        if (user is null || user.IsDeleted || decoded is null) return BadRequest(new { message = "Invalid or expired password reset link." });
         var result = await userManager.ResetPasswordAsync(user, decoded, request.NewPassword);
         if (!result.Succeeded) return Validation(result);
+        user.MustChangePassword = false;
+        await userManager.UpdateAsync(user);
         await tokens.RevokeAllAsync(user.Id, cancellationToken);
         DeleteRefreshCookie();
         return Ok(new { message = "Password updated. You can now sign in." });
+    }
+
+    [HttpPost("change-temporary-password")]
+    public async Task<IActionResult> ChangeTemporaryPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByEmailAsync(request.Email.Trim());
+        var decoded = DecodeToken(request.Token);
+        if (user is null || user.IsDeleted || !user.MustChangePassword || decoded is null)
+            return BadRequest(new { message = "This temporary-password challenge is invalid or has expired." });
+
+        var result = await userManager.ResetPasswordAsync(user, decoded, request.NewPassword);
+        if (!result.Succeeded) return Validation(result);
+        user.MustChangePassword = false;
+        var update = await userManager.UpdateAsync(user);
+        if (!update.Succeeded) return Validation(update);
+        await tokens.RevokeAllAsync(user.Id, cancellationToken);
+        DeleteRefreshCookie();
+        return Ok(new { message = "Your temporary password has been replaced. You can now sign in." });
     }
 
     private async Task<IActionResult> CompleteLoginAsync(ApplicationUser user, CancellationToken cancellationToken)

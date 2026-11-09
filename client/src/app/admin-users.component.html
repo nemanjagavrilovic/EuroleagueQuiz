@@ -1,0 +1,40 @@
+<main class="admin-shell">
+  <a routerLink="/" class="back">← All games</a>
+  <header class="admin-header">
+    <div><p class="eyebrow">ADMINISTRATION</p><h1>User management</h1><p>Review registered accounts, send account emails and logically delete users.</p></div>
+    <span class="count" *ngIf="result() as data">{{ data.totalCount }} users</span>
+  </header>
+
+  <form class="filters" (ngSubmit)="searchUsers()">
+    <label for="admin-user-search">Search users
+      <input id="admin-user-search" name="search" [(ngModel)]="search" placeholder="Name or email" autocomplete="off">
+    </label>
+    <button type="submit" [disabled]="loading()">Search</button>
+    <label class="deleted-filter"><input type="checkbox" name="includeDeleted" [(ngModel)]="includeDeleted" (change)="toggleDeleted()"> Include deleted</label>
+  </form>
+
+  <p class="notice success" *ngIf="message()" role="status">{{ message() }}</p>
+  <p class="notice error" *ngIf="error()" role="alert">{{ error() }}</p>
+
+  <section class="users-card" [attr.aria-busy]="loading()">
+    <div class="loading" *ngIf="loading()">Loading users…</div>
+    <ng-container *ngIf="!loading() && result() as data">
+      <div class="user-table" *ngIf="data.users.length; else emptyUsers">
+        <div class="table-header" aria-hidden="true"><span>User</span><span>Status</span><span>Joined</span><span>Last login</span><span>Actions</span></div>
+        <article class="user-row" *ngFor="let user of data.users" [class.deleted]="user.isDeleted">
+          <div class="identity"><span class="avatar">{{ user.displayName.charAt(0).toUpperCase() }}</span><div><strong>{{ user.displayName }}</strong><small>{{ user.email }}</small><span class="roles" *ngIf="user.roles.length">{{ user.roles.join(' · ') }}</span></div></div>
+          <div class="status-cell"><span class="status" [class.confirmed]="user.emailConfirmed && !user.mustChangePassword" [class.deleted-status]="user.isDeleted">{{ user.isDeleted ? 'Deleted' : user.mustChangePassword ? 'Temporary password' : user.emailConfirmed ? 'Confirmed' : 'Unconfirmed' }}</span><small>{{ user.hasPassword ? 'Portal password' : 'Google only' }}</small></div>
+          <time [attr.datetime]="user.createdAtUtc"><span class="mobile-label">Joined</span>{{ user.createdAtUtc | date:'mediumDate' }}</time>
+          <time [attr.datetime]="user.lastLoginAtUtc || null"><span class="mobile-label">Last login</span>{{ user.lastLoginAtUtc ? (user.lastLoginAtUtc | date:'medium') : 'Never' }}</time>
+          <div class="actions">
+            <button type="button" (click)="sendPasswordReset(user)" [disabled]="user.isDeleted || !user.emailConfirmed || !!actionUserId()">{{ actionUserId() === user.id ? 'Sending…' : 'Set temporary password' }}</button>
+            <button type="button" (click)="resendConfirmation(user)" [disabled]="user.isDeleted || user.emailConfirmed || !!actionUserId()">Resend confirmation</button>
+            <button class="delete" type="button" (click)="deleteUser(user)" [disabled]="!canDelete(user) || !!actionUserId()">Delete</button>
+          </div>
+        </article>
+      </div>
+      <ng-template #emptyUsers><div class="empty">No users match this search.</div></ng-template>
+      <nav class="pagination" aria-label="User list pages" *ngIf="data.totalPages > 1"><button type="button" (click)="previous()" [disabled]="data.page <= 1">Previous</button><span>Page {{ data.page }} of {{ data.totalPages }}</span><button type="button" (click)="next()" [disabled]="data.page >= data.totalPages">Next</button></nav>
+    </ng-container>
+  </section>
+</main>

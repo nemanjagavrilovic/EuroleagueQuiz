@@ -10,6 +10,10 @@ public sealed class ApplicationUser : IdentityUser<Guid>
     public string SubscriptionPlan { get; set; } = SubscriptionPlans.Free;
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? LastLoginAtUtc { get; set; }
+    public bool MustChangePassword { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAtUtc { get; set; }
+    public Guid? DeletedByUserId { get; set; }
     public ICollection<UserRefreshToken> RefreshTokens { get; set; } = new List<UserRefreshToken>();
 }
 

@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<IDailyGridRepository, DailyGridRepository>();
         services.AddScoped<IDailyGameRepository, DailyGameRepository>();
         services.AddScoped<ILeaderboardRepository, LeaderboardRepository>();
+        services.AddScoped<IAdminUserRepository, AdminUserRepository>();
         services.AddHttpClient<IBasketballDataProvider, InCrowdEuroleagueDataProvider>(client =>
         {
             client.BaseAddress = new Uri("https://feeds.incrowdsports.com/provider/euroleague-feeds/v2/");

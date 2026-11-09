@@ -6,7 +6,7 @@ import { finalize } from 'rxjs';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 
-type AuthMode = 'login' | 'register' | 'forgot' | 'reset' | 'resend' | 'setup';
+type AuthMode = 'login' | 'register' | 'forgot' | 'reset' | 'resend' | 'setup' | 'temporary';
 
 @Component({
   selector: 'app-auth-page', standalone: true,
@@ -35,13 +35,14 @@ export class AuthPageComponent implements OnInit {
   ngOnInit(): void {
     this.mode.set((this.route.snapshot.data['mode'] as AuthMode) || 'login');
     this.form.patchValue({ email: this.route.snapshot.queryParamMap.get('email') || '' });
-    if (this.mode() === 'setup' && (!this.route.snapshot.queryParamMap.get('token') || this.form.controls.email.invalid)) {
+    if ((this.mode() === 'setup' || this.mode() === 'temporary') && (!this.route.snapshot.queryParamMap.get('token') || this.form.controls.email.invalid)) {
       this.invalidSetupLink.set(true);
-      this.error.set('This password creation link is incomplete. Request a new password email.');
+      this.error.set(this.mode() === 'temporary' ? 'This temporary-password challenge is incomplete. Sign in again with the temporary password.' : 'This password creation link is incomplete. Request a new password email.');
     }
     const googleError = this.route.snapshot.queryParamMap.get('error');
     if (googleError === 'google-cancelled') this.error.set('Google sign-in was cancelled. Try again or sign in with email.');
     else if (googleError === 'google-email') this.error.set('Your Google account did not provide an email address. Sign in with email or choose another Google account.');
+    else if (googleError === 'account-deleted') this.error.set('This account is no longer active. Contact an administrator if you think this is a mistake.');
     else if (googleError) this.error.set('Google sign-in could not be completed. Please try again.');
   }
 
@@ -50,13 +51,13 @@ export class AuthPageComponent implements OnInit {
     this.message.set(''); this.error.set(''); this.showResend.set(false);
     const mode = this.mode();
     const { displayName, email, password, confirmPassword } = this.form.getRawValue();
-    if (!email || this.form.controls.email.invalid || ((mode === 'login' || mode === 'register' || mode === 'reset' || mode === 'setup') && !password)) {
+    if (!email || this.form.controls.email.invalid || ((mode === 'login' || mode === 'register' || mode === 'reset' || mode === 'setup' || mode === 'temporary') && !password)) {
       this.form.markAllAsTouched(); return;
     }
-    if ((mode === 'register' || mode === 'reset' || mode === 'setup') && this.form.controls.password.invalid) {
+    if ((mode === 'register' || mode === 'reset' || mode === 'setup' || mode === 'temporary') && this.form.controls.password.invalid) {
       this.error.set('Use a password between 8 and 128 characters.'); return;
     }
-    if ((mode === 'register' || mode === 'reset' || mode === 'setup') && password !== confirmPassword) {
+    if ((mode === 'register' || mode === 'reset' || mode === 'setup' || mode === 'temporary') && password !== confirmPassword) {
       this.error.set('Passwords do not match.'); return;
     }
     this.loading.set(true);
@@ -65,6 +66,7 @@ export class AuthPageComponent implements OnInit {
       : mode === 'forgot' ? this.auth.forgotPassword(email)
       : mode === 'resend' ? this.auth.resendConfirmation(email)
       : mode === 'setup' ? this.auth.setPassword(email, this.route.snapshot.queryParamMap.get('token') || '', password)
+      : mode === 'temporary' ? this.auth.changeTemporaryPassword(email, this.route.snapshot.queryParamMap.get('token') || '', password)
       : this.auth.resetPassword(email, this.route.snapshot.queryParamMap.get('token') || '', password);
     request.pipe(finalize(() => this.loading.set(false))).subscribe({
       next: (response: unknown) => {
@@ -72,13 +74,17 @@ export class AuthPageComponent implements OnInit {
         else {
           this.message.set(this.responseMessage(response));
           if (mode === 'register') this.showResend.set(true);
-          if (mode === 'setup' || mode === 'reset') this.form.patchValue({ password: '', confirmPassword: '' });
+          if (mode === 'setup' || mode === 'reset' || mode === 'temporary') this.form.patchValue({ password: '', confirmPassword: '' });
         }
       },
-      error: (response: { status?: number; error?: { message?: string; errors?: { description?: string }[] | Record<string, string[]> } }) => {
+      error: (response: { status?: number; error?: { message?: string; requiresPasswordChange?: boolean; email?: string; token?: string; errors?: { description?: string }[] | Record<string, string[]> } }) => {
         if (mode === 'register' && response.status === 503) {
           this.message.set(response.error?.message || 'Your account was created, but the confirmation email could not be sent.');
           this.showResend.set(true);
+          return;
+        }
+        if (mode === 'login' && response.status === 428 && response.error?.requiresPasswordChange && response.error.email && response.error.token) {
+          void this.router.navigate(['/change-temporary-password'], { queryParams: { email: response.error.email, token: response.error.token } });
           return;
         }
         if (mode === 'login' && response.status === 403) {

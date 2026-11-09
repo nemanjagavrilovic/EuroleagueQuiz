@@ -51,7 +51,7 @@ public sealed class LeaderboardRepository(EuroleagueDbContext db) : ILeaderboard
             group.Sum(x => x.PerfectGames),
             group.Max(x => x.LastCompletedAtUtc))).ToList();
         var userIds = combined.Select(x => x.UserId).ToList();
-        var names = await db.Users.AsNoTracking().Where(x => userIds.Contains(x.Id))
+        var names = await db.Users.AsNoTracking().Where(x => userIds.Contains(x.Id) && !x.IsDeleted)
             .ToDictionaryAsync(x => x.Id, x => x.DisplayName, ct);
 
         return combined.Where(x => names.ContainsKey(x.UserId)).Select(x => new LeaderboardAggregate(

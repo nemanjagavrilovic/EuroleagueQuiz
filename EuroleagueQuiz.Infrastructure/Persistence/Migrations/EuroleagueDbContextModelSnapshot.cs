@@ -507,6 +507,12 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedByUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(101)
@@ -523,6 +529,9 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime?>("LastLoginAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -535,6 +544,9 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -578,6 +590,8 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
+
+                    b.HasIndex("IsDeleted", "CreatedAtUtc");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });

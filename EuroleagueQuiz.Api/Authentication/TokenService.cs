@@ -23,6 +23,8 @@ public sealed class TokenService(
 
     public async Task<IssuedSession> IssueAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
+        if (user.IsDeleted || user.MustChangePassword)
+            throw new InvalidOperationException("An inactive account cannot receive an authenticated session.");
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var accessExpires = now.AddMinutes(Math.Clamp(settings.AccessTokenMinutes, 5, 60));
         var roles = await userManager.GetRolesAsync(user);
@@ -59,7 +61,7 @@ public sealed class TokenService(
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var existing = await db.UserRefreshTokens.Include(x => x.User)
             .SingleOrDefaultAsync(x => x.TokenHash == hash, cancellationToken);
-        if (existing is null || existing.RevokedAtUtc is not null || existing.ExpiresAtUtc <= now)
+        if (existing is null || existing.User.IsDeleted || existing.User.MustChangePassword || existing.RevokedAtUtc is not null || existing.ExpiresAtUtc <= now)
             return null;
 
         var claimed = await db.UserRefreshTokens

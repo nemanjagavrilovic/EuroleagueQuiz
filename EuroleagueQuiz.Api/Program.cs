@@ -1,11 +1,15 @@
 using EuroleagueQuiz.Application;
 using EuroleagueQuiz.Api.Authentication;
+using EuroleagueQuiz.Api.Administration;
 using EuroleagueQuiz.Infrastructure;
+using EuroleagueQuiz.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 
@@ -48,6 +52,7 @@ builder.Services.Configure<JwtOptions>(options =>
 });
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<PasswordSetupService>();
+builder.Services.AddScoped<AdminUserService>();
 
 var authentication = builder.Services.AddAuthentication(options =>
 {
@@ -66,6 +71,22 @@ var authentication = builder.Services.AddAuthentication(options =>
         ValidateLifetime = true, ClockSkew = TimeSpan.FromSeconds(30),
         NameClaimType = System.Security.Claims.ClaimTypes.Name,
         RoleClaimType = System.Security.Claims.ClaimTypes.Role
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async context =>
+        {
+            if (!Guid.TryParse(context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            {
+                context.Fail("The user identity is invalid.");
+                return;
+            }
+
+            var db = context.HttpContext.RequestServices.GetRequiredService<EuroleagueDbContext>();
+            var active = await db.Users.AsNoTracking()
+                .AnyAsync(user => user.Id == userId && !user.IsDeleted && !user.MustChangePassword, context.HttpContext.RequestAborted);
+            if (!active) context.Fail("The account is no longer active.");
+        }
     };
 })
 .AddCookie("External", options =>

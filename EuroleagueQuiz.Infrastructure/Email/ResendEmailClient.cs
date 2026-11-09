@@ -8,7 +8,7 @@ namespace EuroleagueQuiz.Infrastructure.Email;
 
 public sealed class ResendEmailClient(HttpClient httpClient, IOptions<ResendOptions> options, ILogger<ResendEmailClient> logger)
 {
-    public async Task SendAsync(string to, string subject, string text, string? replyTo, CancellationToken cancellationToken)
+    public async Task SendAsync(string to, string subject, string text, string? replyTo, CancellationToken cancellationToken, string? html = null)
     {
         var settings = options.Value;
         if (string.IsNullOrWhiteSpace(settings.ApiKey) || string.IsNullOrWhiteSpace(settings.FromAddress))
@@ -17,7 +17,7 @@ public sealed class ResendEmailClient(HttpClient httpClient, IOptions<ResendOpti
         using var request = new HttpRequestMessage(HttpMethod.Post, "emails");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ApiKey);
         request.Content = JsonContent.Create(new ResendEmailRequest(
-            $"{settings.FromName} <{settings.FromAddress}>", [to], subject, text,
+            $"{settings.FromName} <{settings.FromAddress}>", [to], subject, text, html,
             string.IsNullOrWhiteSpace(replyTo) ? null : [replyTo]));
 
         try
@@ -41,6 +41,7 @@ public sealed class ResendEmailClient(HttpClient httpClient, IOptions<ResendOpti
         [property: JsonPropertyName("to")] string[] To,
         [property: JsonPropertyName("subject")] string Subject,
         [property: JsonPropertyName("text")] string Text,
+        [property: JsonPropertyName("html"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Html,
         [property: JsonPropertyName("reply_to"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string[]? ReplyTo);
 }
 

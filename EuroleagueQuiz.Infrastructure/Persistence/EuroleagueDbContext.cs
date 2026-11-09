@@ -32,6 +32,7 @@ public sealed class EuroleagueDbContext : IdentityDbContext<ApplicationUser, Ide
             entity.Property(x => x.LastName).HasMaxLength(50);
             entity.Property(x => x.SubscriptionPlan).HasMaxLength(30).IsRequired();
             entity.HasIndex(x => x.DisplayName);
+            entity.HasIndex(x => new { x.IsDeleted, x.CreatedAtUtc });
         });
         modelBuilder.Entity<UserRefreshToken>(entity =>
         {
