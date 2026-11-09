@@ -317,10 +317,40 @@ Do not expose port 8080 publicly. Certbot renewals can be tested with `sudo cert
 ### Update the application
 
 ```bash
-git pull
-docker compose up -d --build
-docker image prune -f
+bash scripts/deploy-production.sh
 ```
+
+The deployment script pulls the current branch with `--ff-only`, builds the API
+and web images sequentially, applies pending EF Core migrations, recreates the
+containers, verifies that both services are running, installs and validates the
+host Nginx configuration, reloads Nginx, and removes superseded dangling images.
+It also removes BuildKit cache older than seven days so every deployment does
+not permanently consume more disk space. If `nginx -t` rejects the new file,
+the script restores the previous host configuration and does not reload Nginx.
+
+The Angular build is limited to a 768 MB Node heap by default. Override the
+limit for a larger server when needed:
+
+```bash
+NODE_BUILD_MEMORY_MB=1024 bash scripts/deploy-production.sh
+```
+
+Cleanup can be disabled for one deployment, or the cache retention changed:
+
+```bash
+PRUNE_AFTER_DEPLOY=0 bash scripts/deploy-production.sh
+BUILD_CACHE_MAX_AGE=72h bash scripts/deploy-production.sh
+```
+
+Skip the host Nginx update for a deployment when necessary:
+
+```bash
+UPDATE_NGINX=0 bash scripts/deploy-production.sh
+```
+
+The default host paths are `/etc/nginx/sites-available/pickandroll.io` and
+`/etc/nginx/sites-enabled/pickandroll.io`. Override `NGINX_TARGET`,
+`NGINX_ENABLED`, or `NGINX_BIN` if the server uses different paths.
 
 The production Angular build uses `/api` as its API URL, so no Azure API URL needs to be changed in the client.
 

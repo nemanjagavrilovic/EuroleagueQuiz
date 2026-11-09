@@ -2,6 +2,11 @@
 FROM node:20-bookworm-slim AS client-build
 WORKDIR /src/client
 
+# Keep Angular builds from consuming all memory on smaller production servers.
+# Override with NODE_BUILD_MEMORY_MB in scripts/deploy-production.sh when needed.
+ARG NODE_OPTIONS=--max-old-space-size=768
+ENV NODE_OPTIONS=${NODE_OPTIONS}
+
 COPY client/package*.json ./
 RUN npm ci
 
