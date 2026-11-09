@@ -22,7 +22,9 @@ public sealed class ContactService(IContactEmailSender sender) : IContactService
         var email = new ContactEmail(
             "noreply@pickandroll.io", normalized.Email, normalized.Name,
             $"[Pick & Roll Contact] {normalized.Subject}",
-            $"Name: {normalized.Name}\nEmail: {normalized.Email}\nSubject: {normalized.Subject}\n\n{normalized.Message}");
+            $"Name: {normalized.Name}\nEmail: {normalized.Email}\nSubject: {normalized.Subject}\n\n{normalized.Message}",
+            normalized.Subject,
+            normalized.Message);
         await sender.SendAsync(email, cancellationToken);
     }
 }

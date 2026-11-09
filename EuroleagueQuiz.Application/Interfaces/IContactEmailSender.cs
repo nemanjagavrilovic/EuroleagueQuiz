@@ -1,6 +1,13 @@
 namespace EuroleagueQuiz.Application.Interfaces;
 
-public sealed record ContactEmail(string To, string ReplyTo, string ReplyToName, string Subject, string Body);
+public sealed record ContactEmail(
+    string To,
+    string ReplyTo,
+    string ReplyToName,
+    string Subject,
+    string Body,
+    string SubmittedSubject,
+    string SubmittedMessage);
 
 public interface IContactEmailSender
 {

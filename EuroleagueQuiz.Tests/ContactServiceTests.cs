@@ -11,7 +11,7 @@ namespace EuroleagueQuiz.Tests;
 public sealed class ContactServiceTests
 {
     [Fact]
-    public async Task SendsToFixedInboxWithVisitorAsReplyToAndPlainTextBody()
+    public async Task SendsToFixedInboxWithVisitorAsReplyToAndMessageDetails()
     {
         var sender = new FakeSender();
         var service = new ContactService(sender);
@@ -23,6 +23,8 @@ public sealed class ContactServiceTests
         Assert.Equal("Basketball Fan", email.ReplyToName);
         Assert.Equal("[Pick & Roll Contact] Quiz issue", email.Subject);
         Assert.Contains("Please check this player.", email.Body);
+        Assert.Equal("Quiz issue", email.SubmittedSubject);
+        Assert.Equal("Please check this player.", email.SubmittedMessage);
     }
 
     [Fact]
@@ -66,7 +68,7 @@ public sealed class ContactServiceTests
     {
         var sender = new SmtpContactEmailSender(Options.Create(new SmtpOptions()), NullLogger<SmtpContactEmailSender>.Instance);
         await Assert.ThrowsAsync<ContactEmailDeliveryException>(() => sender.SendAsync(
-            new ContactEmail("noreply@pickandroll.io", "fan@example.com", "Fan", "Subject", "Message"), CancellationToken.None));
+            new ContactEmail("noreply@pickandroll.io", "fan@example.com", "Fan", "Subject", "Message", "Subject", "Message"), CancellationToken.None));
     }
 
     [Fact]

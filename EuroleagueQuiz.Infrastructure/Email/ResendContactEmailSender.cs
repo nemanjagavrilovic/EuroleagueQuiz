@@ -6,7 +6,13 @@ public sealed class ResendContactEmailSender(ResendEmailClient client) : IContac
 {
     public async Task SendAsync(ContactEmail email, CancellationToken cancellationToken)
     {
-        try { await client.SendAsync(email.To, email.Subject, email.Body, email.ReplyTo, cancellationToken); }
+        var html = ContactEmailTemplates.CreateHtml(
+            email.ReplyToName,
+            email.ReplyTo,
+            email.SubmittedSubject,
+            email.SubmittedMessage);
+
+        try { await client.SendAsync(email.To, email.Subject, email.Body, email.ReplyTo, cancellationToken, html); }
         catch (ResendEmailException) { throw new ContactEmailDeliveryException(); }
     }
 }
