@@ -350,7 +350,10 @@ UPDATE_NGINX=0 bash scripts/deploy-production.sh
 
 The default host paths are `/etc/nginx/sites-available/pickandroll.io` and
 `/etc/nginx/sites-enabled/pickandroll.io`. Override `NGINX_TARGET`,
-`NGINX_ENABLED`, or `NGINX_BIN` if the server uses different paths.
+`NGINX_ENABLED`, or `NGINX_BIN` if the server uses different paths. The checked-in
+configuration is self-contained and does not require Certbot's optional
+`options-ssl-nginx.conf` or `ssl-dhparams.pem` files; it requires only the
+certificate and private key under `/etc/letsencrypt/live/pickandroll.io/`.
 
 The production Angular build uses `/api` as its API URL, so no Azure API URL needs to be changed in the client.
 
