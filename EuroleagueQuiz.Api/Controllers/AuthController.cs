@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text;
 using EuroleagueQuiz.Api.Authentication;
+using EuroleagueQuiz.Api.RateLimiting;
 using EuroleagueQuiz.Application.Interfaces;
 using EuroleagueQuiz.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication;
@@ -17,7 +18,6 @@ namespace EuroleagueQuiz.Api.Controllers;
 [ApiController]
 [Route("api/auth")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-[EnableRateLimiting("auth")]
 public sealed class AuthController(
     UserManager<ApplicationUser> userManager,
     TokenService tokens,
@@ -32,6 +32,7 @@ public sealed class AuthController(
     private const string RefreshCookie = "pickandroll.refresh";
 
     [HttpPost("register")]
+    [EnableRateLimiting(RateLimitPolicies.Registration)]
     public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
     {
         var email = request.Email.Trim();
@@ -70,6 +71,7 @@ public sealed class AuthController(
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting(RateLimitPolicies.Login)]
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
@@ -150,6 +152,7 @@ public sealed class AuthController(
 
     [Authorize]
     [HttpPost("password-reset-link")]
+    [EnableRateLimiting(RateLimitPolicies.AccountEmail)]
     public async Task<IActionResult> RequestPasswordResetLink(CancellationToken cancellationToken)
     {
         var user = await userManager.GetUserAsync(User);
@@ -170,6 +173,7 @@ public sealed class AuthController(
 
     [Authorize]
     [HttpPost("password-setup-link")]
+    [EnableRateLimiting(RateLimitPolicies.AccountEmail)]
     public async Task<IActionResult> RequestPasswordSetupLink(CancellationToken cancellationToken)
     {
         var user = await userManager.GetUserAsync(User);
@@ -189,6 +193,7 @@ public sealed class AuthController(
     }
 
     [HttpPost("set-password")]
+    [EnableRateLimiting(RateLimitPolicies.Login)]
     public async Task<IActionResult> SetPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
@@ -214,6 +219,7 @@ public sealed class AuthController(
     }
 
     [HttpGet("google")]
+    [EnableRateLimiting(RateLimitPolicies.Login)]
     public IActionResult Google([FromQuery] string? returnUrl = "/")
     {
         if (string.IsNullOrWhiteSpace(googleOptions.Value.ClientId) || string.IsNullOrWhiteSpace(googleOptions.Value.ClientSecret))
@@ -288,6 +294,7 @@ public sealed class AuthController(
     }
 
     [HttpPost("resend-confirmation")]
+    [EnableRateLimiting(RateLimitPolicies.AccountEmail)]
     public async Task<IActionResult> ResendConfirmation(EmailRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
@@ -297,6 +304,7 @@ public sealed class AuthController(
     }
 
     [HttpPost("forgot-password")]
+    [EnableRateLimiting(RateLimitPolicies.AccountEmail)]
     public async Task<IActionResult> ForgotPassword(EmailRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
@@ -313,6 +321,7 @@ public sealed class AuthController(
     }
 
     [HttpPost("reset-password")]
+    [EnableRateLimiting(RateLimitPolicies.Login)]
     public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
@@ -328,6 +337,7 @@ public sealed class AuthController(
     }
 
     [HttpPost("change-temporary-password")]
+    [EnableRateLimiting(RateLimitPolicies.Login)]
     public async Task<IActionResult> ChangeTemporaryPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());

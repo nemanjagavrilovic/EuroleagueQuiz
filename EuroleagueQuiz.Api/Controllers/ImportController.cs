@@ -1,10 +1,13 @@
 using EuroleagueQuiz.Application.Interfaces;
+using EuroleagueQuiz.Api.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace EuroleagueQuiz.Api.Controllers;
 
 [ApiController]
 [Route("api/import")]
+[EnableRateLimiting(RateLimitPolicies.Import)]
 public sealed class ImportController : ControllerBase
 {
     private readonly IDataImportService _importService;

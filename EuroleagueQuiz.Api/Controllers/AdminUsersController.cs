@@ -1,9 +1,11 @@
 using System.Security.Claims;
 using EuroleagueQuiz.Api.Administration;
+using EuroleagueQuiz.Api.RateLimiting;
 using EuroleagueQuiz.Application.Interfaces;
 using EuroleagueQuiz.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace EuroleagueQuiz.Api.Controllers;
 
@@ -23,14 +25,17 @@ public sealed class AdminUsersController(AdminUserService users) : ControllerBas
         Ok(await users.GetPageAsync(search, page, pageSize, includeDeleted, ct));
 
     [HttpDelete("{id:guid}")]
+    [EnableRateLimiting(RateLimitPolicies.AdminAction)]
     public Task<IActionResult> Delete(Guid id, CancellationToken ct) =>
         ExecuteAsync(() => users.SoftDeleteAsync(CurrentUserId(), id, ct));
 
     [HttpPost("{id:guid}/password-reset")]
+    [EnableRateLimiting(RateLimitPolicies.AdminAction)]
     public Task<IActionResult> SendPasswordReset(Guid id, CancellationToken ct) =>
         ExecuteAsync(() => users.SendPasswordEmailAsync(id, ct));
 
     [HttpPost("{id:guid}/resend-confirmation")]
+    [EnableRateLimiting(RateLimitPolicies.AdminAction)]
     public Task<IActionResult> ResendConfirmation(Guid id, CancellationToken ct) =>
         ExecuteAsync(() => users.ResendConfirmationAsync(id, ct));
 

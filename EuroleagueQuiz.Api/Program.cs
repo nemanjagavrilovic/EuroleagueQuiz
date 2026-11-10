@@ -1,12 +1,14 @@
 using EuroleagueQuiz.Application;
 using EuroleagueQuiz.Api.Authentication;
 using EuroleagueQuiz.Api.Administration;
+using EuroleagueQuiz.Api.RateLimiting;
 using EuroleagueQuiz.Infrastructure;
 using EuroleagueQuiz.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -119,21 +121,34 @@ builder.Services.AddAuthorization();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    // Shared delivery limit works behind Nginx without trusting forwarded IP headers.
-    options.AddPolicy("contact", _ => RateLimitPartition.GetFixedWindowLimiter("contact", _ => new FixedWindowRateLimiterOptions
+    options.OnRejected = async (context, cancellationToken) =>
     {
-        PermitLimit = 10,
-        Window = TimeSpan.FromMinutes(1),
-        QueueLimit = 0,
-        AutoReplenishment = true
-    }));
-    options.AddPolicy("auth", _ => RateLimitPartition.GetFixedWindowLimiter("auth", _ => new FixedWindowRateLimiterOptions
-    {
-        PermitLimit = 30,
-        Window = TimeSpan.FromMinutes(1),
-        QueueLimit = 0,
-        AutoReplenishment = true
-    }));
+        var response = context.HttpContext.Response;
+        response.ContentType = "application/problem+json";
+        int? retryAfterSeconds = null;
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            retryAfterSeconds = Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds));
+            response.Headers["Retry-After"] = retryAfterSeconds.Value.ToString();
+        }
+
+        await response.WriteAsJsonAsync(new
+        {
+            type = "https://httpstatuses.com/429",
+            title = "Too many requests",
+            status = StatusCodes.Status429TooManyRequests,
+            detail = "Please wait before trying this action again.",
+            message = "Too many requests. Please wait before trying again.",
+            retryAfterSeconds
+        }, cancellationToken);
+    };
+
+    AddIpPolicy(options, RateLimitPolicies.Login, "Login", 10, TimeSpan.FromMinutes(1));
+    AddIpPolicy(options, RateLimitPolicies.Registration, "Registration", 5, TimeSpan.FromHours(1));
+    AddUserOrIpPolicy(options, RateLimitPolicies.AccountEmail, "AccountEmail", 3, TimeSpan.FromHours(1));
+    AddIpPolicy(options, RateLimitPolicies.Contact, "Contact", 5, TimeSpan.FromMinutes(10));
+    AddUserOrIpPolicy(options, RateLimitPolicies.AdminAction, "AdminAction", 20, TimeSpan.FromMinutes(1));
+    AddUserOrIpPolicy(options, RateLimitPolicies.Import, "Import", 2, TimeSpan.FromHours(1));
 });
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(options => options.AddPolicy("Angular", policy =>
@@ -159,9 +174,36 @@ if (app.Environment.IsDevelopment())
 
 app.UseRouting();
 app.UseCors("Angular");
-app.UseRateLimiter();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.MapControllers();
 await IdentitySeeder.SeedAsync(app.Services);
 app.Run();
+
+void AddIpPolicy(RateLimiterOptions options, string policyName, string configurationName,
+    int defaultPermitLimit, TimeSpan defaultWindow) =>
+    options.AddPolicy(policyName, context => RateLimitPartition.GetFixedWindowLimiter(
+        $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}",
+        _ => FixedWindow(configurationName, defaultPermitLimit, defaultWindow)));
+
+void AddUserOrIpPolicy(RateLimiterOptions options, string policyName, string configurationName,
+    int defaultPermitLimit, TimeSpan defaultWindow) =>
+    options.AddPolicy(policyName, context =>
+    {
+        var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var partitionKey = !string.IsNullOrWhiteSpace(userId)
+            ? $"user:{userId}"
+            : $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+        return RateLimitPartition.GetFixedWindowLimiter(partitionKey,
+            _ => FixedWindow(configurationName, defaultPermitLimit, defaultWindow));
+    });
+
+FixedWindowRateLimiterOptions FixedWindow(string name, int defaultPermitLimit, TimeSpan defaultWindow) => new()
+{
+    PermitLimit = builder.Configuration.GetValue<int?>($"RateLimiting:{name}:PermitLimit") ?? defaultPermitLimit,
+    Window = TimeSpan.FromSeconds(
+        builder.Configuration.GetValue<int?>($"RateLimiting:{name}:WindowSeconds") ?? (int)defaultWindow.TotalSeconds),
+    QueueLimit = 0,
+    AutoReplenishment = true
+};

@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using EuroleagueQuiz.Application.DTOs;
 using EuroleagueQuiz.Application.Interfaces;
+using EuroleagueQuiz.Api.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -8,7 +9,7 @@ namespace EuroleagueQuiz.Api.Controllers;
 
 [ApiController]
 [Route("api/contact")]
-[EnableRateLimiting("contact")]
+[EnableRateLimiting(RateLimitPolicies.Contact)]
 public sealed class ContactController(IContactService service) : ControllerBase
 {
     [HttpPost]
