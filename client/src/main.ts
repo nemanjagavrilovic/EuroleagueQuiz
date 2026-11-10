@@ -19,6 +19,7 @@ import { GameModeComponent } from './app/game-mode.component';
 import { LeaderboardComponent } from './app/leaderboard.component';
 import { NotFoundComponent } from './app/not-found.component';
 import { AdminUsersComponent } from './app/admin-users.component';
+import { AdminAuditLogsComponent } from './app/admin-audit-logs.component';
 
 const signedInGuard: CanActivateFn = (_route, state) => inject(AuthService).user()
   ? true
@@ -46,6 +47,7 @@ const routes: Routes = [
   { path: 'profile', component: ProfileComponent },
   { path: 'leaderboard', component: LeaderboardComponent },
   { path: 'admin/users', component: AdminUsersComponent, canActivate: [adminGuard] },
+  { path: 'admin/audit-logs', component: AdminAuditLogsComponent, canActivate: [adminGuard] },
   { path: 'play/:game', component: GameModeComponent, canActivate: [signedInGuard] },
   { path: 'game/five-player', component: FivePlayerGameComponent },
   { path: 'game/history', component: TeamHistoryComponent },

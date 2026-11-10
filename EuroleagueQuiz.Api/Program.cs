@@ -1,6 +1,7 @@
 using EuroleagueQuiz.Application;
 using EuroleagueQuiz.Api.Authentication;
 using EuroleagueQuiz.Api.Administration;
+using EuroleagueQuiz.Api.Auditing;
 using EuroleagueQuiz.Api.RateLimiting;
 using EuroleagueQuiz.Api.Security;
 using EuroleagueQuiz.Infrastructure;
@@ -56,6 +57,9 @@ builder.Services.Configure<JwtOptions>(options =>
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<PasswordSetupService>();
 builder.Services.AddScoped<AdminUserService>();
+builder.Services.AddScoped<AdminAuditLogService>();
+builder.Services.AddScoped<AuditLogWriter>();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddOptions<TurnstileOptions>()
     .Bind(builder.Configuration.GetSection(TurnstileOptions.SectionName))
     .Validate(options => !string.IsNullOrWhiteSpace(options.SiteKey), "Turnstile:SiteKey is required.")

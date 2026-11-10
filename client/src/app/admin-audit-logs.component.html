@@ -1,0 +1,37 @@
+<main class="audit-shell">
+  <nav class="admin-nav" aria-label="Administration"><a routerLink="/admin/users">User management</a><a routerLink="/admin/audit-logs" class="active">Audit logs</a></nav>
+  <header class="audit-header">
+    <div><p class="eyebrow">ADMINISTRATION</p><h1>Audit logs</h1><p>Review security, account, administration and data-import events. Entries are append-only.</p></div>
+    <span class="count" *ngIf="result() as data">{{ data.totalCount }} events</span>
+  </header>
+
+  <form class="filters" (ngSubmit)="applyFilters()">
+    <label>Search<input name="search" [(ngModel)]="search" placeholder="Action, entity or correlation ID" autocomplete="off"></label>
+    <label>Action<select name="action" [(ngModel)]="action"><option value="">All actions</option><option *ngFor="let item of actions" [value]="item">{{ item }}</option></select></label>
+    <label>Result<select name="result" [(ngModel)]="resultFilter"><option value="">All results</option><option>Success</option><option>Failed</option><option>Denied</option><option>Started</option></select></label>
+    <label>From<input name="fromDate" type="date" [(ngModel)]="fromDate"></label>
+    <label>To<input name="toDate" type="date" [(ngModel)]="toDate"></label>
+    <div class="filter-actions"><button type="submit" [disabled]="loading()">Apply</button><button class="secondary" type="button" (click)="clearFilters()" [disabled]="loading()">Clear</button></div>
+  </form>
+
+  <p class="notice error" *ngIf="error()" role="alert">{{ error() }}</p>
+  <section class="audit-card" [attr.aria-busy]="loading()">
+    <div class="loading" *ngIf="loading()">Loading audit events…</div>
+    <ng-container *ngIf="!loading() && result() as data">
+      <div class="audit-table" *ngIf="data.entries.length; else emptyLogs">
+        <div class="table-header" aria-hidden="true"><span>Time</span><span>Actor</span><span>Action</span><span>Result</span><span>Target</span><span>Details</span></div>
+        <article class="audit-row" *ngFor="let entry of data.entries">
+          <time [attr.datetime]="entry.occurredAtUtc"><span class="mobile-label">Time</span>{{ entry.occurredAtUtc | date:'medium' }}</time>
+          <div><span class="mobile-label">Actor</span><strong>{{ entry.actorDisplayName }}</strong><small>{{ entry.actorType }}</small></div>
+          <div class="action"><span class="mobile-label">Action</span>{{ entry.action }}</div>
+          <div><span class="mobile-label">Result</span><span class="result" [class.success]="entry.result === 'Success'" [class.failed]="entry.result === 'Failed'" [class.denied]="entry.result === 'Denied'">{{ entry.result }}</span></div>
+          <div class="target"><span class="mobile-label">Target</span>{{ target(entry) }}</div>
+          <details *ngIf="hasDetails(entry); else noDetails"><summary>View</summary><pre>{{ formattedDetails(entry) }}</pre></details>
+          <ng-template #noDetails><span class="no-details">—</span></ng-template>
+        </article>
+      </div>
+      <ng-template #emptyLogs><div class="empty">No audit events match these filters.</div></ng-template>
+      <nav class="pagination" aria-label="Audit log pages" *ngIf="data.totalPages > 1"><button type="button" (click)="previous()" [disabled]="data.page <= 1">Previous</button><span>Page {{ data.page }} of {{ data.totalPages }}</span><button type="button" (click)="next()" [disabled]="data.page >= data.totalPages">Next</button></nav>
+    </ng-container>
+  </section>
+</main>

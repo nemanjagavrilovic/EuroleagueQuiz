@@ -20,6 +20,7 @@ public sealed class EuroleagueDbContext : IdentityDbContext<ApplicationUser, Ide
     public DbSet<DailyGameChallenge> DailyGameChallenges => Set<DailyGameChallenge>();
     public DbSet<DailyGameAttempt> DailyGameAttempts => Set<DailyGameAttempt>();
     public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -139,6 +140,22 @@ public sealed class EuroleagueDbContext : IdentityDbContext<ApplicationUser, Ide
             entity.Property(x => x.Provider).HasMaxLength(100).IsRequired();
             entity.Property(x => x.Status).HasMaxLength(30).IsRequired();
             entity.Property(x => x.ErrorMessage).HasMaxLength(4000);
+        });
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.ActorType).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Action).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Result).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.EntityType).HasMaxLength(50);
+            entity.Property(x => x.EntityId).HasMaxLength(100);
+            entity.Property(x => x.CorrelationId).HasMaxLength(100);
+            entity.Property(x => x.DetailsJson).HasColumnType("jsonb");
+            entity.HasIndex(x => x.OccurredAtUtc);
+            entity.HasIndex(x => new { x.ActorUserId, x.OccurredAtUtc });
+            entity.HasIndex(x => new { x.Action, x.OccurredAtUtc });
+            entity.HasIndex(x => new { x.EntityType, x.EntityId, x.OccurredAtUtc });
+            entity.HasIndex(x => new { x.Result, x.OccurredAtUtc });
         });
     }
 }

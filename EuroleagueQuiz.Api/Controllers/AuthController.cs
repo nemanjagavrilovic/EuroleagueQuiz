@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text;
 using EuroleagueQuiz.Api.Authentication;
+using EuroleagueQuiz.Api.Auditing;
 using EuroleagueQuiz.Api.RateLimiting;
 using EuroleagueQuiz.Application.Interfaces;
 using EuroleagueQuiz.Infrastructure.Identity;
@@ -27,7 +28,8 @@ public sealed class AuthController(
     IOptions<IdentityBootstrapOptions> bootstrapOptions,
     IWebHostEnvironment environment,
     TimeProvider timeProvider,
-    PasswordSetupService passwordSetup) : ControllerBase
+    PasswordSetupService passwordSetup,
+    AuditLogWriter audit) : ControllerBase
 {
     private const string RefreshCookie = "pickandroll.refresh";
 
@@ -63,9 +65,15 @@ public sealed class AuthController(
         try { await SendConfirmationAsync(user, cancellationToken); }
         catch (AccountEmailDeliveryException)
         {
+            await audit.WriteAsync(AuditActions.UserRegistered, AuditResults.Success, "User", user.Id.ToString(),
+                new { provider = "Password", confirmationEmailSent = false }, actorUserId: user.Id,
+                cancellationToken: cancellationToken);
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new { message = "Your account was created, but the confirmation email could not be sent. Use resend confirmation shortly." });
         }
+        await audit.WriteAsync(AuditActions.UserRegistered, AuditResults.Success, "User", user.Id.ToString(),
+            new { provider = "Password", confirmationEmailSent = true }, actorUserId: user.Id,
+            cancellationToken: cancellationToken);
         return StatusCode(StatusCodes.Status201Created,
             new { message = "Account created. Check your email to confirm it before signing in." });
     }
@@ -75,20 +83,37 @@ public sealed class AuthController(
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
-        if (user is null || user.IsDeleted) return UnauthorizedMessage();
+        if (user is null || user.IsDeleted)
+        {
+            await audit.WriteAsync(AuditActions.LoginFailed, AuditResults.Failed,
+                details: new { reason = "InvalidCredentials" }, cancellationToken: cancellationToken);
+            return UnauthorizedMessage();
+        }
         if (await userManager.IsLockedOutAsync(user))
+        {
+            await audit.WriteAsync(AuditActions.LoginFailed, AuditResults.Denied, "User", user.Id.ToString(),
+                new { reason = "LockedOut" }, cancellationToken: cancellationToken);
             return StatusCode(StatusCodes.Status423Locked, new { message = "Account temporarily locked. Try again later." });
+        }
         if (!await userManager.CheckPasswordAsync(user, request.Password))
         {
             await userManager.AccessFailedAsync(user);
+            await audit.WriteAsync(AuditActions.LoginFailed, AuditResults.Failed, "User", user.Id.ToString(),
+                new { reason = "InvalidCredentials" }, cancellationToken: cancellationToken);
             return UnauthorizedMessage();
         }
         if (!await userManager.IsEmailConfirmedAsync(user))
+        {
+            await audit.WriteAsync(AuditActions.LoginFailed, AuditResults.Denied, "User", user.Id.ToString(),
+                new { reason = "EmailUnconfirmed" }, cancellationToken: cancellationToken);
             return StatusCode(StatusCodes.Status403Forbidden, new { message = "Confirm your email before signing in." });
+        }
 
         await userManager.ResetAccessFailedCountAsync(user);
         if (user.MustChangePassword)
         {
+            await audit.WriteAsync(AuditActions.LoginFailed, AuditResults.Denied, "User", user.Id.ToString(),
+                new { reason = "TemporaryPasswordChangeRequired" }, cancellationToken: cancellationToken);
             var token = EncodeToken(await userManager.GeneratePasswordResetTokenAsync(user));
             return StatusCode(StatusCodes.Status428PreconditionRequired, new
             {
@@ -110,6 +135,8 @@ public sealed class AuthController(
         if (rotated is null)
         {
             DeleteRefreshCookie();
+            await audit.WriteAsync(AuditActions.SessionRefreshFailed, AuditResults.Denied,
+                details: new { reason = "InvalidExpiredOrReusedToken" }, cancellationToken: cancellationToken);
             return Unauthorized();
         }
         WriteRefreshCookie(rotated.Value.Session);
@@ -147,7 +174,10 @@ public sealed class AuthController(
             user.PhoneNumberConfirmed = false;
         }
         var result = await userManager.UpdateAsync(user);
-        return result.Succeeded ? Ok(await UserResponseAsync(user)) : Validation(result);
+        if (!result.Succeeded) return Validation(result);
+        await audit.WriteAsync(AuditActions.ProfileUpdated, AuditResults.Success, "User", user.Id.ToString(),
+            actorUserId: user.Id, cancellationToken: HttpContext.RequestAborted);
+        return Ok(await UserResponseAsync(user));
     }
 
     [Authorize]
@@ -165,9 +195,13 @@ public sealed class AuthController(
         try { await SendPasswordResetAsync(user, cancellationToken); }
         catch (AccountEmailDeliveryException)
         {
+            await audit.WriteAsync(AuditActions.PasswordResetRequested, AuditResults.Failed, "User", user.Id.ToString(),
+                new { reason = "EmailDeliveryFailed" }, actorUserId: user.Id, cancellationToken: cancellationToken);
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new { message = "The password reset email could not be sent. Please try again shortly." });
         }
+        await audit.WriteAsync(AuditActions.PasswordResetRequested, AuditResults.Success, "User", user.Id.ToString(),
+            actorUserId: user.Id, cancellationToken: cancellationToken);
         return Ok(new { message = "A password reset link has been sent to your email. Check your inbox and spam folder." });
     }
 
@@ -186,9 +220,13 @@ public sealed class AuthController(
         try { await SendPasswordSetupAsync(user, cancellationToken); }
         catch (AccountEmailDeliveryException)
         {
+            await audit.WriteAsync(AuditActions.PasswordSetupRequested, AuditResults.Failed, "User", user.Id.ToString(),
+                new { reason = "EmailDeliveryFailed" }, actorUserId: user.Id, cancellationToken: cancellationToken);
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new { message = "The password creation email could not be sent. Please try again shortly." });
         }
+        await audit.WriteAsync(AuditActions.PasswordSetupRequested, AuditResults.Success, "User", user.Id.ToString(),
+            actorUserId: user.Id, cancellationToken: cancellationToken);
         return Ok(new { message = "A link to create your portal password has been sent to your email. Google sign-in will remain available." });
     }
 
@@ -206,6 +244,8 @@ public sealed class AuthController(
         await userManager.UpdateAsync(user);
         await tokens.RevokeAllAsync(user.Id, cancellationToken);
         DeleteRefreshCookie();
+        await audit.WriteAsync(AuditActions.PasswordChanged, AuditResults.Success, "User", user.Id.ToString(),
+            new { method = "PasswordSetup" }, actorUserId: user.Id, cancellationToken: cancellationToken);
         return Ok(new { message = "Your portal password has been created. Sign in with Google or with your email and new password." });
     }
 
@@ -215,6 +255,7 @@ public sealed class AuthController(
         if (Request.Cookies.TryGetValue(RefreshCookie, out var refreshToken) && !string.IsNullOrWhiteSpace(refreshToken))
             await tokens.RevokeAsync(refreshToken, cancellationToken);
         DeleteRefreshCookie();
+        await audit.WriteAsync(AuditActions.Logout, AuditResults.Success, cancellationToken: cancellationToken);
         return NoContent();
     }
 
@@ -232,13 +273,23 @@ public sealed class AuthController(
     public async Task<IActionResult> GoogleCallback([FromQuery] string? returnUrl, CancellationToken cancellationToken)
     {
         var external = await HttpContext.AuthenticateAsync("External");
-        if (!external.Succeeded || external.Principal is null) return Redirect(ClientUrl("/login?error=google"));
+        if (!external.Succeeded || external.Principal is null)
+        {
+            await audit.WriteAsync(AuditActions.GoogleLoginFailed, AuditResults.Failed,
+                details: new { reason = "ExternalAuthenticationFailed" }, cancellationToken: cancellationToken);
+            return Redirect(ClientUrl("/login?error=google"));
+        }
         var providerKey = external.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
         var email = external.Principal.FindFirstValue(ClaimTypes.Email);
         if (string.IsNullOrWhiteSpace(providerKey) || string.IsNullOrWhiteSpace(email))
+        {
+            await audit.WriteAsync(AuditActions.GoogleLoginFailed, AuditResults.Failed,
+                details: new { reason = "RequiredClaimsMissing" }, cancellationToken: cancellationToken);
             return Redirect(ClientUrl("/login?error=google-email"));
+        }
 
         var user = await userManager.FindByLoginAsync("Google", providerKey) ?? await userManager.FindByEmailAsync(email);
+        var createdUser = false;
         if (user is null)
         {
             var displayName = external.Principal.FindFirstValue(ClaimTypes.Name)?.Trim();
@@ -251,11 +302,22 @@ public sealed class AuthController(
                 SubscriptionPlan = SubscriptionPlans.Free, CreatedAtUtc = timeProvider.GetUtcNow().UtcDateTime
             };
             var create = await userManager.CreateAsync(user);
-            if (!create.Succeeded) return Redirect(ClientUrl("/login?error=account"));
+            if (!create.Succeeded)
+            {
+                await audit.WriteAsync(AuditActions.GoogleLoginFailed, AuditResults.Failed,
+                    details: new { reason = "AccountCreationFailed" }, cancellationToken: cancellationToken);
+                return Redirect(ClientUrl("/login?error=account"));
+            }
+            createdUser = true;
             await userManager.AddToRoleAsync(user, AppRoles.Free);
             if (IsConfiguredAdmin(email)) await userManager.AddToRoleAsync(user, AppRoles.Admin);
         }
-        if (user.IsDeleted) return Redirect(ClientUrl("/login?error=account-deleted"));
+        if (user.IsDeleted)
+        {
+            await audit.WriteAsync(AuditActions.GoogleLoginFailed, AuditResults.Denied, "User", user.Id.ToString(),
+                new { reason = "AccountDeleted" }, actorUserId: user.Id, cancellationToken: cancellationToken);
+            return Redirect(ClientUrl("/login?error=account-deleted"));
+        }
         if (!user.EmailConfirmed)
         {
             user.EmailConfirmed = true;
@@ -264,7 +326,12 @@ public sealed class AuthController(
         if ((await userManager.GetLoginsAsync(user)).All(x => x.LoginProvider != "Google" || x.ProviderKey != providerKey))
         {
             var linked = await userManager.AddLoginAsync(user, new UserLoginInfo("Google", providerKey, "Google"));
-            if (!linked.Succeeded) return Redirect(ClientUrl("/login?error=account"));
+            if (!linked.Succeeded)
+            {
+                await audit.WriteAsync(AuditActions.GoogleLoginFailed, AuditResults.Failed, "User", user.Id.ToString(),
+                    new { reason = "AccountLinkFailed" }, actorUserId: user.Id, cancellationToken: cancellationToken);
+                return Redirect(ClientUrl("/login?error=account"));
+            }
         }
 
         if (user.MustChangePassword)
@@ -279,18 +346,43 @@ public sealed class AuthController(
         await userManager.UpdateAsync(user);
         WriteRefreshCookie(session);
         await HttpContext.SignOutAsync("External");
+        if (createdUser)
+        {
+            await audit.WriteAsync(AuditActions.UserRegistered, AuditResults.Success, "User", user.Id.ToString(),
+                new { provider = "Google" }, actorUserId: user.Id, cancellationToken: cancellationToken);
+        }
+        await audit.WriteAsync(AuditActions.GoogleLoginSucceeded, AuditResults.Success, "User", user.Id.ToString(),
+            actorUserId: user.Id, cancellationToken: cancellationToken);
         return Redirect(ClientUrl($"/auth/callback?returnUrl={Uri.EscapeDataString(SafeReturnUrl(returnUrl))}"));
     }
 
     [HttpGet("confirm-email")]
-    public async Task<IActionResult> ConfirmEmail([FromQuery] Guid userId, [FromQuery] string token)
+    public async Task<IActionResult> ConfirmEmail([FromQuery] Guid userId, [FromQuery] string token, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByIdAsync(userId.ToString());
-        if (user is null || user.IsDeleted) return BadRequest(new { message = "Invalid confirmation link." });
+        if (user is null || user.IsDeleted)
+        {
+            await audit.WriteAsync(AuditActions.EmailConfirmationFailed, AuditResults.Denied,
+                details: new { reason = "AccountNotAvailable" }, cancellationToken: cancellationToken);
+            return BadRequest(new { message = "Invalid confirmation link." });
+        }
         var decoded = DecodeToken(token);
-        if (decoded is null) return BadRequest(new { message = "Invalid confirmation link." });
+        if (decoded is null)
+        {
+            await audit.WriteAsync(AuditActions.EmailConfirmationFailed, AuditResults.Failed, "User", user.Id.ToString(),
+                new { reason = "MalformedToken" }, actorUserId: user.Id, cancellationToken: cancellationToken);
+            return BadRequest(new { message = "Invalid confirmation link." });
+        }
         var result = await userManager.ConfirmEmailAsync(user, decoded);
-        return result.Succeeded ? Ok(new { message = "Email confirmed. You can now sign in." }) : Validation(result);
+        if (!result.Succeeded)
+        {
+            await audit.WriteAsync(AuditActions.EmailConfirmationFailed, AuditResults.Failed, "User", user.Id.ToString(),
+                new { reason = "TokenRejected" }, actorUserId: user.Id, cancellationToken: cancellationToken);
+            return Validation(result);
+        }
+        await audit.WriteAsync(AuditActions.EmailConfirmed, AuditResults.Success, "User", user.Id.ToString(),
+            actorUserId: user.Id, cancellationToken: cancellationToken);
+        return Ok(new { message = "Email confirmed. You can now sign in." });
     }
 
     [HttpPost("resend-confirmation")]
@@ -299,7 +391,17 @@ public sealed class AuthController(
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
         if (user is not null && !user.IsDeleted && !await userManager.IsEmailConfirmedAsync(user))
-            try { await SendConfirmationAsync(user, cancellationToken); } catch (AccountEmailDeliveryException) { }
+            try
+            {
+                await SendConfirmationAsync(user, cancellationToken);
+                await audit.WriteAsync(AuditActions.ConfirmationRequested, AuditResults.Success, "User", user.Id.ToString(),
+                    cancellationToken: cancellationToken);
+            }
+            catch (AccountEmailDeliveryException)
+            {
+                await audit.WriteAsync(AuditActions.ConfirmationRequested, AuditResults.Failed, "User", user.Id.ToString(),
+                    new { reason = "EmailDeliveryFailed" }, cancellationToken: cancellationToken);
+            }
         return Ok(new { message = "If that account needs confirmation, a new email has been sent." });
     }
 
@@ -310,12 +412,20 @@ public sealed class AuthController(
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
         if (user is not null && !user.IsDeleted && await userManager.IsEmailConfirmedAsync(user))
         {
+            var hasPassword = await userManager.HasPasswordAsync(user);
+            var action = hasPassword ? AuditActions.PasswordResetRequested : AuditActions.PasswordSetupRequested;
             try
             {
-                if (await userManager.HasPasswordAsync(user)) await SendPasswordResetAsync(user, cancellationToken);
+                if (hasPassword) await SendPasswordResetAsync(user, cancellationToken);
                 else await SendPasswordSetupAsync(user, cancellationToken);
+                await audit.WriteAsync(action, AuditResults.Success, "User", user.Id.ToString(),
+                    cancellationToken: cancellationToken);
             }
-            catch (AccountEmailDeliveryException) { }
+            catch (AccountEmailDeliveryException)
+            {
+                await audit.WriteAsync(action, AuditResults.Failed, "User", user.Id.ToString(),
+                    new { reason = "EmailDeliveryFailed" }, cancellationToken: cancellationToken);
+            }
         }
         return Ok(new { message = "If an eligible account exists for that email, a password email has been sent." });
     }
@@ -333,6 +443,8 @@ public sealed class AuthController(
         await userManager.UpdateAsync(user);
         await tokens.RevokeAllAsync(user.Id, cancellationToken);
         DeleteRefreshCookie();
+        await audit.WriteAsync(AuditActions.PasswordChanged, AuditResults.Success, "User", user.Id.ToString(),
+            new { method = "PasswordReset" }, actorUserId: user.Id, cancellationToken: cancellationToken);
         return Ok(new { message = "Password updated. You can now sign in." });
     }
 
@@ -352,6 +464,8 @@ public sealed class AuthController(
         if (!update.Succeeded) return Validation(update);
         await tokens.RevokeAllAsync(user.Id, cancellationToken);
         DeleteRefreshCookie();
+        await audit.WriteAsync(AuditActions.PasswordChanged, AuditResults.Success, "User", user.Id.ToString(),
+            new { method = "TemporaryPassword" }, actorUserId: user.Id, cancellationToken: cancellationToken);
         return Ok(new { message = "Your temporary password has been replaced. You can now sign in." });
     }
 
@@ -361,6 +475,8 @@ public sealed class AuthController(
         await userManager.UpdateAsync(user);
         var session = await tokens.IssueAsync(user, cancellationToken);
         WriteRefreshCookie(session);
+        await audit.WriteAsync(AuditActions.LoginSucceeded, AuditResults.Success, "User", user.Id.ToString(),
+            actorUserId: user.Id, cancellationToken: cancellationToken);
         return Ok(await ResponseAsync(user, session));
     }
 

@@ -19,12 +19,16 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("Postgres")
             ?? throw new InvalidOperationException("ConnectionStrings:Postgres is not configured.");
 
-        services.AddDbContext<EuroleagueDbContext>(options =>
+        services.AddScoped<RankedCompletionAuditInterceptor>();
+        services.AddDbContext<EuroleagueDbContext>((serviceProvider, options) =>
+        {
             options.UseNpgsql(connectionString, npgsqlOptions =>
                 npgsqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 5,
                     maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorCodesToAdd: null)));
+                    errorCodesToAdd: null));
+            options.AddInterceptors(serviceProvider.GetRequiredService<RankedCompletionAuditInterceptor>());
+        });
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {

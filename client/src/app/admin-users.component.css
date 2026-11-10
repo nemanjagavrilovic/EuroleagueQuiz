@@ -61,3 +61,6 @@ button:disabled { opacity: .42; cursor: default; }
   .actions button { min-height: 42px; }
   .actions .delete { grid-column: 1 / -1; }
 }
+.admin-section-nav { display: flex; gap: 8px; margin-bottom: 20px; }
+.admin-section-nav a { padding: 9px 13px; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 800; }
+.admin-section-nav a.active { border-color: var(--accent); background: var(--selected-bg); color: var(--accent-soft); }
