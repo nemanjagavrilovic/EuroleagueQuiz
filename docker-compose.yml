@@ -18,6 +18,8 @@ services:
       Resend__ApiKey: ${RESEND_API_KEY:-}
       Resend__FromAddress: ${RESEND_FROM_ADDRESS:-noreply@pickandroll.io}
       Resend__FromName: Pick & Roll
+      Turnstile__SiteKey: ${TURNSTILE_SITE_KEY}
+      Turnstile__SecretKey: ${TURNSTILE_SECRET_KEY}
     expose:
       - "8080"
     volumes:

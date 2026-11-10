@@ -54,6 +54,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--
 textarea { min-height: 184px; }
 .message-help { flex-wrap: wrap; gap: 6px 12px; }
 .form-actions { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+app-turnstile { margin-top: 20px; }
 .form-actions button { min-height: 46px; }
 .submit-error { border: 1px solid var(--error-border); margin: 20px 0 0; }
 .contact-guide h2 { margin: 0 0 24px; font-size: 27px; }

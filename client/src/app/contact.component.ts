@@ -5,16 +5,18 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { environment } from '../environments/environment';
+import { TurnstileComponent } from './shared/turnstile/turnstile.component';
 
 @Component({
   selector: 'app-contact', standalone: true,
-  imports: [NgIf, ReactiveFormsModule, RouterLink],
+  imports: [NgIf, ReactiveFormsModule, RouterLink, TurnstileComponent],
   templateUrl: './contact.component.html', styleUrl: './contact.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ContactComponent {
   @ViewChild('contactForm') private contactForm?: ElementRef<HTMLFormElement>;
   @ViewChild('successMessage') private successMessage?: ElementRef<HTMLDivElement>;
+  @ViewChild(TurnstileComponent) private turnstile?: TurnstileComponent;
   private readonly injector = inject(Injector);
   private readonly http = inject(HttpClient);
   private readonly detector = inject(ChangeDetectorRef);
@@ -30,6 +32,7 @@ export class ContactComponent {
   sending = false;
   sent = false;
   errorMessage = '';
+  turnstileToken = '';
 
   invalid(field: 'name' | 'email' | 'subject' | 'message'): boolean {
     const control = this.form.controls[field];
@@ -43,8 +46,15 @@ export class ContactComponent {
       this.contactForm?.nativeElement.querySelector<HTMLElement>('input.ng-invalid, textarea.ng-invalid')?.focus();
       return;
     }
+    if (!this.turnstileToken) {
+      this.errorMessage = 'Complete the verification before sending your message.';
+      return;
+    }
     const values = this.form.getRawValue();
-    const request = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value.trim()]));
+    const request = {
+      ...Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value.trim()])),
+      turnstileToken: this.turnstileToken
+    };
     this.sending = true;
     this.errorMessage = '';
     this.http.post(`${environment.apiUrl.replace(/\/+$/, '')}/contact`, request).pipe(
@@ -55,12 +65,19 @@ export class ContactComponent {
         afterNextRender(() => this.successMessage?.nativeElement.focus({ preventScroll: true }), { injector: this.injector });
       },
       error: (error: HttpErrorResponse) => {
+        this.turnstileToken = '';
+        this.turnstile?.reset();
         this.errorMessage = error.status === 429
           ? 'Too many messages have been sent recently. Please wait a minute and try again.'
           : error.status === 400
-            ? 'Please check your details and message, then try again.'
+            ? error.error?.message || 'Please check your details and message, then try again.'
             : 'Your message could not be sent. Your text is still here—please try again later.';
       }
     });
+  }
+
+  onTurnstileToken(token: string): void {
+    this.turnstileToken = token;
+    if (token && this.errorMessage.startsWith('Complete the verification')) this.errorMessage = '';
   }
 }

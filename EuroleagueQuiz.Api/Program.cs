@@ -2,6 +2,7 @@ using EuroleagueQuiz.Application;
 using EuroleagueQuiz.Api.Authentication;
 using EuroleagueQuiz.Api.Administration;
 using EuroleagueQuiz.Api.RateLimiting;
+using EuroleagueQuiz.Api.Security;
 using EuroleagueQuiz.Infrastructure;
 using EuroleagueQuiz.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -55,6 +56,25 @@ builder.Services.Configure<JwtOptions>(options =>
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<PasswordSetupService>();
 builder.Services.AddScoped<AdminUserService>();
+builder.Services.AddOptions<TurnstileOptions>()
+    .Bind(builder.Configuration.GetSection(TurnstileOptions.SectionName))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.SiteKey), "Turnstile:SiteKey is required.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.SecretKey), "Turnstile:SecretKey is required.")
+    .ValidateOnStart();
+if (builder.Environment.IsDevelopment())
+    builder.Services.PostConfigure<TurnstileOptions>(options =>
+    {
+        if (!string.IsNullOrWhiteSpace(options.SiteKey) && !string.IsNullOrWhiteSpace(options.SecretKey)) return;
+        options.SiteKey = "1x00000000000000000000AA";
+        options.SecretKey = "1x0000000000000000000000000000000AA";
+        options.AllowedHostnames = ["example.com"];
+        options.EnforceAction = false;
+    });
+builder.Services.AddHttpClient<TurnstileValidator>(client =>
+{
+    client.BaseAddress = new Uri("https://challenges.cloudflare.com/");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 
 var authentication = builder.Services.AddAuthentication(options =>
 {

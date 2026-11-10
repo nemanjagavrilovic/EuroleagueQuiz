@@ -11,8 +11,9 @@
           <div class="field"><label for="contact-message">Message</label><textarea id="contact-message" formControlName="message" rows="6" minlength="10" maxlength="5000" required placeholder="If you spotted a quiz issue, include the game, player and clubs involved." [attr.aria-invalid]="invalid('message')" aria-describedby="message-help message-error"></textarea><div class="message-help" id="message-help"><span>10–5,000 characters</span><span>{{ form.controls.message.value.length }} / 5,000</span></div><p id="message-error" class="field-error" *ngIf="invalid('message')">Write a message between 10 and 5,000 characters.</p></div>
           <div class="website-field" aria-hidden="true"><label for="contact-website">Website</label><input id="contact-website" formControlName="website" tabindex="-1" autocomplete="off"></div>
         </fieldset>
+        <app-turnstile action="contact" (tokenChange)="onTurnstileToken($event)"></app-turnstile>
         <p class="submit-error" *ngIf="errorMessage" role="alert">{{ errorMessage }}</p>
-        <div class="form-actions"><button type="submit" [disabled]="sending">{{ sending ? 'Sending…' : 'Send message' }}</button><span>We’ll use your email to reply.</span></div>
+        <div class="form-actions"><button type="submit" [disabled]="sending || !turnstileToken">{{ sending ? 'Sending…' : 'Send message' }}</button><span>We’ll use your email to reply.</span></div>
       </form>
       <div #successMessage *ngIf="sent" class="contact-success" role="status" tabindex="-1"><p class="eyebrow">MESSAGE SENT</p><h2>Thanks for the assist.</h2><p>Your message has been sent to the Pick & Roll inbox.</p><a routerLink="/">Back to the games →</a></div>
     </section>
