@@ -16,7 +16,9 @@ public sealed class ContactRequest
     [Required, StringLength(5000, MinimumLength = 10)]
     public string Message { get; set; } = string.Empty;
 
-    [Required, StringLength(2048)]
+    // Validated by TurnstileValidator at the API boundary. Keeping this out of
+    // DataAnnotations allows ContactService to validate its normalized copy
+    // without carrying the one-time security token into the email workflow.
     public string TurnstileToken { get; set; } = string.Empty;
 
     // Honeypot: real visitors leave this field empty.
