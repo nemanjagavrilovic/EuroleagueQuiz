@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /admin/
+Disallow: /profile
+Disallow: /auth/
+Disallow: /confirm-email
+Disallow: /reset-password
+Disallow: /set-password
+Disallow: /change-temporary-password
+
+Sitemap: https://pickandroll.io/sitemap.xml
