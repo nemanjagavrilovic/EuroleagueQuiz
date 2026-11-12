@@ -17,6 +17,11 @@ public sealed class GoogleOptions
     public string ClientSecret { get; set; } = string.Empty;
 }
 
+public static class AuthenticationSchemes
+{
+    public const string GoogleMobile = "GoogleMobile";
+}
+
 public sealed class ClientOptions
 {
     public string BaseUrl { get; set; } = "http://localhost:4200";

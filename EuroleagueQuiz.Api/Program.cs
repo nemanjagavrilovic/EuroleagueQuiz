@@ -80,6 +80,7 @@ builder.Services.AddHttpClient<TurnstileValidator>(client =>
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 
+var googleOptions = builder.Configuration.GetSection(GoogleOptions.SectionName).Get<GoogleOptions>() ?? new GoogleOptions();
 var authentication = builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -123,8 +124,23 @@ var authentication = builder.Services.AddAuthentication(options =>
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
     options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
 });
-var googleOptions = builder.Configuration.GetSection(GoogleOptions.SectionName).Get<GoogleOptions>() ?? new GoogleOptions();
 var clientBaseUrl = (builder.Configuration["Client:BaseUrl"] ?? "http://localhost:4200").TrimEnd('/');
+if (!string.IsNullOrWhiteSpace(googleOptions.ClientId))
+    authentication.AddJwtBearer(AuthenticationSchemes.GoogleMobile, options =>
+    {
+        options.MapInboundClaims = false;
+        options.Authority = "https://accounts.google.com";
+        options.Audience = googleOptions.ClientId;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuers = ["https://accounts.google.com", "accounts.google.com"],
+            ValidateAudience = true,
+            ValidAudience = googleOptions.ClientId,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+    });
 if (!string.IsNullOrWhiteSpace(googleOptions.ClientId) && !string.IsNullOrWhiteSpace(googleOptions.ClientSecret))
     authentication.AddGoogle("Google", options =>
     {

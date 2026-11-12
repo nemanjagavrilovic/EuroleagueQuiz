@@ -1,0 +1,47 @@
+<section *ngIf="consent.visible()" class="consent-panel" role="dialog" aria-labelledby="cookie-title" aria-describedby="cookie-description">
+  <ng-container *ngIf="!customizing(); else settingsPanel">
+    <div class="consent-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M20.5 13.2A8.6 8.6 0 0 1 10.8 3.5a8.6 8.6 0 1 0 9.7 9.7Z"/><circle cx="8.2" cy="11" r="1"/><circle cx="12.2" cy="16" r="1"/><circle cx="16.3" cy="12" r="1"/></svg>
+    </div>
+    <div class="consent-copy">
+      <span class="eyebrow">YOUR PRIVACY</span>
+      <h2 id="cookie-title">Cookies, your call.</h2>
+      <p id="cookie-description">We use essential cookies to keep accounts secure and remember your session. Optional cookies help us understand and improve Pick &amp; Roll.</p>
+      <p class="cloudflare-note">Cloudflare Web Analytics is privacy-friendly and does not use cookies.</p>
+    </div>
+    <div class="consent-actions">
+      <button type="button" class="accept" (click)="acceptAll()">Accept all</button>
+      <button type="button" class="essential" (click)="essentialOnly()">Essential only</button>
+      <button type="button" class="settings" (click)="customize()">Customize</button>
+    </div>
+  </ng-container>
+
+  <ng-template #settingsPanel>
+    <div class="settings-header">
+      <button type="button" class="back" (click)="back()" aria-label="Back to cookie choices">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <div>
+        <span class="eyebrow">COOKIE SETTINGS</span>
+        <h2 id="cookie-title">Choose what works for you.</h2>
+      </div>
+    </div>
+
+    <div class="cookie-options" id="cookie-description">
+      <div class="cookie-option">
+        <div><strong>Essential</strong><p>Required for authentication, security and saving your consent choice.</p></div>
+        <span class="always-on">Always on</span>
+      </div>
+      <label class="cookie-option optional">
+        <div><strong>Analytics &amp; performance</strong><p>Allows future optional analytics that use browser storage. Cookie-free Cloudflare Web Analytics is not affected.</p></div>
+        <input type="checkbox" [checked]="analyticsEnabled()" (change)="analyticsEnabled.set(!analyticsEnabled())">
+        <span class="switch" aria-hidden="true"></span>
+      </label>
+    </div>
+
+    <div class="settings-actions">
+      <button type="button" class="essential" (click)="essentialOnly()">Reject optional</button>
+      <button type="button" class="accept" (click)="save()">Save choices</button>
+    </div>
+  </ng-template>
+</section>

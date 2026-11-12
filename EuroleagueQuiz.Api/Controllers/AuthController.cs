@@ -288,51 +288,19 @@ public sealed class AuthController(
             return Redirect(ClientUrl("/login?error=google-email"));
         }
 
-        var user = await userManager.FindByLoginAsync("Google", providerKey) ?? await userManager.FindByEmailAsync(email);
-        var createdUser = false;
-        if (user is null)
+        var resolved = await ResolveGoogleUserAsync(
+            providerKey,
+            email,
+            external.Principal.FindFirstValue(ClaimTypes.Name),
+            external.Principal.FindFirstValue(ClaimTypes.GivenName),
+            external.Principal.FindFirstValue(ClaimTypes.Surname));
+        if (resolved.Error is not null)
         {
-            var displayName = external.Principal.FindFirstValue(ClaimTypes.Name)?.Trim();
-            user = new ApplicationUser
-            {
-                Id = Guid.NewGuid(), UserName = email, Email = email, EmailConfirmed = true,
-                DisplayName = string.IsNullOrWhiteSpace(displayName) ? email.Split('@')[0] : displayName,
-                FirstName = OptionalName(external.Principal.FindFirstValue(ClaimTypes.GivenName)),
-                LastName = OptionalName(external.Principal.FindFirstValue(ClaimTypes.Surname)),
-                SubscriptionPlan = SubscriptionPlans.Free, CreatedAtUtc = timeProvider.GetUtcNow().UtcDateTime
-            };
-            var create = await userManager.CreateAsync(user);
-            if (!create.Succeeded)
-            {
-                await audit.WriteAsync(AuditActions.GoogleLoginFailed, AuditResults.Failed,
-                    details: new { reason = "AccountCreationFailed" }, cancellationToken: cancellationToken);
-                return Redirect(ClientUrl("/login?error=account"));
-            }
-            createdUser = true;
-            await userManager.AddToRoleAsync(user, AppRoles.Free);
-            if (IsConfiguredAdmin(email)) await userManager.AddToRoleAsync(user, AppRoles.Admin);
+            await WriteGoogleFailureAsync(resolved, cancellationToken);
+            return Redirect(ClientUrl($"/login?error={resolved.Error}"));
         }
-        if (user.IsDeleted)
-        {
-            await audit.WriteAsync(AuditActions.GoogleLoginFailed, AuditResults.Denied, "User", user.Id.ToString(),
-                new { reason = "AccountDeleted" }, actorUserId: user.Id, cancellationToken: cancellationToken);
-            return Redirect(ClientUrl("/login?error=account-deleted"));
-        }
-        if (!user.EmailConfirmed)
-        {
-            user.EmailConfirmed = true;
-            await userManager.UpdateAsync(user);
-        }
-        if ((await userManager.GetLoginsAsync(user)).All(x => x.LoginProvider != "Google" || x.ProviderKey != providerKey))
-        {
-            var linked = await userManager.AddLoginAsync(user, new UserLoginInfo("Google", providerKey, "Google"));
-            if (!linked.Succeeded)
-            {
-                await audit.WriteAsync(AuditActions.GoogleLoginFailed, AuditResults.Failed, "User", user.Id.ToString(),
-                    new { reason = "AccountLinkFailed" }, actorUserId: user.Id, cancellationToken: cancellationToken);
-                return Redirect(ClientUrl("/login?error=account"));
-            }
-        }
+        var user = resolved.User!;
+        var createdUser = resolved.Created;
 
         if (user.MustChangePassword)
         {
@@ -354,6 +322,51 @@ public sealed class AuthController(
         await audit.WriteAsync(AuditActions.GoogleLoginSucceeded, AuditResults.Success, "User", user.Id.ToString(),
             actorUserId: user.Id, cancellationToken: cancellationToken);
         return Redirect(ClientUrl($"/auth/callback?returnUrl={Uri.EscapeDataString(SafeReturnUrl(returnUrl))}"));
+    }
+
+    [HttpPost("google/mobile")]
+    [Authorize(AuthenticationSchemes = AuthenticationSchemes.GoogleMobile)]
+    [EnableRateLimiting(RateLimitPolicies.Login)]
+    public async Task<IActionResult> GoogleMobile(CancellationToken cancellationToken)
+    {
+        var providerKey = User.FindFirstValue("sub");
+        var email = User.FindFirstValue("email");
+        if (string.IsNullOrWhiteSpace(providerKey) || string.IsNullOrWhiteSpace(email))
+        {
+            await audit.WriteAsync(AuditActions.GoogleLoginFailed, AuditResults.Failed,
+                details: new { reason = "RequiredClaimsMissing", client = "Mobile" }, cancellationToken: cancellationToken);
+            return Unauthorized(new { message = "Google did not provide the account information required to sign in." });
+        }
+
+        var resolved = await ResolveGoogleUserAsync(
+            providerKey,
+            email,
+            User.FindFirstValue("name"),
+            User.FindFirstValue("given_name"),
+            User.FindFirstValue("family_name"));
+        if (resolved.Error is not null)
+        {
+            await WriteGoogleFailureAsync(resolved, cancellationToken, "Mobile");
+            return resolved.Error == "account-deleted"
+                ? StatusCode(StatusCodes.Status403Forbidden, new { message = "This account is no longer active." })
+                : StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Google sign-in could not be completed." });
+        }
+
+        var user = resolved.User!;
+        if (user.MustChangePassword)
+            return StatusCode(StatusCodes.Status428PreconditionRequired,
+                new { message = "Replace your temporary password on pickandroll.io before using Google sign-in." });
+
+        var session = await tokens.IssueAsync(user, cancellationToken);
+        user.LastLoginAtUtc = timeProvider.GetUtcNow().UtcDateTime;
+        await userManager.UpdateAsync(user);
+        WriteRefreshCookie(session);
+        if (resolved.Created)
+            await audit.WriteAsync(AuditActions.UserRegistered, AuditResults.Success, "User", user.Id.ToString(),
+                new { provider = "Google", client = "Mobile" }, actorUserId: user.Id, cancellationToken: cancellationToken);
+        await audit.WriteAsync(AuditActions.GoogleLoginSucceeded, AuditResults.Success, "User", user.Id.ToString(),
+            new { client = "Mobile" }, actorUserId: user.Id, cancellationToken: cancellationToken);
+        return Ok(await ResponseAsync(user, session));
     }
 
     [HttpGet("confirm-email")]
@@ -480,6 +493,69 @@ public sealed class AuthController(
         return Ok(await ResponseAsync(user, session));
     }
 
+    private async Task<GoogleUserResolution> ResolveGoogleUserAsync(
+        string providerKey,
+        string email,
+        string? displayName,
+        string? firstName,
+        string? lastName)
+    {
+        var user = await userManager.FindByLoginAsync("Google", providerKey)
+            ?? await userManager.FindByEmailAsync(email);
+        var created = false;
+        if (user is null)
+        {
+            var normalizedDisplayName = displayName?.Trim();
+            user = new ApplicationUser
+            {
+                Id = Guid.NewGuid(),
+                UserName = email,
+                Email = email,
+                EmailConfirmed = true,
+                DisplayName = string.IsNullOrWhiteSpace(normalizedDisplayName) ? email.Split('@')[0] : normalizedDisplayName,
+                FirstName = OptionalName(firstName),
+                LastName = OptionalName(lastName),
+                SubscriptionPlan = SubscriptionPlans.Free,
+                CreatedAtUtc = timeProvider.GetUtcNow().UtcDateTime
+            };
+            var create = await userManager.CreateAsync(user);
+            if (!create.Succeeded) return new(null, false, "account", "AccountCreationFailed");
+            created = true;
+            await userManager.AddToRoleAsync(user, AppRoles.Free);
+            if (IsConfiguredAdmin(email)) await userManager.AddToRoleAsync(user, AppRoles.Admin);
+        }
+
+        if (user.IsDeleted) return new(user, created, "account-deleted", "AccountDeleted");
+        if (!user.EmailConfirmed)
+        {
+            user.EmailConfirmed = true;
+            await userManager.UpdateAsync(user);
+        }
+        if ((await userManager.GetLoginsAsync(user)).All(login =>
+                login.LoginProvider != "Google" || login.ProviderKey != providerKey))
+        {
+            var linked = await userManager.AddLoginAsync(user, new UserLoginInfo("Google", providerKey, "Google"));
+            if (!linked.Succeeded) return new(user, created, "account", "AccountLinkFailed");
+        }
+
+        return new(user, created, null, null);
+    }
+
+    private Task WriteGoogleFailureAsync(
+        GoogleUserResolution resolution,
+        CancellationToken cancellationToken,
+        string client = "Web")
+    {
+        var result = resolution.Error == "account-deleted" ? AuditResults.Denied : AuditResults.Failed;
+        return audit.WriteAsync(
+            AuditActions.GoogleLoginFailed,
+            result,
+            resolution.User is null ? null : "User",
+            resolution.User?.Id.ToString(),
+            new { reason = resolution.FailureReason, client },
+            cancellationToken: cancellationToken);
+    }
+
     private async Task<object> ResponseAsync(ApplicationUser user, IssuedSession session) => new
     {
         accessToken = session.AccessToken,
@@ -528,6 +604,12 @@ public sealed class AuthController(
     private static IActionResult UnauthorizedMessage() => new UnauthorizedObjectResult(new { message = "Invalid email or password." });
     private static IActionResult Validation(IdentityResult result) => new BadRequestObjectResult(new
         { message = "Please correct the highlighted fields.", errors = result.Errors.Select(x => new { code = x.Code, description = x.Description }) });
+
+    private sealed record GoogleUserResolution(
+        ApplicationUser? User,
+        bool Created,
+        string? Error,
+        string? FailureReason);
 }
 
 public sealed record RegisterRequest(
