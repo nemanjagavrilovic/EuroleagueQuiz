@@ -117,15 +117,35 @@ public sealed class DailyGridServiceTests
     }
 
     [Fact]
-    public async Task Singleton_exception_fills_both_cells_but_never_prefills_new_grid()
+    public async Task Singleton_exception_fills_only_unique_cells_but_never_prefills_new_grid()
     {
         var f = new Fixture(); f.Players.Shared = true; f.Players.Singleton = true;
         var guest = Guid.NewGuid(); var round = await f.Service.StartAsync(guest, GridDifficulty.Normal, default);
         Assert.Empty(round.Answers);
         round = await f.Service.GuessAsync(guest, new(round.ChallengeId, 50, Guid.NewGuid()), default);
-        Assert.Equal(2, round.Answers.Count);
-        Assert.Equal(20, round.Score);
+        var answer = Assert.Single(round.Answers);
+        Assert.Equal((0, 0), (answer.Row, answer.Column));
+        Assert.Equal(10, round.Score);
         Assert.Equal(1, round.GuessesUsed);
+    }
+
+    [Fact]
+    public async Task Westermann_capture_fills_only_the_two_singletons_from_six_matching_cells()
+    {
+        var f = new Fixture();
+        f.Players.WestermannCapture = true;
+        var guest = Guid.NewGuid();
+        var round = await f.Service.StartAsync(guest, GridDifficulty.Normal, default);
+
+        round = await f.Service.GuessAsync(guest, new(round.ChallengeId, 313, Guid.NewGuid()), default);
+
+        Assert.Equal(2, round.Answers.Count);
+        Assert.Equal([(0, 0), (2, 0)], round.Answers.Select(x => (x.Row, x.Column)).Order().ToList());
+        Assert.All(round.Answers, answer => Assert.Equal(313, answer.Player.Id));
+        Assert.Empty(round.PendingCells);
+        Assert.Null(round.PendingPlayer);
+        Assert.Contains(313, round.UsedPlayerIds);
+        Assert.Equal(20, round.Score);
     }
 
     [Fact]
@@ -231,10 +251,20 @@ public sealed class DailyGridServiceTests
     {
         public bool Shared { get; set; }
         public bool Singleton { get; set; }
+        public bool WestermannCapture { get; set; }
         private static PlayerDto Player(long id) => new(id, id.ToString(), "Player " + id, null, null, null, null, null, null);
         public Task<IReadOnlyList<PlayerDto>> GetCommonPlayersAsync(long row, long column, CancellationToken ct)
         {
             var index = (row - 1) * 3 + column - 4;
+            if (WestermannCapture)
+            {
+                int[] counts = [1, 3, 7, 2, 5, 8, 1, 8, 10];
+                bool[] containsWestermann = [true, false, true, true, false, true, true, false, true];
+                var captured = Enumerable.Range(0, counts[index])
+                    .Select(offset => Player(2_000 + index * 20 + offset)).ToList();
+                if (containsWestermann[index]) captured[0] = Player(313);
+                return Task.FromResult<IReadOnlyList<PlayerDto>>(captured);
+            }
             var list = new List<PlayerDto> { Player(index + 1) };
             if (Shared && index < 2) { if (Singleton && index == 0) list.Clear(); list.Add(Player(50)); }
             return Task.FromResult<IReadOnlyList<PlayerDto>>(list);

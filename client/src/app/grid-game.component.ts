@@ -152,8 +152,12 @@ export class GridGameComponent {
         next: match => {
           const cells = match.availableCells.filter(cell => !this.isCellFilled(cell.row, cell.column));
           if (!cells.length) { this.searchError = 'This player does not match any empty grid cell.'; this.clearPracticeSearch(false); return; }
-          if (cells.length === 1 || cells.some(cell => cell.playerCount === 1)) {
+          if (cells.length === 1) {
             cells.forEach(cell => this.answers[cell.row * 3 + cell.column] = player);
+            this.searchError = 'Correct connection!'; this.clearPracticeSearch(false);
+          } else if (cells.some(cell => cell.playerCount === 1)) {
+            cells.filter(cell => cell.playerCount === 1)
+              .forEach(cell => this.answers[cell.row * 3 + cell.column] = player);
             this.searchError = 'Correct connection!'; this.clearPracticeSearch(false);
           } else {
             this.selectedPlayer = player; this.pendingCells = cells;

@@ -32,9 +32,17 @@ public sealed class DailyGridService(IDailyGridRepository repository, IGridServi
                 state.Feedback = "This player does not match any empty grid cell.";
                 FinishIfNeeded(state, definition);
             }
-            else if (state.PendingCells.Count == 1 || state.PendingCells.Any(x => x.PlayerCount == 1))
+            else if (state.PendingCells.Count == 1)
             {
                 foreach (var cell in state.PendingCells) state.Answers.Add(new(cell.Row, cell.Column, player, false));
+                state.PendingCells.Clear();
+                state.Feedback = "Correct connection!";
+                FinishIfNeeded(state, definition);
+            }
+            else if (state.PendingCells.Any(x => x.PlayerCount == 1))
+            {
+                foreach (var cell in state.PendingCells.Where(x => x.PlayerCount == 1))
+                    state.Answers.Add(new(cell.Row, cell.Column, player, false));
                 state.PendingCells.Clear();
                 state.Feedback = "Correct connection!";
                 FinishIfNeeded(state, definition);
