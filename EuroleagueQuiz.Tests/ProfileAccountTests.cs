@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using EuroleagueQuiz.Api.Authentication;
+using EuroleagueQuiz.Api.Auditing;
 using EuroleagueQuiz.Api.Controllers;
 using EuroleagueQuiz.Application.Interfaces;
 using EuroleagueQuiz.Infrastructure.Identity;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace EuroleagueQuiz.Tests;
@@ -32,6 +34,19 @@ public sealed class ProfileAccountTests
         Assert.Equal("Nemanja Gavrilović", created.DisplayName);
         Assert.Equal("+381 60 123 4567", created.PhoneNumber);
         Assert.Contains(AppRoles.Free, manager.AddedRoles);
+    }
+
+    [Fact]
+    public async Task Registration_allows_phone_number_to_be_omitted()
+    {
+        using var manager = new StubUserManager(Account());
+
+        var result = await Controller(manager, new RecordingEmailSender(), signedIn: false).Register(new(
+            "Jane", "Doe", null, "jane@example.test", "Password1"), default);
+
+        var created = Assert.IsType<ApplicationUser>(manager.CreatedUser);
+        Assert.IsType<ObjectResult>(result);
+        Assert.Null(created.PhoneNumber);
     }
 
     [Fact]
@@ -89,6 +104,20 @@ public sealed class ProfileAccountTests
         Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal(0, manager.Updates);
         Assert.Equal("+38160111222", user.PhoneNumber);
+    }
+
+    [Fact]
+    public async Task Profile_update_allows_phone_number_to_be_cleared()
+    {
+        var user = Account();
+        using var manager = new StubUserManager(user);
+
+        var result = await Controller(manager, new RecordingEmailSender())
+            .UpdateProfile(new("Jane", "Doe", "  "));
+
+        Assert.IsType<OkObjectResult>(result);
+        Assert.Null(user.PhoneNumber);
+        Assert.False(user.PhoneNumberConfirmed);
     }
 
     [Fact]
@@ -187,10 +216,17 @@ public sealed class ProfileAccountTests
         return new AuthController(manager, null!, sender,
             Options.Create(new ClientOptions { BaseUrl = "https://pickandroll.test" }),
             Options.Create(new GoogleOptions()), Options.Create(new IdentityBootstrapOptions()), null!, TimeProvider.System,
-            new PasswordSetupService(manager))
+            new PasswordSetupService(manager), AuditWriter())
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) } }
         };
+    }
+
+    private static AuditLogWriter AuditWriter()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        return new AuditLogWriter(new HttpContextAccessor(), services.GetRequiredService<IServiceScopeFactory>(),
+            TimeProvider.System, NullLogger<AuditLogWriter>.Instance);
     }
 
     private sealed class RecordingEmailSender : IAccountEmailSender

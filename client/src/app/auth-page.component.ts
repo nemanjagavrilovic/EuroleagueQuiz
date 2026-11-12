@@ -28,7 +28,7 @@ export class AuthPageComponent implements OnInit {
   readonly form = this.fb.nonNullable.group({
     firstName: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/\S/)]],
     lastName: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/\S/)]],
-    phoneNumber: ['', [Validators.required, Validators.minLength(7), Validators.maxLength(30), Validators.pattern(/^\+?[0-9 ()-]+$/)]],
+    phoneNumber: ['', [Validators.minLength(7), Validators.maxLength(30), Validators.pattern(/^\+?[0-9 ()-]+$/)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
     confirmPassword: ['']
@@ -61,7 +61,7 @@ export class AuthPageComponent implements OnInit {
     }
     if (mode === 'register' && (this.form.controls.firstName.invalid || this.form.controls.lastName.invalid || this.form.controls.phoneNumber.invalid)) {
       this.form.markAllAsTouched();
-      this.error.set('Enter your first name, last name and a valid phone number.'); return;
+      this.error.set('Enter your first and last name. Leave the phone number blank or enter a valid number.'); return;
     }
     if ((mode === 'register' || mode === 'reset' || mode === 'setup' || mode === 'temporary') && password !== confirmPassword) {
       this.error.set('Passwords do not match.'); return;

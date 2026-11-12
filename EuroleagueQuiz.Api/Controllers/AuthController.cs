@@ -40,7 +40,9 @@ public sealed class AuthController(
         var email = request.Email.Trim();
         var firstName = request.FirstName.Trim();
         var lastName = request.LastName.Trim();
-        var phoneNumber = request.PhoneNumber.Trim();
+        var phoneNumber = NormalizePhoneNumber(request.PhoneNumber);
+        if (!IsValidPhoneNumber(phoneNumber))
+            return BadRequest(new { message = "Leave the phone number blank or enter a valid number of up to 30 characters." });
         var user = new ApplicationUser
         {
             Id = Guid.NewGuid(), UserName = email, Email = email,
@@ -159,11 +161,11 @@ public sealed class AuthController(
         if (user is null) return Unauthorized();
         var firstName = request.FirstName.Trim();
         var lastName = request.LastName.Trim();
-        var phoneNumber = request.PhoneNumber.Trim();
+        var phoneNumber = NormalizePhoneNumber(request.PhoneNumber);
         if (firstName.Length is < 1 or > 50 || lastName.Length is < 1 or > 50)
             return BadRequest(new { message = "Enter a first and last name of up to 50 characters each." });
-        if (phoneNumber.Length is < 7 or > 30 || !new PhoneAttribute().IsValid(phoneNumber))
-            return BadRequest(new { message = "Enter a valid phone number of up to 30 characters." });
+        if (!IsValidPhoneNumber(phoneNumber))
+            return BadRequest(new { message = "Leave the phone number blank or enter a valid number of up to 30 characters." });
 
         user.FirstName = firstName;
         user.LastName = lastName;
@@ -599,6 +601,9 @@ public sealed class AuthController(
         .Any(value => string.Equals(value?.Trim(), email.Trim(), StringComparison.OrdinalIgnoreCase));
     private static string SafeReturnUrl(string? value) => !string.IsNullOrWhiteSpace(value) && value.StartsWith('/') && !value.StartsWith("//") ? value : "/";
     private static string? OptionalName(string? value) => value?.Trim() is { Length: > 0 and <= 50 } name ? name : null;
+    private static string? NormalizePhoneNumber(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private static bool IsValidPhoneNumber(string? value) => value is null ||
+        (value.Length is >= 7 and <= 30 && new PhoneAttribute().IsValid(value));
     private static string EncodeToken(string value) => WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(value));
     private static string? DecodeToken(string value) { try { return Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(value)); } catch { return null; } }
     private static IActionResult UnauthorizedMessage() => new UnauthorizedObjectResult(new { message = "Invalid email or password." });
@@ -615,7 +620,7 @@ public sealed class AuthController(
 public sealed record RegisterRequest(
     [Required, StringLength(50, MinimumLength = 1)] string FirstName,
     [Required, StringLength(50, MinimumLength = 1)] string LastName,
-    [Required, Phone, StringLength(30, MinimumLength = 7)] string PhoneNumber,
+    [StringLength(30)] string? PhoneNumber,
     [Required, EmailAddress, StringLength(254)] string Email,
     [Required, StringLength(128, MinimumLength = 8)] string Password);
 public sealed record LoginRequest([Required, EmailAddress] string Email, [Required] string Password);
@@ -625,6 +630,6 @@ public sealed record ResetPasswordRequest([Required, EmailAddress] string Email,
 public sealed record UpdateProfileRequest(
     [Required, StringLength(50)] string FirstName,
     [Required, StringLength(50)] string LastName,
-    [Required, Phone, StringLength(30, MinimumLength = 7)] string PhoneNumber);
+    [StringLength(30)] string? PhoneNumber);
 public sealed record AuthUserResponse(Guid Id, string? Email, string DisplayName, string? FirstName, string? LastName, string? PhoneNumber,
     IReadOnlyList<string> Roles, string SubscriptionPlan, bool HasPassword);

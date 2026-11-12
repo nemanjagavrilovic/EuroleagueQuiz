@@ -26,7 +26,7 @@ export class ProfileComponent {
   readonly form = this.fb.nonNullable.group({
     firstName: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/\S/)]],
     lastName: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/\S/)]],
-    phoneNumber: ['', [Validators.required, Validators.minLength(7), Validators.maxLength(30), Validators.pattern(/^\+?[0-9 ()-]+$/)]]
+    phoneNumber: ['', [Validators.minLength(7), Validators.maxLength(30), Validators.pattern(/^\+?[0-9 ()-]+$/)]]
   });
 
   constructor() {
