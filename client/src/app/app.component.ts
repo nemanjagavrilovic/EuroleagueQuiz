@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { ConfirmationModalComponent } from './shared/confirmation-modal/confirmation-modal.component';
 import { CookieConsentComponent } from './shared/cookie-consent/cookie-consent.component';
 import { CookieConsentService } from './shared/cookie-consent/cookie-consent.service';
+import { AnalyticsService } from './analytics.service';
 
 @Component({
   selector: 'app-root',
@@ -18,6 +19,7 @@ import { CookieConsentService } from './shared/cookie-consent/cookie-consent.ser
 export class AppComponent {
   @ViewChild('accountMenu') private accountMenu?: ElementRef<HTMLElement>;
   private readonly seo = inject(SeoService);
+  private readonly analytics = inject(AnalyticsService);
   readonly year = new Date().getFullYear();
   readonly auth = inject(AuthService);
   readonly cookieConsent = inject(CookieConsentService);

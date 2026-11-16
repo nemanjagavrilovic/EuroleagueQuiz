@@ -6,6 +6,7 @@ import { catchError, debounceTime, finalize, map, switchMap } from 'rxjs/operato
 import { DailyGridAttempt, DataApiService, GridCell, GridDefinition, Player } from './data-api.service';
 import { BasketballLoaderComponent } from './basketball-loader.component';
 import { createGuestUuid } from './guest-identity';
+import { AnalyticsService } from './analytics.service';
 
 @Component({
   selector: 'app-grid-game',
@@ -20,6 +21,7 @@ export class GridGameComponent {
   @ViewChild('suggestionsList') private suggestionsList?: ElementRef<HTMLUListElement>;
   private readonly injector = inject(Injector);
   private readonly api = inject(DataApiService);
+  private readonly analytics = inject(AnalyticsService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly changeDetector = inject(ChangeDetectorRef);
@@ -45,6 +47,7 @@ export class GridGameComponent {
   revealing = false;
   gridRevealed = false;
   dailyAttempt: DailyGridAttempt | null = null;
+  private practiceStarted = false;
   get attemptCompleted(): boolean { return this.dailyAttempt?.completed ?? (this.practice && (this.isGridComplete() || this.gridRevealed)); }
 
   get guessedCount(): number { return this.answers.filter(player => player !== null).length; }
@@ -76,7 +79,10 @@ export class GridGameComponent {
       this.gridLoading = true; this.gridError = ''; this.dailyAttempt = null; this.answers = Array(9).fill(null);
       this.revealedAnswers = Array(9).fill(null); this.gridRevealed = false; this.pendingCells = []; this.selectedPlayer = null;
       this.api.changeGrid(this.selectedDifficulty).subscribe({
-        next: grid => { this.grid = grid; this.gridLoading = false; this.clearSearch(); this.changeDetector.markForCheck(); },
+        next: grid => {
+          this.practiceStarted = false;
+          this.grid = grid; this.gridLoading = false; this.clearSearch(); this.changeDetector.markForCheck();
+        },
         error: () => { this.gridError = 'The practice grid could not be loaded.'; this.gridLoading = false; this.changeDetector.markForCheck(); }
       });
       return;
@@ -150,14 +156,20 @@ export class GridGameComponent {
         finalize(() => { this.checkingPlayer = false; this.focusSearch(); this.changeDetector.markForCheck(); })
       ).subscribe({
         next: match => {
+          if (!this.practiceStarted) {
+            this.practiceStarted = true;
+            this.analytics.grid('start', 'practice', this.selectedDifficulty);
+          }
           const cells = match.availableCells.filter(cell => !this.isCellFilled(cell.row, cell.column));
           if (!cells.length) { this.searchError = 'This player does not match any empty grid cell.'; this.clearPracticeSearch(false); return; }
           if (cells.length === 1) {
             cells.forEach(cell => this.answers[cell.row * 3 + cell.column] = player);
+            this.trackPracticeCompletion();
             this.searchError = 'Correct connection!'; this.clearPracticeSearch(false);
           } else if (cells.some(cell => cell.playerCount === 1)) {
             cells.filter(cell => cell.playerCount === 1)
               .forEach(cell => this.answers[cell.row * 3 + cell.column] = player);
+            this.trackPracticeCompletion();
             this.searchError = 'Correct connection!'; this.clearPracticeSearch(false);
           } else {
             this.selectedPlayer = player; this.pendingCells = cells;
@@ -176,7 +188,7 @@ export class GridGameComponent {
       })
     ).subscribe({
       next: result => {
-        this.applyAttempt(result);
+        this.applyActionResult(result, 'guess');
         this.changeDetector.markForCheck();
       },
       error: () => { this.searchError = 'The answer could not be confirmed. Restoring your saved progress…'; this.loadGrid(); }
@@ -194,6 +206,7 @@ export class GridGameComponent {
         next: result => {
           for (const cell of result.cells) if (!this.answers[cell.row * 3 + cell.column]) this.revealedAnswers[cell.row * 3 + cell.column] = cell.player;
           this.gridRevealed = true; this.clearPracticeSearch(false);
+          this.analytics.grid('reveal', 'practice', this.selectedDifficulty);
         },
         error: () => this.gridError = 'The grid answers could not be revealed.'
       });
@@ -204,7 +217,7 @@ export class GridGameComponent {
       finalize(() => { this.revealing = false; this.changeDetector.markForCheck(); })
     ).subscribe({
       next: result => {
-        this.applyAttempt(result);
+        this.applyActionResult(result, 'reveal');
         this.changeDetector.markForCheck();
       },
       error: () => { this.gridError = 'The grid answers could not be revealed.'; this.changeDetector.markForCheck(); }
@@ -226,13 +239,36 @@ export class GridGameComponent {
     if ((!this.practice && !this.dailyAttempt) || !this.selectedPlayer || this.isCellFilled(cell.row, cell.column) || this.checkingPlayer || this.revealing || this.attemptCompleted) return;
     if (this.practice) {
       this.answers[cell.row * 3 + cell.column] = this.selectedPlayer;
+      this.trackPracticeCompletion();
       this.pendingCells = []; this.searchError = 'Correct connection!'; this.clearPracticeSearch(false); return;
     }
     this.checkingPlayer = true;
     const challengeId = this.dailyAttempt!.challengeId;
     this.api.placeDailyGrid(challengeId, cell.row, cell.column, this.ranked).pipe(finalize(() => {
       this.checkingPlayer = false; this.focusSearch(); this.changeDetector.markForCheck();
-    })).subscribe({ next: result => this.applyAttempt(result), error: () => { this.searchError = 'Placement could not be confirmed. Restoring your saved progress…'; this.loadGrid(); } });
+    })).subscribe({ next: result => this.applyActionResult(result, 'place'), error: () => { this.searchError = 'Placement could not be confirmed. Restoring your saved progress…'; this.loadGrid(); } });
+  }
+
+  private trackPracticeCompletion(): void {
+    if (this.isGridComplete()) this.analytics.grid('complete', 'practice', this.selectedDifficulty);
+  }
+
+  private applyActionResult(result: DailyGridAttempt, action: 'guess' | 'place' | 'reveal'): void {
+    const previous = this.dailyAttempt;
+    this.applyAttempt(result);
+    if (!previous || previous.challengeId !== result.challengeId || previous.completed) return;
+
+    const mode = this.ranked ? 'ranked' : 'daily';
+    const difficulty = result.grid.difficulty;
+    if (action === 'guess' && previous.guessesUsed === 0 && result.guessesUsed === 1) {
+      this.analytics.grid('start', mode, difficulty);
+    }
+    if (action === 'reveal' && result.revealed && !previous.revealed) {
+      this.analytics.grid('reveal', mode, difficulty);
+    }
+    if (action !== 'reveal' && result.completed && !result.revealed && this.isGridComplete()) {
+      this.analytics.grid('complete', mode, difficulty);
+    }
   }
 
   private applyAttempt(attempt: DailyGridAttempt): void {
@@ -240,7 +276,9 @@ export class GridGameComponent {
     this.grid = attempt.grid;
     this.selectedDifficulty = attempt.grid.difficulty;
     if (this.route.snapshot.paramMap.get('difficulty')?.toLowerCase() !== this.selectedDifficulty.toLowerCase()) {
-      void this.router.navigate(['/grid', this.selectedDifficulty.toLowerCase()], { replaceUrl: true });
+      void this.router.navigate(['/grid', this.selectedDifficulty.toLowerCase()], {
+        replaceUrl: true, queryParamsHandling: 'preserve'
+      });
     }
     this.gridRevealed = attempt.revealed;
     this.answers = Array(9).fill(null);

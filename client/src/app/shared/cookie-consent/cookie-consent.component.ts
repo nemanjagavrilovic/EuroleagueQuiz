@@ -14,16 +14,18 @@ export class CookieConsentComponent {
   readonly consent = inject(CookieConsentService);
   readonly customizing = signal(false);
   readonly analyticsEnabled = signal(false);
+  readonly marketingEnabled = signal(false);
 
   customize(): void {
     this.analyticsEnabled.set(this.consent.preferences()?.analytics ?? false);
+    this.marketingEnabled.set(this.consent.preferences()?.marketing ?? false);
     this.customizing.set(true);
   }
 
   back(): void { this.customizing.set(false); }
 
   save(): void {
-    this.consent.save(this.analyticsEnabled());
+    this.consent.save(this.analyticsEnabled(), this.marketingEnabled());
     this.customizing.set(false);
   }
 

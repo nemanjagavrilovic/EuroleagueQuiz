@@ -6,7 +6,7 @@
     <div class="consent-copy">
       <span class="eyebrow">YOUR PRIVACY</span>
       <h2 id="cookie-title">Cookies, your call.</h2>
-      <p id="cookie-description">We use essential cookies to keep accounts secure and remember your session. Optional cookies help us understand and improve Pick &amp; Roll.</p>
+      <p id="cookie-description">Essential cookies keep accounts secure and remember your session. With your permission, we use Google Analytics to measure site usage and Meta Pixel to measure advertising.</p>
       <p class="cloudflare-note">Cloudflare Web Analytics is privacy-friendly and does not use cookies.</p>
     </div>
     <div class="consent-actions">
@@ -33,8 +33,13 @@
         <span class="always-on">Always on</span>
       </div>
       <label class="cookie-option optional">
-        <div><strong>Analytics &amp; performance</strong><p>Allows future optional analytics that use browser storage. Cookie-free Cloudflare Web Analytics is not affected.</p></div>
+        <div><strong>Analytics &amp; performance</strong><p>Lets Google Analytics measure page visits and how people use the quiz.</p></div>
         <input type="checkbox" [checked]="analyticsEnabled()" (change)="analyticsEnabled.set(!analyticsEnabled())">
+        <span class="switch" aria-hidden="true"></span>
+      </label>
+      <label class="cookie-option optional">
+        <div><strong>Marketing</strong><p>Lets Meta Pixel measure Facebook and Instagram ads and build advertising audiences.</p></div>
+        <input type="checkbox" [checked]="marketingEnabled()" (change)="marketingEnabled.set(!marketingEnabled())">
         <span class="switch" aria-hidden="true"></span>
       </label>
     </div>

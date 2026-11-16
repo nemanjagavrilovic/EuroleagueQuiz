@@ -363,6 +363,30 @@ If `pickandroll.io` is proxied through Cloudflare (orange cloud), enable Web Ana
 
 If the hostname is not proxied, use Cloudflare's **Manage site** page to obtain the manual JavaScript snippet and add that snippet to `client/src/index.html`. Do not add a Cloudflare API token or database credential to the application.
 
+### Enable Google Analytics 4 and Meta Pixel
+
+1. In Google Analytics, open **Admin → Data streams → your web stream** and copy the Measurement ID starting with `G-`. Turn off **Enhanced measurement** for this stream. Pick & Roll sends its own page views and quiz events, so the automatic browser-history page views would duplicate them. [Google tag setup](https://developers.google.com/analytics/devguides/collection/ga4/views)
+2. In Meta Events Manager, select or create your website data source and copy its numeric Pixel ID. Use this site's manual Pixel integration and leave automatic event detection and automatic advanced matching off. [Manual Meta Pixel configuration](https://developers.facebook.com/documentation/meta-pixel/advanced#automatic-configuration)
+3. Add the two public IDs to the production `.env` next to `docker-compose.yml`. Leave either value blank to disable that provider.
+
+   ```dotenv
+   GOOGLE_ANALYTICS_MEASUREMENT_ID=G-YOUR_ID
+   META_PIXEL_ID=YOUR_NUMERIC_PIXEL_ID
+   ```
+
+4. Deploy the updated app with `bash scripts/deploy-production.sh`. There are no database schema changes for tracking. After the code is deployed, changing only the IDs requires recreating the Compose services with `docker compose up -d --force-recreate api web`; the Angular bundle reads the IDs at runtime.
+5. Open the site in a fresh browser session. With **Essential only**, neither tag should load. In **Cookie settings**, enable **Analytics & performance** for GA4 and **Marketing** for Meta Pixel. Verify page views in GA4 Realtime or DebugView and in Meta Events Manager → **Test Events**. To test the Grid start, submit an answer on a fresh attempt. You can use Practice for repeatable tests. Previous cookie choices are prompted again because the optional categories have changed.
+
+Local development can use ASP.NET Core environment variables `Analytics__GoogleMeasurementId` and `Analytics__MetaPixelId`. Use separate test tracking properties to keep development events out of production reports.
+
+| Grid action | GA4 | Meta Pixel |
+| --- | --- | --- |
+| First guess processed, including an incorrect guess | `quiz_start` | `QuizStart` |
+| All nine cells answered by the player | `quiz_complete` | `QuizComplete` |
+| Reveal succeeds | `quiz_reveal` | `QuizReveal` |
+
+The Grid events include `game`, `mode`, and `difficulty`. Use `mode=daily` when reporting on the guest campaign discussed for `/grid/easy`. In GA4, mark the events you want as key events and register any of these parameters you want to use as event-scoped custom dimensions. After Meta receives the events, create custom conversions for `QuizStart` and `QuizComplete` in Events Manager. Keep UTM parameters on the ad link, for example `utm_source=instagram&utm_medium=paid_social&utm_campaign=grid_rs_w1&utm_content=mirotic_demo`. [Meta custom conversions](https://developers.facebook.com/docs/marketing-api/reference/custom-conversion/)
+
 ## 12. Applying EF Core migrations to Supabase
 
 The Docker runtime does not automatically change the database schema. Apply migrations explicitly when the model changes.
