@@ -18,6 +18,7 @@
     <button *ngIf="mode() === 'login' || mode() === 'register'" class="google" type="button" (click)="google()">
       <span aria-hidden="true">G</span> Continue with Google
     </button>
+    <p class="legal-note" *ngIf="mode() === 'login' || mode() === 'register'">By continuing with Google, you agree to the <a routerLink="/terms" target="_blank" rel="noopener">Terms of Use</a>. Read our <a routerLink="/privacy" target="_blank" rel="noopener">Privacy Policy</a> to learn how we use your information.</p>
     <div *ngIf="mode() === 'login' || mode() === 'register'" class="divider"><span>or use email</span></div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -30,6 +31,13 @@
       <label *ngIf="mode() === 'login' || mode() === 'register' || mode() === 'reset' || ((mode() === 'setup' || mode() === 'temporary') && !message())">{{ mode() === 'temporary' ? 'New password' : 'Password' }}<input formControlName="password" type="password" [autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'" placeholder="At least 8 characters" maxlength="128"></label>
       <small class="password-hint" *ngIf="mode() === 'register' || mode() === 'reset' || ((mode() === 'setup' || mode() === 'temporary') && !message())">Use at least 8 characters with uppercase, lowercase and a number.</small>
       <label *ngIf="mode() === 'register' || mode() === 'reset' || ((mode() === 'setup' || mode() === 'temporary') && !message())">Confirm password<input formControlName="confirmPassword" type="password" autocomplete="new-password" maxlength="128"></label>
+      <div class="registration-legal" *ngIf="mode() === 'register'">
+        <div class="terms-choice">
+          <input id="accept-terms" formControlName="acceptTerms" type="checkbox" required [attr.aria-invalid]="form.controls.acceptTerms.touched && form.controls.acceptTerms.invalid ? 'true' : null" aria-describedby="registration-privacy">
+          <label for="accept-terms">I agree to the <a routerLink="/terms" target="_blank" rel="noopener">Terms of Use</a>.</label>
+        </div>
+        <p id="registration-privacy" class="legal-note">Read our <a routerLink="/privacy" target="_blank" rel="noopener">Privacy Policy</a>. Your first and last name appear as your display name on public leaderboards when you play ranked. Optional tracking is controlled separately in Cookie settings.</p>
+      </div>
       <p class="form-error" *ngIf="error()" role="alert">{{ error() }}</p>
       <p class="form-success" *ngIf="message()" role="status">{{ message() }}</p>
       <button *ngIf="showResend()" class="resend-button" type="button" [disabled]="loading()" (click)="resend()">Resend confirmation email</button>

@@ -6,6 +6,7 @@
 h2 { margin: 0; font-size: 24px; line-height: 1.15; letter-spacing: -.04em; }
 p { margin: 10px 0 0; color: var(--text-secondary); font-size: 13px; line-height: 1.55; }
 .cloudflare-note { color: var(--muted); font-size: 11px; }
+.privacy-link a { color: var(--accent-soft); font-size: 12px; text-underline-offset: 3px; }
 .consent-actions, .settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 20px; }
 button { min-height: 43px; border: 1px solid var(--border-strong); border-radius: 9px; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
 .accept { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }

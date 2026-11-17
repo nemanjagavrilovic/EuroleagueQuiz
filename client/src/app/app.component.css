@@ -27,6 +27,7 @@ nav a.active { box-shadow: 0 2px #f97316; }
 .profile-menu svg { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .profile-menu button { border-top: 1px solid #243b4d; border-radius: 0 0 7px 7px; color: #ffb08a; }
 .site-footer { background: #07131f; color: #9bafc2; margin-top: 16px; border-top: 1px solid #203344; }
+.site-footer nav { justify-content: flex-end; flex-wrap: wrap; gap: 4px 20px; }
 .footer-inner { padding-top: 22px; padding-bottom: 22px; }
 .footer-brand { display: inline-flex; align-items: center; gap: 10px; color: white; text-decoration: none; font-size: 18px; font-weight: 800; letter-spacing: -.5px; }
 .footer-brand span { display: none; }
@@ -54,5 +55,6 @@ nav a.active { box-shadow: 0 2px #f97316; }
   nav { gap: 16px; flex-wrap: wrap; }
   nav a { font-size: 12px; }
   .footer-inner, .footer-bottom { align-items: flex-start; flex-direction: column; }
+  .site-footer nav { justify-content: flex-start; }
   .footer-notes { align-items: flex-start; text-align: left; }
 }

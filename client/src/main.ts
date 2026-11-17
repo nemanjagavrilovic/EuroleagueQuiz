@@ -36,6 +36,8 @@ const routes: Routes = [
   { path: 'team-history', component: TeamHistoryComponent },
   { path: 'contact', component: ContactComponent },
   { path: 'scoring', loadComponent: () => import('./app/scoring-page.component').then(page => page.ScoringPageComponent) },
+  { path: 'privacy', loadComponent: () => import('./app/legal/legal-page.component').then(page => page.LegalPageComponent), data: { document: 'privacy' } },
+  { path: 'terms', loadComponent: () => import('./app/legal/legal-page.component').then(page => page.LegalPageComponent), data: { document: 'terms' } },
   { path: 'login', component: AuthPageComponent, data: { mode: 'login' } },
   { path: 'register', component: AuthPageComponent, data: { mode: 'register' } },
   { path: 'forgot-password', component: AuthPageComponent, data: { mode: 'forgot' } },

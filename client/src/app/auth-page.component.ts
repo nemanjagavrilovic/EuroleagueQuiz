@@ -31,7 +31,8 @@ export class AuthPageComponent implements OnInit {
     phoneNumber: ['', [Validators.minLength(7), Validators.maxLength(30), Validators.pattern(/^\+?[0-9 ()-]+$/)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
-    confirmPassword: ['']
+    confirmPassword: [''],
+    acceptTerms: [false, Validators.requiredTrue]
   });
 
   ngOnInit(): void {
@@ -52,6 +53,11 @@ export class AuthPageComponent implements OnInit {
     if (this.loading() || this.invalidSetupLink()) return;
     this.message.set(''); this.error.set(''); this.showResend.set(false);
     const mode = this.mode();
+    if (mode === 'register' && this.form.controls.acceptTerms.invalid) {
+      this.form.controls.acceptTerms.markAsTouched();
+      this.error.set('Accept the Terms of Use to create an account.');
+      return;
+    }
     const { firstName, lastName, phoneNumber, email, password, confirmPassword } = this.form.getRawValue();
     if (!email || this.form.controls.email.invalid || ((mode === 'login' || mode === 'register' || mode === 'reset' || mode === 'setup' || mode === 'temporary') && !password)) {
       this.form.markAllAsTouched(); return;

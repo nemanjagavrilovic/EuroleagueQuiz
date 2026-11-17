@@ -56,6 +56,8 @@ textarea { min-height: 184px; }
 .form-actions { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
 app-turnstile { margin-top: 20px; }
 .form-actions button { min-height: 46px; }
+.contact-privacy { margin: 16px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.contact-privacy a { color: var(--accent-soft); text-underline-offset: 3px; }
 .submit-error { border: 1px solid var(--error-border); margin: 20px 0 0; }
 .contact-guide h2 { margin: 0 0 24px; font-size: 27px; }
 .contact-guide h2 span { display: block; }

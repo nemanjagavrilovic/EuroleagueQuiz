@@ -8,6 +8,7 @@
       <h2 id="cookie-title">Cookies, your call.</h2>
       <p id="cookie-description">Essential cookies keep accounts secure and remember your session. With your permission, we use Google Analytics to measure site usage and Meta Pixel to measure advertising.</p>
       <p class="cloudflare-note">Cloudflare Web Analytics is privacy-friendly and does not use cookies.</p>
+      <p class="privacy-link"><a routerLink="/privacy" fragment="cookies" (click)="readPrivacy()">Read our Privacy Policy</a></p>
     </div>
     <div class="consent-actions">
       <button type="button" class="accept" (click)="acceptAll()">Accept all</button>
@@ -48,5 +49,6 @@
       <button type="button" class="essential" (click)="essentialOnly()">Reject optional</button>
       <button type="button" class="accept" (click)="save()">Save choices</button>
     </div>
+    <p class="privacy-link"><a routerLink="/privacy" fragment="cookies" (click)="readPrivacy()">Privacy Policy and storage details</a></p>
   </ng-template>
 </section>

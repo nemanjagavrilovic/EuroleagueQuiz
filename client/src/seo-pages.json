@@ -1,4 +1,6 @@
 [
+  { "path": "/privacy", "title": "Privacy Policy | Pick & Roll", "description": "Learn how Pick & Roll handles account details, public leaderboard names, game data, cookies, analytics and your privacy choices." },
+  { "path": "/terms", "title": "Terms of Use | Pick & Roll", "description": "Read the rules for Pick & Roll accounts, guest challenges, practice, ranked games, fair play and leaderboard scores." },
   { "path": "/contact", "title": "Contact Us | Pick & Roll", "description": "Contact Pick & Roll to report a basketball quiz issue, suggest a new game, or ask a question. Help us improve our EuroLeague quiz games." },
   { "path": "/scoring", "title": "Scoring Rules for Every Game | Pick & Roll", "description": "Learn how to earn points in every Pick & Roll quiz. Explore Grid difficulty weights, clue bonuses, daily ranked totals, guest scores, and leaderboard rules." },
   { "path": "/", "title": "Pick & Roll | EuroLeague Basketball Quizzes", "description": "Test your EuroLeague knowledge with six free basketball quiz games. Connect clubs in Player Grid, guess careers, solve clues, and beat the Starting Five clock." },

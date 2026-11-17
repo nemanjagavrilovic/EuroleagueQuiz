@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, HostListener, inject, signal } from '@angular/core';
 import { NgIf } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { CookieConsentService } from './cookie-consent.service';
 
 @Component({
   selector: 'app-cookie-consent',
   standalone: true,
-  imports: [NgIf],
+  imports: [NgIf, RouterLink],
   templateUrl: './cookie-consent.component.html',
   styleUrl: './cookie-consent.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -23,6 +24,11 @@ export class CookieConsentComponent {
   }
 
   back(): void { this.customizing.set(false); }
+
+  readPrivacy(): void {
+    this.customizing.set(false);
+    this.consent.visible.set(false);
+  }
 
   save(): void {
     this.consent.save(this.analyticsEnabled(), this.marketingEnabled());

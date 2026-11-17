@@ -14,6 +14,7 @@
         <app-turnstile action="contact" (tokenChange)="onTurnstileToken($event)"></app-turnstile>
         <p class="submit-error" *ngIf="errorMessage" role="alert">{{ errorMessage }}</p>
         <div class="form-actions"><button type="submit" [disabled]="sending || !turnstileToken">{{ sending ? 'Sending…' : 'Send message' }}</button><span>We’ll use your email to reply.</span></div>
+        <p class="contact-privacy">Read our <a routerLink="/privacy">Privacy Policy</a> for how we handle your message and contact details.</p>
       </form>
       <div #successMessage *ngIf="sent" class="contact-success" role="status" tabindex="-1"><p class="eyebrow">MESSAGE SENT</p><h2>Thanks for the assist.</h2><p>Your message has been sent to the Pick & Roll inbox.</p><a routerLink="/">Back to the games →</a></div>
     </section>

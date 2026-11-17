@@ -1,0 +1,37 @@
+<main class="legal-page">
+  <a class="back-link" routerLink="/">← All games</a>
+  <header class="legal-header">
+    <p class="eyebrow">PICK &amp; ROLL / {{ isPrivacy ? 'YOUR PRIVACY' : 'PLAYING BY THE RULES' }}</p>
+    <h1>{{ document.title }}</h1>
+    <p class="intro">{{ document.introduction }}</p>
+    <div class="document-meta"><span>Last updated <time [attr.datetime]="details.updatedIso">{{ details.updated }}</time></span><a [routerLink]="isPrivacy ? '/terms' : '/privacy'">{{ isPrivacy ? 'Terms of Use' : 'Privacy Policy' }} <span aria-hidden="true">↗</span></a></div>
+  </header>
+
+  <div class="legal-layout">
+    <aside class="legal-sidebar">
+      <nav class="contents" aria-label="On this page">
+        <h2>On this page</h2>
+        <a *ngFor="let section of document.sections; let index = index" [routerLink]="path" [fragment]="section.id"><span aria-hidden="true">{{ index + 1 < 10 ? '0' : '' }}{{ index + 1 }}</span>{{ section.title }}</a>
+      </nav>
+      <div class="contact-card"><h2>Have a question?</h2><p>Contact {{ details.operator }} about {{ isPrivacy ? 'your information or choices' : 'these terms or your account' }}.</p><a [href]="'mailto:' + details.email">{{ details.email }}</a></div>
+    </aside>
+
+    <article class="legal-document" [attr.aria-label]="document.title">
+      <section *ngFor="let section of document.sections; let index = index" class="legal-section" [id]="section.id" [attr.aria-labelledby]="section.id + '-title'">
+        <h2 [id]="section.id + '-title'"><span class="section-number" aria-hidden="true">{{ index + 1 < 10 ? '0' : '' }}{{ index + 1 }}</span>{{ section.title }}</h2>
+        <p *ngFor="let paragraph of section.paragraphs">{{ paragraph }}</p>
+        <ul *ngIf="section.items"><li *ngFor="let item of section.items">{{ item }}</li></ul>
+        <ul *ngIf="section.links" class="provider-links"><li *ngFor="let link of section.links"><a [href]="link.href" target="_blank" rel="noopener noreferrer">{{ link.label }} <span aria-hidden="true">↗</span><span class="sr-only"> (opens in a new tab)</span></a></li></ul>
+        <ng-container *ngIf="isPrivacy && section.id === 'cookies'">
+          <div class="table-wrap" tabindex="0" role="region" aria-label="Cookies and browser storage details">
+            <table><caption>Cookies and browser storage used by Pick &amp; Roll</caption><thead><tr><th scope="col">Storage</th><th scope="col">Purpose and category</th><th scope="col">How long</th></tr></thead><tbody><tr *ngFor="let item of storage"><th scope="row">{{ item.name }}</th><td><span class="storage-category">{{ item.category }}</span>{{ item.purpose }}</td><td>{{ item.duration }}</td></tr></tbody></table>
+          </div>
+          <button class="action-button" type="button" (click)="consent.open()">Manage cookie choices</button>
+        </ng-container>
+        <a *ngIf="!isPrivacy && section.id === 'scores'" class="inline-action" routerLink="/scoring">Read the scoring rules <span aria-hidden="true">→</span></a>
+        <a *ngIf="!isPrivacy && (section.id === 'accounts' || section.id === 'account-actions')" class="inline-action" routerLink="/privacy">Read the Privacy Policy <span aria-hidden="true">→</span></a>
+      </section>
+      <div class="document-end"><p>Need help with your account or a quiz?</p><a routerLink="/contact">Contact us <span aria-hidden="true">→</span></a></div>
+    </article>
+  </div>
+</main>
