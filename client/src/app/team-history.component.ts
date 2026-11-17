@@ -5,6 +5,7 @@ import { Observable, Subject, catchError, debounceTime, finalize, map, of, switc
 import { DailyTeamHistoryAttempt, DataApiService, Player, TeamHistoryRound } from './data-api.service';
 import { createGuestUuid } from './guest-identity';
 import { BasketballLoaderComponent } from './basketball-loader.component';
+import { AnalyticsService } from './analytics.service';
 
 @Component({
   selector: 'app-team-history',
@@ -19,6 +20,7 @@ export class TeamHistoryComponent implements OnInit {
   @ViewChild('suggestionsList') private suggestionsList?: ElementRef<HTMLDivElement>;
   private readonly injector = inject(Injector);
   private readonly api = inject(DataApiService);
+  private readonly analytics = inject(AnalyticsService);
   private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute);
   private readonly searchTerms = new Subject<string>();
@@ -163,6 +165,7 @@ export class TeamHistoryComponent implements OnInit {
 
   private submitGuess(playerId: number | undefined, skip: boolean): void {
     if (!this.round || (!this.practice && !this.dailyAttempt) || this.loading || this.restoring || this.round.completed) return;
+    const previous = this.round;
     this.errorMessage = '';
     this.answerFeedback = '';
     this.searchingPlayers = false;
@@ -176,7 +179,7 @@ export class TeamHistoryComponent implements OnInit {
     if (this.practice) {
       this.api.guessTeamHistory(this.round.roundId, playerId, skip).pipe(finalize(() => {
         this.loading = false; this.focusSearch(); this.changeDetector.markForCheck();
-      })).subscribe({ next: round => this.applyPracticeRound(round), error: () => this.errorMessage = 'The answer could not be checked.' });
+      })).subscribe({ next: round => { this.trackAnswer(previous, round, skip); this.applyPracticeRound(round); }, error: () => this.errorMessage = 'The answer could not be checked.' });
       return;
     }
     const challengeId = this.dailyAttempt!.challengeId;
@@ -185,14 +188,14 @@ export class TeamHistoryComponent implements OnInit {
       this.focusSearch();
       this.changeDetector.markForCheck();
     })).subscribe({
-      next: attempt => this.applyAttempt(attempt),
+      next: attempt => { this.trackAnswer(previous, attempt.round, skip, attempt.score); this.applyAttempt(attempt); },
       error: () => {
         this.restoring = true;
         this.errorMessage = 'Your answer could not be confirmed. Restoring saved progress…';
         this.api.startDailyTeamHistory(this.ranked).pipe(finalize(() => {
           this.restoring = false; this.focusSearch(); this.changeDetector.markForCheck();
         })).subscribe({
-          next: attempt => { this.applyAttempt(attempt); this.changeDetector.markForCheck(); },
+          next: attempt => { this.trackAnswer(previous, attempt.round, skip, attempt.score); this.applyAttempt(attempt); this.changeDetector.markForCheck(); },
           error: () => { this.errorMessage = 'Saved progress could not be loaded. Refresh before submitting another answer.'; this.changeDetector.markForCheck(); }
         });
       }
@@ -211,6 +214,23 @@ export class TeamHistoryComponent implements OnInit {
     this.activeSuggestionIndex = -1;
     this.selectedPlayer = null;
     this.searchTerms.next('');
+  }
+
+  private trackAnswer(previous: TeamHistoryRound, round: TeamHistoryRound, skip: boolean, score?: number): void {
+    if (previous.roundId !== round.roundId || previous.completed ||
+      (previous.attempts === round.attempts && previous.revealedTeamCount === round.revealedTeamCount && !round.completed)) return;
+    const mode = this.practice ? 'practice' : this.ranked ? 'ranked' : 'daily';
+    const details = { clues_revealed: round.revealedTeamCount, score };
+    if (skip && round.completed) {
+      this.analytics.quiz('reveal', 'team-history', mode, { ...details, reason: 'reveal' });
+      return;
+    }
+    if (previous.attempts === 0 && previous.revealedTeamCount === 1) this.analytics.quiz('start', 'team-history', mode);
+    if (!skip) this.analytics.quiz('answer', 'team-history', mode, { ...details, result: round.correct ? 'correct' : 'incorrect' });
+    if (round.revealedTeamCount > previous.revealedTeamCount) {
+      this.analytics.quiz('clue', 'team-history', mode, { ...details, reason: skip ? 'skip' : 'incorrect' });
+    }
+    if (round.completed) this.analytics.quiz('complete', 'team-history', mode, { ...details, result: round.correct ? 'correct' : 'incorrect' });
   }
 
   private applyPracticeRound(round: TeamHistoryRound): void {

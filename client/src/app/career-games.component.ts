@@ -6,6 +6,7 @@ import { Observable, Subject, catchError, concatMap, debounceTime, finalize, map
 import { CareerOrderClub, CareerOrderRound, DailyCareerOrderAttempt, DailyMissingClubAttempt, DailyMysteryPlayerAttempt, DataApiService, MissingClubRound, MysteryPlayerRound, Player } from './data-api.service';
 import { createGuestUuid } from './guest-identity';
 import { BasketballLoaderComponent } from './basketball-loader.component';
+import { AnalyticsService } from './analytics.service';
 
 type GameType = 'missing-club' | 'career-order' | 'mystery-player';
 
@@ -18,6 +19,7 @@ export class CareerGamesComponent implements OnInit {
   @ViewChild('mysterySuggestions') private mysterySuggestions?: ElementRef<HTMLDivElement>;
   private readonly injector = inject(Injector);
   private readonly api = inject(DataApiService);
+  private readonly analytics = inject(AnalyticsService);
   private readonly route = inject(ActivatedRoute);
   private readonly detector = inject(ChangeDetectorRef);
   private readonly searchTerms = new Subject<string>();
@@ -120,26 +122,27 @@ export class CareerGamesComponent implements OnInit {
   chooseTeam(id: number): void { if (this.missing && !this.missing.completed && !this.loading && !this.restoringMissing) this.selectedTeamId = id; }
   submitMissing(skip = false): void {
     if (!this.missing || (!this.practice && !this.dailyMissing) || this.missing.completed || this.loading || this.restoringMissing || (!skip && this.selectedTeamId === null)) return;
+    const previous = this.missing;
     this.errorMessage = '';
     this.loading = true;
     if (this.practice) {
       this.api.guessMissingClub(this.missing.roundId, this.selectedTeamId ?? undefined, skip).pipe(
         finalize(() => { this.loading = false; this.detector.markForCheck(); })
-      ).subscribe({ next: round => this.applyPracticeMissing(round), error: () => this.errorMessage = 'The answer could not be checked.' });
+      ).subscribe({ next: round => { this.trackMissing(previous, round, skip); this.applyPracticeMissing(round); }, error: () => this.errorMessage = 'The answer could not be checked.' });
       return;
     }
     const challengeId = this.dailyMissing!.challengeId;
     this.api.guessDailyMissingClub(challengeId, createGuestUuid(), this.selectedTeamId ?? undefined, skip, this.ranked).pipe(
       finalize(() => { this.loading = false; this.detector.markForCheck(); })
     ).subscribe({
-      next: attempt => this.applyMissingAttempt(attempt),
+      next: attempt => { this.trackMissing(previous, attempt.round, skip, attempt.score); this.applyMissingAttempt(attempt); },
       error: () => {
         this.restoringMissing = true;
         this.errorMessage = 'Your answer could not be confirmed. Restoring saved progress…';
         this.api.startDailyMissingClub(this.ranked).pipe(finalize(() => {
           this.restoringMissing = false; this.detector.markForCheck();
         })).subscribe({
-          next: attempt => this.applyMissingAttempt(attempt),
+          next: attempt => { this.trackMissing(previous, attempt.round, skip, attempt.score); this.applyMissingAttempt(attempt); },
           error: () => { this.errorMessage = 'Saved progress could not be loaded. Refresh before submitting another answer.'; this.detector.markForCheck(); }
         });
       }
@@ -173,26 +176,27 @@ export class CareerGamesComponent implements OnInit {
   }
   submitOrder(): void {
     if (!this.order || (!this.practice && !this.dailyOrder) || this.order.completed || this.loading || this.restoringOrder || this.pendingOrderSaves) return;
+    const previous = this.order;
     this.loading = true;
     this.errorMessage = '';
     if (this.practice) {
       this.api.guessCareerOrder(this.order.roundId, this.orderClubs.map(x => x.id)).pipe(
         finalize(() => { this.loading = false; this.detector.markForCheck(); })
-      ).subscribe({ next: round => this.applyPracticeOrder(round), error: () => this.errorMessage = 'The order could not be checked.' });
+      ).subscribe({ next: round => { this.trackOrder(previous, round); this.applyPracticeOrder(round); }, error: () => this.errorMessage = 'The order could not be checked.' });
       return;
     }
     const challengeId = this.dailyOrder!.challengeId;
     this.api.submitDailyCareerOrder(challengeId, createGuestUuid(), this.orderClubs.map(x => x.id), this.ranked).pipe(
       finalize(() => { this.loading = false; this.detector.markForCheck(); })
     ).subscribe({
-      next: attempt => this.applyOrderAttempt(attempt),
+      next: attempt => { this.trackOrder(previous, attempt.round, attempt.score); this.applyOrderAttempt(attempt); },
       error: () => {
         this.restoringOrder = true;
         this.errorMessage = 'Your submission could not be confirmed. Restoring saved progress…';
         this.api.startDailyCareerOrder(this.ranked).pipe(finalize(() => {
           this.restoringOrder = false; this.detector.markForCheck();
         })).subscribe({
-          next: attempt => this.applyOrderAttempt(attempt),
+          next: attempt => { this.trackOrder(previous, attempt.round, attempt.score); this.applyOrderAttempt(attempt); },
           error: () => { this.errorMessage = 'Saved progress could not be loaded. Refresh before submitting another answer.'; this.detector.markForCheck(); }
         });
       }
@@ -267,6 +271,7 @@ export class CareerGamesComponent implements OnInit {
   }
   submitMystery(skip = false): void {
     if (!this.mystery || (!this.practice && !this.dailyMystery) || this.mystery.completed || this.loading || this.restoringMystery || (!skip && !this.selectedPlayer)) return;
+    const previous = this.mystery;
     const playerId = this.selectedPlayer?.id;
     this.errorMessage = '';
     this.answerFeedback = '';
@@ -275,21 +280,21 @@ export class CareerGamesComponent implements OnInit {
     if (this.practice) {
       this.api.guessMysteryPlayer(this.mystery.roundId, playerId, skip).pipe(
         finalize(() => { this.loading = false; this.focusMysterySearch(); this.detector.markForCheck(); })
-      ).subscribe({ next: round => this.applyPracticeMystery(round), error: () => this.errorMessage = 'The answer could not be checked.' });
+      ).subscribe({ next: round => { this.trackMystery(previous, round, skip); this.applyPracticeMystery(round); }, error: () => this.errorMessage = 'The answer could not be checked.' });
       return;
     }
     const challengeId = this.dailyMystery!.challengeId;
     this.api.guessDailyMysteryPlayer(challengeId, createGuestUuid(), playerId, skip, this.ranked).pipe(
       finalize(() => { this.loading = false; this.focusMysterySearch(); this.detector.markForCheck(); })
     ).subscribe({
-      next: attempt => this.applyMysteryAttempt(attempt),
+      next: attempt => { this.trackMystery(previous, attempt.round, skip, attempt.score); this.applyMysteryAttempt(attempt); },
       error: () => {
         this.restoringMystery = true;
         this.errorMessage = 'Your answer could not be confirmed. Restoring saved progress…';
         this.api.startDailyMysteryPlayer(this.ranked).pipe(finalize(() => {
           this.restoringMystery = false; this.focusMysterySearch(); this.detector.markForCheck();
         })).subscribe({
-          next: attempt => this.applyMysteryAttempt(attempt),
+          next: attempt => { this.trackMystery(previous, attempt.round, skip, attempt.score); this.applyMysteryAttempt(attempt); },
           error: () => { this.errorMessage = 'Saved progress could not be loaded. Refresh before submitting another answer.'; this.detector.markForCheck(); }
         });
       }
@@ -308,6 +313,40 @@ export class CareerGamesComponent implements OnInit {
   private applyPracticeMystery(round: MysteryPlayerRound): void {
     this.dailyMystery = null; this.mystery = round; this.clearSearch();
     this.errorMessage = ''; this.answerFeedback = ''; this.detector.markForCheck();
+  }
+
+  private get trackingMode(): 'daily' | 'ranked' | 'practice' { return this.practice ? 'practice' : this.ranked ? 'ranked' : 'daily'; }
+
+  private trackMissing(previous: MissingClubRound, round: MissingClubRound, skip: boolean, score?: number): void {
+    if (previous.roundId !== round.roundId || previous.completed || !round.completed) return;
+    if (skip) { this.analytics.quiz('reveal', 'missing-club', this.trackingMode, { reason: 'reveal', score }); return; }
+    this.analytics.quiz('start', 'missing-club', this.trackingMode);
+    const details = { result: round.correct ? 'correct' as const : 'incorrect' as const, score };
+    this.analytics.quiz('answer', 'missing-club', this.trackingMode, details);
+    this.analytics.quiz('complete', 'missing-club', this.trackingMode, details);
+  }
+
+  private trackOrder(previous: CareerOrderRound, round: CareerOrderRound, score?: number): void {
+    if (previous.roundId !== round.roundId || previous.completed || !round.completed) return;
+    this.analytics.quiz('start', 'career-order', this.trackingMode);
+    const details = { result: round.correct ? 'correct' as const : score && score > 0 ? 'partial' as const : 'incorrect' as const, score };
+    this.analytics.quiz('answer', 'career-order', this.trackingMode, details);
+    this.analytics.quiz('complete', 'career-order', this.trackingMode, details);
+  }
+
+  private trackMystery(previous: MysteryPlayerRound, round: MysteryPlayerRound, skip: boolean, score?: number): void {
+    if (previous.roundId !== round.roundId || previous.completed ||
+      (previous.revealedClueCount === round.revealedClueCount && !round.completed)) return;
+    const details = { clues_revealed: round.revealedClueCount, score };
+    if (skip && round.completed) {
+      this.analytics.quiz('reveal', 'mystery-player', this.trackingMode, { ...details, reason: 'reveal' }); return;
+    }
+    if (previous.revealedClueCount === 1) this.analytics.quiz('start', 'mystery-player', this.trackingMode);
+    if (!skip) this.analytics.quiz('answer', 'mystery-player', this.trackingMode, { ...details, result: round.correct ? 'correct' : 'incorrect' });
+    if (round.revealedClueCount > previous.revealedClueCount) {
+      this.analytics.quiz('clue', 'mystery-player', this.trackingMode, { ...details, reason: skip ? 'skip' : 'incorrect' });
+    }
+    if (round.completed) this.analytics.quiz('complete', 'mystery-player', this.trackingMode, { ...details, result: round.correct ? 'correct' : 'incorrect' });
   }
 
   private focusMysterySearch(): void {

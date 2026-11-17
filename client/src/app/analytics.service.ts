@@ -25,20 +25,41 @@ type TrackingWindow = Window & {
   _fbq?: MetaPixel;
 } & Partial<Record<`ga-disable-${string}`, boolean>>;
 
-const gridEvents = {
+const quizEvents = {
   start: ['quiz_start', 'QuizStart'],
   complete: ['quiz_complete', 'QuizComplete'],
-  reveal: ['quiz_reveal', 'QuizReveal']
+  reveal: ['quiz_reveal', 'QuizReveal'],
+  answer: ['quiz_answer', 'QuizAnswer'],
+  clue: ['quiz_clue_reveal', 'QuizClueReveal'],
+  round_start: ['quiz_round_start', 'QuizRoundStart'],
+  round_complete: ['quiz_round_complete', 'QuizRoundComplete']
 } as const;
-type GridEvent = {
-  action: keyof typeof gridEvents;
-  data: { game: 'grid'; mode: 'daily' | 'ranked' | 'practice'; difficulty: string };
+export type QuizGame = 'grid' | 'team-history' | 'missing-club' | 'career-order' | 'mystery-player' | 'five-player';
+export type QuizMode = 'daily' | 'ranked' | 'practice';
+export interface QuizEventDetails {
+  difficulty?: string;
+  result?: 'correct' | 'incorrect' | 'partial';
+  reason?: 'skip' | 'incorrect' | 'reveal' | 'timeout' | 'answered';
+  score?: number;
+  clues_revealed?: number;
+  round_number?: number;
+  correct_players?: number;
+}
+type QuizEvent = {
+  action: keyof typeof quizEvents;
+  data: { game: QuizGame; mode: QuizMode } & QuizEventDetails;
+};
+const gamePaths: Record<QuizGame, readonly string[]> = {
+  grid: ['/grid/easy', '/grid/normal', '/grid/hard', '/grid/legend'],
+  'team-history': ['/team-history', '/game/history'],
+  'missing-club': ['/game/missing-club', '/game/missing'],
+  'career-order': ['/game/career-order', '/game/order'],
+  'mystery-player': ['/game/mystery-player', '/game/mystery'],
+  'five-player': ['/game/five-player']
 };
 
 const publicPages = new Set([
-  '/', '/contact', '/scoring', '/leaderboard', '/team-history', '/game/history', '/game/missing-club',
-  '/game/career-order', '/game/mystery-player', '/game/five-player',
-  '/grid/easy', '/grid/normal', '/grid/hard', '/grid/legend'
+  '/', '/contact', '/scoring', '/leaderboard', ...Object.values(gamePaths).flat()
 ]);
 const campaignKeys = new Set(['utm_source', 'utm_medium', 'utm_campaign', 'utm_id', 'utm_term', 'utm_content']);
 const campaignValue = /^[a-z\d_.~-]{1,100}$/i;
@@ -65,8 +86,8 @@ export class AnalyticsService {
   private metaConfigured = false;
   private googlePage: TrackedPage | null = null;
   private metaPage: TrackedPage | null = null;
-  private googleQueue: GridEvent[] = [];
-  private metaQueue: GridEvent[] = [];
+  private googleQueue: QuizEvent[] = [];
+  private metaQueue: QuizEvent[] = [];
 
   constructor() {
     if (!this.browser) return;
@@ -91,20 +112,35 @@ export class AnalyticsService {
     effect(() => this.syncTags());
   }
 
-  grid(action: GridEvent['action'], mode: GridEvent['data']['mode'], difficulty: string): void {
+  grid(action: 'start' | 'complete' | 'reveal', mode: QuizMode, difficulty: string): void {
+    this.quiz(action, 'grid', mode, { difficulty });
+  }
+
+  quiz(action: QuizEvent['action'], game: QuizGame, mode: QuizMode, details: QuizEventDetails = {}): void {
     const page = this.page();
-    if (!page?.path.startsWith('/grid/')) return;
-    const level = difficulty.toLowerCase();
-    if (!publicPages.has(`/grid/${level}`)) return;
-    const event: GridEvent = { action, data: { game: 'grid', mode, difficulty: level } };
+    if (!page || !gamePaths[game]?.includes(page.path) || !supportedModes.has(mode)) return;
+    // Explicitly copy supported fields; never pass through a round, guess or account object.
+    const data: QuizEvent['data'] = { game, mode };
+    const level = details.difficulty?.toLowerCase();
+    if (game === 'grid') {
+      if (!level || !gamePaths.grid.includes(`/grid/${level}`)) return;
+      data.difficulty = level;
+    }
+    if (details.result && ['correct', 'incorrect', 'partial'].includes(details.result)) data.result = details.result;
+    if (details.reason && ['skip', 'incorrect', 'reveal', 'timeout', 'answered'].includes(details.reason)) data.reason = details.reason;
+    for (const [field, maximum] of [['score', 100], ['clues_revealed', 5], ['round_number', 5], ['correct_players', 25]] as const) {
+      const value = details[field];
+      if (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= maximum) data[field] = value;
+    }
+    const event: QuizEvent = { action, data };
     const config = this.config();
     if (this.consent.analyticsAllowed() && (!config || config.googleMeasurementId)) {
-      if (this.googleActive && this.googlePage === page) this.sendGoogleGrid(event, page);
-      else if (this.googleQueue.length < 8) this.googleQueue.push(event);
+      if (this.googleActive && this.googlePage === page) this.sendGoogleQuiz(event, page);
+      else if (this.googleQueue.length < 64) this.googleQueue.push(event);
     }
     if (page.metaSafe && this.consent.marketingAllowed() && (!config || config.metaPixelId)) {
-      if (this.metaActive && this.metaPage === page && config) this.sendMetaGrid(event, config.metaPixelId);
-      else if (this.metaQueue.length < 8) this.metaQueue.push(event);
+      if (this.metaActive && this.metaPage === page && config) this.sendMetaQuiz(event, config.metaPixelId);
+      else if (this.metaQueue.length < 64) this.metaQueue.push(event);
     }
   }
 
@@ -167,7 +203,9 @@ export class AnalyticsService {
       }
       browser.gtag?.('event', 'page_view', fields);
       this.googlePage = page;
-      for (const event of this.googleQueue.splice(0)) this.sendGoogleGrid(event, page);
+    }
+    if (googleActive && page && this.googlePage === page) {
+      for (const event of this.googleQueue.splice(0)) this.sendGoogleQuiz(event, page);
     }
 
     const metaActive = useMeta && this.metaReady();
@@ -183,21 +221,23 @@ export class AnalyticsService {
       }
       browser.fbq?.('trackSingle', metaId, 'PageView');
       this.metaPage = page;
-      for (const event of this.metaQueue.splice(0)) this.sendMetaGrid(event, metaId);
+    }
+    if (metaActive && page && this.metaPage === page) {
+      for (const event of this.metaQueue.splice(0)) this.sendMetaQuiz(event, metaId);
     }
   }
 
-  private sendGoogleGrid(event: GridEvent, page: TrackedPage): void {
+  private sendGoogleQuiz(event: QuizEvent, page: TrackedPage): void {
     try {
-      this.browser?.gtag?.('event', gridEvents[event.action][0], { ...event.data, page_location: page.location });
+      this.browser?.gtag?.('event', quizEvents[event.action][0], { ...event.data, page_location: page.location });
     } catch {
       // Analytics must not interrupt a guess when a third-party tag fails.
     }
   }
 
-  private sendMetaGrid(event: GridEvent, pixelId: string): void {
+  private sendMetaQuiz(event: QuizEvent, pixelId: string): void {
     try {
-      this.browser?.fbq?.('trackSingleCustom', pixelId, gridEvents[event.action][1], event.data);
+      this.browser?.fbq?.('trackSingleCustom', pixelId, quizEvents[event.action][1], event.data);
     } catch {
       // Analytics must not interrupt a guess when a third-party tag fails.
     }
