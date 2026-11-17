@@ -36,7 +36,7 @@ type GridEvent = {
 };
 
 const publicPages = new Set([
-  '/', '/contact', '/leaderboard', '/team-history', '/game/history', '/game/missing-club',
+  '/', '/contact', '/scoring', '/leaderboard', '/team-history', '/game/history', '/game/missing-club',
   '/game/career-order', '/game/mystery-player', '/game/five-player',
   '/grid/easy', '/grid/normal', '/grid/hard', '/grid/legend'
 ]);

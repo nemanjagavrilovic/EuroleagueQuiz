@@ -6,6 +6,7 @@
       <div><h1>Leaderboard</h1><p>{{ game === 'grid' ? 'Your ranked Grid results contribute up to 100 points each day.' : 'Six games. One daily score. See who knows EuroLeague best.' }}</p></div>
       <div class="maximum" *ngIf="board?.maximumScore as maximum"><span>MAXIMUM</span><strong>{{ maximum }}</strong><small>points</small></div>
     </div>
+    <a class="scoring-guide-link" routerLink="/scoring">How points work →</a>
   </header>
 
   <section class="filters" aria-label="Leaderboard filters">

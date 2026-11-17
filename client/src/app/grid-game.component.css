@@ -1,7 +1,7 @@
 :host { display: block; }
 .daily-status { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; margin-top: 16px; color: var(--muted); font-size: 11px; line-height: 1.6; }
 .daily-status > span:first-child { color: var(--accent-soft); font-weight: 700; }
-.daily-score { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 12px; padding: 12px 0; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+.daily-score { display: flex; justify-content: flex-end; align-items: start; flex-wrap: wrap; gap: 12px; padding: 12px 0; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
 .daily-score .ranked-points { text-align: right; }
 .daily-score .ranked-points strong { color: var(--accent); }
 .daily-score > div { display: flex; flex-direction: column; gap: 5px; }
@@ -12,6 +12,10 @@
 .shell.grid-page { max-width: 1120px; margin: auto; padding: 28px 24px 40px; }
 .game-header { max-width: 540px; margin-bottom: 18px; }
 .back-link { color: var(--muted); font-size: 12px; text-decoration: none; font-weight: 700; }
+.game-links { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.scoring-guide-link, .guide-tip a { color: var(--accent-soft); font-size: 12px; font-weight: 700; text-decoration: none; }
+.scoring-guide-link:hover, .guide-tip a:hover { text-decoration: underline; }
+.guide-tip a { display: inline-block; margin-top: 14px; }
 .title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 22px; }
 .eyebrow { color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: .13em; margin: 0 0 8px; }
 .grid-page .game-header .eyebrow { margin-top: 0; }

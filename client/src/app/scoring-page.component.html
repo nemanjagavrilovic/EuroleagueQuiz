@@ -1,0 +1,92 @@
+<main class="scoring-page">
+  <header class="page-header">
+    <a class="back-link" routerLink="/">← All games</a>
+    <p class="eyebrow">SCORING GUIDE</p>
+    <div class="heading-row">
+      <div><h1>How points work</h1><p class="intro">Every game contributes up to 100 ranked points. The four Grid levels share that game's 100-point total.</p></div>
+      <div class="daily-maximum"><span>DAILY RANKED MAXIMUM</span><strong>600</strong><span>points across six games</span></div>
+    </div>
+  </header>
+
+  <section class="play-modes" aria-label="Points by play mode">
+    <article><h2>Guest</h2><p>Play a daily challenge for each game, with a separate grid at every level. Your daily scores are shown out of 100 and saved for this browser.</p><p>Guest results are excluded from the leaderboard, including rounds started before signing in.</p></article>
+    <article><h2>Practice</h2><p>Play fresh random challenges as often as you like. Practice results help you learn the games and are excluded from the leaderboard.</p></article>
+    <article><h2>Ranked</h2><p>Sign in to earn leaderboard points. Play one daily challenge per game and one grid at each of the four levels. Your results are saved to your account.</p></article>
+  </section>
+
+  <div class="scoring-layout">
+    <nav class="section-nav" aria-label="Scoring sections">
+      <a *ngFor="let section of sections" routerLink="/scoring" [fragment]="section.id">{{ section.title }}</a>
+    </nav>
+
+    <div class="game-rules">
+      <section class="rules-card" id="player-grid" aria-labelledby="grid-scoring-title">
+        <div class="section-heading"><h2 id="grid-scoring-title">Player Grid</h2><span>100 ranked points total</span></div>
+        <p>Each level has its own daily ranked grid. Earn points for every correctly filled square, plus a completion bonus when you guess all nine.</p>
+        <div class="table-wrap"><table>
+          <caption>Ranked Grid points by difficulty</caption>
+          <thead><tr><th scope="col">Level</th><th scope="col">Per square</th><th scope="col">All nine bonus</th><th scope="col">Maximum</th></tr></thead>
+          <tbody><tr *ngFor="let level of gridLevels"><th scope="row">{{ level.name }}</th><td>{{ level.perSquare }}</td><td>{{ level.bonus }}</td><td>{{ level.maximum }}</td></tr></tbody>
+        </table></div>
+        <p class="example">Seven correct squares on Hard earn 21 points. Completing all nine earns 30 points, including the bonus.</p>
+        <ul><li>All four ranked levels add together for up to 100 Grid points each day.</li><li>You have unlimited guesses. Incorrect guesses do not deduct points.</li><li>Reveal keeps your earned points. Revealed squares earn zero, and the completion bonus requires nine correct guesses.</li></ul>
+        <p class="guest-rule">Guest grids award 10 daily points per correct square, plus 10 for all nine, for a maximum of 100 per grid. These guest scores are excluded from the leaderboard.</p>
+      </section>
+
+      <section class="rules-card" id="team-history" aria-labelledby="history-scoring-title">
+        <div class="section-heading"><h2 id="history-scoring-title">Team History</h2><span>100 points maximum</span></div>
+        <p>Guess the player from their clubs. The fewer club clues you need, the more points you earn.</p>
+        <div class="table-wrap"><table>
+          <caption>Points for a correct Team History answer</caption>
+          <thead><tr><th scope="col">Clubs revealed</th><th scope="col">Points</th></tr></thead>
+          <tbody><tr *ngFor="let points of historyPoints; let i = index"><th scope="row">{{ i + 1 }}</th><td>{{ points }}</td></tr></tbody>
+        </table></div>
+        <p>A wrong guess or Reveal next club uncovers another club and lowers the points available. A wrong guess after the fourth club or revealing the player ends the challenge with zero points.</p>
+      </section>
+
+      <section class="rules-card" id="missing-club" aria-labelledby="missing-scoring-title">
+        <div class="section-heading"><h2 id="missing-scoring-title">Missing Club</h2><span>100 points maximum</span></div>
+        <p>You have one answer. Find the club missing from the player's career.</p>
+        <dl class="outcome-points"><div><dt>Correct answer</dt><dd>100 points</dd></div><div><dt>Wrong answer or Reveal</dt><dd>0 points</dd></div></dl>
+        <p>Submitting an answer or selecting Reveal completes the daily challenge.</p>
+      </section>
+
+      <section class="rules-card" id="career-order" aria-labelledby="career-scoring-title">
+        <div class="section-heading"><h2 id="career-scoring-title">Career Order</h2><span>100 points maximum</span></div>
+        <p>Four clubs make three transfers. A transfer earns credit when its two clubs are next to each other in the correct direction.</p>
+        <div class="table-wrap"><table>
+          <caption>Career Order points for correct consecutive transfers</caption>
+          <thead><tr><th scope="col">Correct transfers</th><th scope="col">Points</th></tr></thead>
+          <tbody><tr *ngFor="let points of transferPoints; let i = index"><th scope="row">{{ i }} of 3</th><td>{{ points }}</td></tr></tbody>
+        </table></div>
+        <p class="example">For the correct career <strong>A → B → C → D</strong>, submitting <strong>B → A → C → D</strong> earns 33 points. The transfer C → D is correct.</p>
+        <p>You can rearrange the clubs before submitting. Submitting your order ends the daily challenge. Revealing the order earns zero points.</p>
+      </section>
+
+      <section class="rules-card" id="mystery-player" aria-labelledby="mystery-scoring-title">
+        <div class="section-heading"><h2 id="mystery-scoring-title">Mystery Player</h2><span>100 points maximum</span></div>
+        <p>Identify the player from the clues. Your points depend on how many clues are visible when you guess correctly.</p>
+        <div class="table-wrap"><table>
+          <caption>Points for a correct Mystery Player answer</caption>
+          <thead><tr><th scope="col">Clues revealed</th><th scope="col">Points</th></tr></thead>
+          <tbody><tr *ngFor="let points of mysteryPoints; let i = index"><th scope="row">{{ i + 1 }}</th><td>{{ points }}</td></tr></tbody>
+        </table></div>
+        <p>A wrong guess or Reveal next clue uncovers another clue and lowers the points available. A wrong guess at the fifth clue or Reveal player ends the challenge with zero points.</p>
+      </section>
+
+      <section class="rules-card" id="starting-five" aria-labelledby="five-scoring-title">
+        <div class="section-heading"><h2 id="five-scoring-title">Starting Five</h2><span>100 points maximum</span></div>
+        <p>Play five rounds, each lasting 24 seconds. Name five players who represented the round's club in any available EuroLeague season, regardless of position.</p>
+        <dl class="outcome-points"><div><dt>Each correct player</dt><dd>4 points</dd></div><div><dt>Five correct players in a round</dt><dd>20 points</dd></div><div><dt>All 25 players across five rounds</dt><dd>100 points</dd></div></dl>
+        <p>Each player can be counted once per round. Incorrect guesses earn zero and the clock keeps running. When time runs out or you reveal a round, you keep the points from your correct guesses.</p>
+      </section>
+
+      <section class="rules-card" id="leaderboard" aria-labelledby="leaderboard-scoring-title">
+        <div class="section-heading"><h2 id="leaderboard-scoring-title">Your daily total</h2><span>600 points maximum</span></div>
+        <p>The four Grid levels contribute up to 100 points together. Each of the other five games contributes up to 100, giving a maximum of 600 ranked points per day.</p>
+        <ul><li>Daily challenges reset at 00:00 UTC. Refreshing a game restores your saved progress.</li><li>View standings for today, this week, this month, or all time. Weekly standings begin on Monday.</li><li>Equal points are ranked by completed challenges, then perfect results, then completion time. Matching results share a rank.</li><li>Results saved under earlier scoring rules keep their original leaderboard points.</li></ul>
+        <a class="leaderboard-link" routerLink="/leaderboard">View leaderboard <span aria-hidden="true">→</span></a>
+      </section>
+    </div>
+  </div>
+</main>

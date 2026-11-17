@@ -30,15 +30,53 @@ h1 span { display: inline-block; margin-left: .15em; color: #ff8a32; }
 .level-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .level-links a { display: grid; place-items: center; min-height: 36px; border: 1px solid #b9682d; border-radius: 6px; color: #f2f6fa; text-decoration: none; font-size: 12px; font-weight: 700; }
 .level-links a:hover { background: #ff8a32; color: #07131f; border-color: #ff8a32; }
-.how-to-play { scroll-margin-top: 24px; margin-top: 30px; border-top: 1px solid #263b4d; border-bottom: 1px solid #263b4d; padding: 20px 0; }
-.how-to-play summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; list-style: none; color: #b2c1d0; font-size: 13px; cursor: pointer; }
-.how-to-play summary::-webkit-details-marker { display: none; }
-.how-to-play summary > span { color: #f2f6fa; font-weight: 700; }
-.how-to-play summary > span > span { color: #ff8a32; margin-left: 14px; }
-.how-to-play ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; padding-left: 20px; margin: 24px 0 4px; }
-.how-to-play li { padding-left: 4px; font-size: 13px; color: #ff8a32; }
-.how-to-play li strong { display: block; color: #f2f6fa; margin-bottom: 6px; }
-.how-to-play li > span { color: #b2c1d0; line-height: 1.7; }
+.how-to-play { scroll-margin-top: 110px; margin-top: 32px; padding: 24px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.how-to-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; }
+.how-to-header h2 { margin: 0; font-size: 25px; letter-spacing: -.03em; }
+.how-to-header p { margin: 8px 0 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.scoring-link { flex-shrink: 0; color: var(--accent-soft); font-size: 13px; font-weight: 700; text-decoration: none; }
+.scoring-link:hover { text-decoration: underline; }
+.scoring-link span { margin-left: 8px; }
+.how-to-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 28px; align-items: start; }
+.guide-tabs { display: flex; flex-direction: column; gap: 6px; }
+.guide-tabs button { min-width: 0; min-height: 44px; padding: 11px 12px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 13px; font-weight: 700; text-align: left; cursor: pointer; }
+.guide-tabs button:hover { background: var(--surface-raised); color: var(--text); }
+.guide-tabs button[aria-selected="true"] { border-color: var(--selected-border); background: var(--selected-bg); color: var(--accent-soft); }
+.game-instructions { min-width: 0; }
+.game-instructions:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 4px; }
+.game-instructions h3 { margin: 0 0 20px; color: var(--text); font-size: 21px; letter-spacing: -.025em; }
+.guide-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; padding-left: 20px; margin: 0; }
+.guide-steps li { min-width: 0; padding-left: 4px; font-size: 14px; }
+.guide-steps li::marker { color: var(--accent); font-weight: 800; }
+.guide-steps strong { display: block; color: var(--text); margin-bottom: 7px; font-size: 15px; }
+.guide-steps span { color: var(--text-secondary); line-height: 1.75; }
+.guide-tip { margin: 22px 0 0; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; line-height: 1.7; }
+.guide-actions { display: flex; margin-top: 18px; }
+.guide-levels > span { display: block; margin-bottom: 9px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.guide-level-links { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.guide-level-links a { display: grid; place-items: center; min-height: 44px; padding: 10px 18px; border: 1px solid var(--selected-border); border-radius: 8px; color: var(--text); font-size: 13px; font-weight: 700; text-decoration: none; }
+.guide-level-links a:hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.guide-play { display: inline-flex; align-items: center; justify-content: center; gap: 20px; min-height: 44px; padding: 11px 18px; border: 1px solid var(--accent); border-radius: 8px; background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 800; text-decoration: none; }
+.guide-play:hover { background: var(--accent-soft); }
+.guide-mode-note { margin: 24px 0 0; padding-top: 18px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; line-height: 1.7; }
+.guide-mode-note a { color: var(--accent-soft); font-weight: 700; }
+@media (max-width: 900px) {
+  .how-to-layout { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .guide-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .guide-tabs button { text-align: center; }
+  .guide-steps { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+}
+@media (max-width: 600px) {
+  .how-to-play { padding: 18px 16px; }
+  .how-to-header { flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+  .how-to-header h2 { font-size: 22px; }
+  .guide-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .guide-tabs button { padding: 10px 8px; font-size: 12px; }
+  .game-instructions h3 { font-size: 20px; }
+  .guide-levels { width: 100%; }
+  .guide-level-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .guide-play { width: 100%; }
+}
 @media (max-width: 1050px) { .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } h1 br { display: block; } h1 span { margin-left: 0; } .hero-copy { max-width: 70%; } }
 @media (max-width: 600px) { .home-shell { padding: 0 16px 24px; } .hero { margin: 0 -16px 20px; padding: 30px 16px; min-height: 260px; } .hero-copy { max-width: 90%; } .hero-image { opacity: .55; object-position: 68% 20%; } .hero::after { background: linear-gradient(90deg, #07131fee, #07131f66), linear-gradient(0deg, #07131f, transparent 30%); } .intro { font-size: 14px; max-width: 270px; } .data-coverage { font-size: 11px; } .section-heading h2 { font-size: 23px; } .section-heading > span { display: none; } .games-grid { gap: 12px; } .game-copy { padding: 10px 12px 14px; } .game-copy h3 { font-size: 16px; } .game-copy > p { font-size: 12px; min-height: 58px; } .game-visual { padding: 2px 4px 0; } .how-to-play ol { grid-template-columns: 1fr; gap: 20px; } .level-links a { min-height: 40px; font-size: 11px; } }
 @media (max-width: 360px) { .games-grid { grid-template-columns: 1fr; } .game-copy > p { min-height: 0; } }

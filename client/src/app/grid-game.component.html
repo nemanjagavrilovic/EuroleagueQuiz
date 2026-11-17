@@ -1,6 +1,6 @@
 <main class="shell grid-page">
   <header class="game-header">
-    <a routerLink="/" class="back-link">← All games</a>
+    <div class="game-links"><a routerLink="/" class="back-link">← All games</a><a routerLink="/scoring" fragment="player-grid" class="scoring-guide-link">How points work</a></div>
     <div class="title-row"><div><p class="eyebrow">CONNECT THE CLUBS</p><h1>Player Grid</h1></div><span class="difficulty-badge">{{ selectedDifficulty }}</span></div>
     <p class="intro">Two clubs. One player. Find the connection in every square.</p>
     <div class="daily-status" *ngIf="practice; else dailyGridStatus"><span>PRACTICE MODE · {{ selectedDifficulty }}</span><span>Unlimited random grids</span></div><ng-template #dailyGridStatus><div class="daily-status" *ngIf="dailyAttempt as attempt"><span>{{ ranked ? 'RANKED' : 'GUEST' }} DAILY GRID · {{ attempt.date }} · {{ selectedDifficulty }}</span><span>Resets at 00:00 UTC</span></div></ng-template>
@@ -16,10 +16,11 @@
         <button class="reveal-button" type="button" (click)="revealGrid()" [disabled]="revealing || checkingPlayer || attemptCompleted"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6m-5 3h4M8.5 13.5a6 6 0 1 1 7 0c-1 .7-1.5 1.5-1.5 2.5h-4c0-1-.5-1.8-1.5-2.5Z"/></svg>{{ revealing ? 'Revealing…' : 'Reveal' }}</button>
       </div>
       <div class="progress-track" role="progressbar" [attr.aria-valuenow]="guessedCount" aria-valuemin="0" aria-valuemax="9" aria-label="Players guessed"><span [style.width.%]="guessedCount / 9 * 100"></span></div>
-      <div class="daily-score" *ngIf="dailyAttempt as attempt" aria-live="polite">
-        <div><span>YOUR SCORE</span><strong>{{ attempt.score }} <small>/ 100</small></strong></div>
-        <div class="ranked-points" *ngIf="attempt.leaderboardEligible"><span>LEADERBOARD POINTS</span><strong>{{ attempt.leaderboardPoints }} <small>/ {{ attempt.maxLeaderboardPoints }}</small></strong></div>
-      </div>
+      <ng-container *ngIf="dailyAttempt as attempt">
+        <div class="daily-score" *ngIf="attempt.leaderboardEligible" aria-live="polite">
+          <div class="ranked-points"><span>LEADERBOARD POINTS</span><strong>{{ attempt.leaderboardPoints }} <small>/ {{ attempt.maxLeaderboardPoints }}</small></strong></div>
+        </div>
+      </ng-container>
 
       <div class="grid-layout" aria-label="Club intersections">
         <div class="grid-corner" aria-label="Match the row and column clubs"><span aria-hidden="true">×</span></div>
@@ -48,7 +49,7 @@
       <div class="revealed-message" *ngIf="gridRevealed && !isGridComplete()" role="status"><strong>Grid revealed</strong><span>{{ guessedCount }} of 9 guessed. Your answers stay green; revealed answers are red.</span><a routerLink="/">Explore games →</a></div>
       <button *ngIf="practice && attemptCompleted" class="primary new-practice-button" type="button" (click)="newPracticeGrid()">New practice grid</button>
       <p class="guest-score-note">{{ practice ? 'Practice is unlimited and does not affect the leaderboard.' : ranked && dailyAttempt?.leaderboardEligible ? (dailyAttempt!.scoringVersion >= 2 ? 'Each ranked level contributes points to your daily Grid total.' : 'This saved grid uses its original scoring rules.') : 'This daily score is saved but does not enter the leaderboard.' }}</p>
-      <p class="guest-score-note" *ngIf="attemptCompleted && dailyAttempt?.leaderboardEligible">You earned <strong>{{ dailyAttempt?.score }} / 100</strong> and <strong>{{ dailyAttempt?.leaderboardPoints }} / {{ dailyAttempt?.maxLeaderboardPoints }} leaderboard points</strong>.</p>
+      <p class="guest-score-note" *ngIf="attemptCompleted && dailyAttempt as attempt">You earned <strong>{{ attempt.leaderboardEligible ? attempt.leaderboardPoints : attempt.score }} / {{ attempt.leaderboardEligible ? attempt.maxLeaderboardPoints : 100 }} {{ attempt.leaderboardEligible ? 'leaderboard points' : 'daily points' }}</strong>.</p>
       <p class="daily-return" *ngIf="attemptCompleted && !practice">Today’s {{ selectedDifficulty }} grid is complete. Choose another level to keep playing.</p>
 
       <div class="answer-section" *ngIf="!attemptCompleted">
@@ -75,7 +76,7 @@
     <aside class="grid-guide" aria-label="How to play Player Grid">
       <p class="eyebrow">THE GAME PLAN</p><h2>Nine squares.<br>All your knowledge.</h2>
       <ol><li><strong>Read the clubs</strong><span>Match a club across the top with one down the side.</span></li><li><strong>Find their connection</strong><span>Search for a player who represented both clubs in the available EuroLeague seasons.</span></li><li><strong>Fill the grid</strong><span>Some players fit more than one square. Choose a highlighted square when prompted.</span></li></ol>
-      <div class="guide-tip"><strong>{{ practice ? 'Practice' : 'Daily scoring' }}</strong><p *ngIf="!practice">Unlimited guesses. Earn 10 points per correct square, plus 10 for all nine. Incorrect guesses don’t deduct points.</p><p *ngIf="!practice">Play one daily grid at each difficulty. Each level saves your progress separately.</p><p *ngIf="ranked && dailyAttempt && dailyAttempt.scoringVersion >= 2">Leaderboard maximums are Easy 10, Normal 20, Hard 30, and Legend 40. Together they contribute up to 100 points each day.</p><p>Keep guessing until you complete the grid, or select Reveal to see the answers.</p></div>
+      <div class="guide-tip"><strong>{{ practice ? 'Practice' : 'Points' }}</strong><p *ngIf="!practice">Correct connections earn points. Revealed squares earn zero. Wrong guesses don’t deduct points.</p><p *ngIf="!practice">Each difficulty has its own daily grid and saved progress.</p><p *ngIf="practice">Play fresh grids as often as you like.</p><a routerLink="/scoring" fragment="player-grid">See scoring rules →</a></div>
       <div class="colour-key"><span><i></i>Your answer</span><span><i></i>Revealed</span></div>
     </aside>
   </div>

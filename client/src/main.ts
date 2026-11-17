@@ -35,6 +35,7 @@ const routes: Routes = [
   { path: 'grid/:difficulty', component: GridGameComponent },
   { path: 'team-history', component: TeamHistoryComponent },
   { path: 'contact', component: ContactComponent },
+  { path: 'scoring', loadComponent: () => import('./app/scoring-page.component').then(page => page.ScoringPageComponent) },
   { path: 'login', component: AuthPageComponent, data: { mode: 'login' } },
   { path: 'register', component: AuthPageComponent, data: { mode: 'register' } },
   { path: 'forgot-password', component: AuthPageComponent, data: { mode: 'forgot' } },

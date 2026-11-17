@@ -16,5 +16,29 @@
       </article>
     </div>
   </section>
-  <details id="how-to-play" class="how-to-play"><summary>New to Pick & Roll? <span>How to play <span aria-hidden="true">+</span></span></summary><ol><li><strong>Pick a game</strong><span>Choose a challenge. For Player Grid, choose your difficulty.</span></li><li><strong>Make the connection</strong><span>Follow the clues or search for a player and select their name.</span></li><li><strong>Keep playing</strong><span>Need an assist? Reveal an answer and discover a career you forgot.</span></li></ol></details>
+  <section id="how-to-play" class="how-to-play" aria-labelledby="how-to-play-title">
+    <header class="how-to-header">
+      <div><h2 id="how-to-play-title">How to play</h2><p>Choose a game for a quick walkthrough.</p></div>
+      <a class="scoring-link" routerLink="/scoring">How points work <span aria-hidden="true">→</span></a>
+    </header>
+    <div class="how-to-layout">
+      <div #guideTabs class="guide-tabs" role="tablist" aria-label="Game instructions" (keydown)="onGuideKeydown($event)">
+        <button *ngFor="let game of games; let i = index" type="button" role="tab" [id]="'guide-tab-' + game.art" aria-controls="game-instructions" [attr.aria-selected]="activeGuideIndex === i" [attr.tabindex]="activeGuideIndex === i ? 0 : -1" (click)="activeGuideIndex = i">{{ game.title }}</button>
+      </div>
+      <section id="game-instructions" class="game-instructions" role="tabpanel" [attr.aria-labelledby]="'guide-tab-' + activeGuide.art" tabindex="0">
+        <h3>{{ activeGuide.title }}</h3>
+        <ol class="guide-steps"><li *ngFor="let step of activeGuide.steps"><strong>{{ step.title }}</strong><span>{{ step.text }}</span></li></ol>
+        <p class="guide-tip">{{ activeGuide.tip }}</p>
+        <div class="guide-actions">
+          <div class="guide-levels" *ngIf="activeGuide.art === 'grid'; else guidePlayLink">
+            <span>Choose a level</span>
+            <div class="guide-level-links"><a *ngFor="let level of levels" [routerLink]="auth.user() ? ['/play/grid'] : ['/grid', level.name.toLowerCase()]" [queryParams]="auth.user() ? { difficulty: level.name.toLowerCase() } : null" [title]="level.description" [attr.aria-label]="'Play ' + level.name + ' Player Grid'">{{ level.name }}</a></div>
+          </div>
+          <ng-template #guidePlayLink><a class="guide-play" [routerLink]="gameLink(activeGuide)">Play {{ activeGuide.title }} <span aria-hidden="true">→</span></a></ng-template>
+        </div>
+      </section>
+    </div>
+    <p class="guide-mode-note" *ngIf="!auth.user(); else signedInGuide">Play daily challenges as a guest. <a routerLink="/login">Sign in</a> for unlimited Practice and daily Ranked play.</p>
+    <ng-template #signedInGuide><p class="guide-mode-note">Choose Practice for fresh challenges or Ranked to earn leaderboard points when you open a game.</p></ng-template>
+  </section>
 </main>
