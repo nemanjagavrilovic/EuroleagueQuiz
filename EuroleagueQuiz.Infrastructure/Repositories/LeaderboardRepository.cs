@@ -1,5 +1,6 @@
 using EuroleagueQuiz.Application.DTOs;
 using EuroleagueQuiz.Application.Interfaces;
+using EuroleagueQuiz.Application.Services;
 using EuroleagueQuiz.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,9 +20,31 @@ public sealed class LeaderboardRepository(EuroleagueDbContext db) : ILeaderboard
             var query = db.DailyGridAttempts.AsNoTracking()
                 .Where(x => x.LeaderboardEligible && x.UserId != null && x.Date < toDateExclusive);
             if (fromDate is not null) query = query.Where(x => x.Date >= fromDate.Value);
-            partials.AddRange(await query.GroupBy(x => x.UserId!.Value).Select(group => new PartialAggregate(
+            // Historical Grid days keep the previous best-result rule and 100-point cap.
+            var legacy = query.Where(x => x.Challenge.ScoringVersion < GridRankedScoring.WeightedVersion);
+            var bestPerDay = legacy.Where(attempt => attempt.Id == legacy
+                .Where(x => x.UserId == attempt.UserId && x.Date == attempt.Date)
+                .OrderByDescending(x => x.Score)
+                .ThenByDescending(x => x.Completed)
+                .ThenBy(x => x.CompletedAtUtc)
+                .ThenBy(x => x.Id)
+                .Select(x => x.Id).First());
+            partials.AddRange(await bestPerDay.GroupBy(x => x.UserId!.Value).Select(group => new PartialAggregate(
                 group.Key,
                 group.Sum(x => x.Score),
+                group.Count(),
+                group.Count(x => x.Completed),
+                group.Count(x => x.Completed && x.Score == 100),
+                group.Max(x => x.Completed ? x.CompletedAtUtc : null))).ToListAsync(ct));
+
+            var weighted = query.Where(x => x.Challenge.ScoringVersion >= GridRankedScoring.WeightedVersion);
+            partials.AddRange(await weighted.GroupBy(x => x.UserId!.Value).Select(group => new PartialAggregate(
+                group.Key,
+                group.Sum(x => x.Score * (
+                    x.Challenge.Difficulty == nameof(GridDifficulty.Easy) ? GridRankedScoring.EasyMaximum :
+                    x.Challenge.Difficulty == nameof(GridDifficulty.Normal) ? GridRankedScoring.NormalMaximum :
+                    x.Challenge.Difficulty == nameof(GridDifficulty.Hard) ? GridRankedScoring.HardMaximum :
+                    x.Challenge.Difficulty == nameof(GridDifficulty.Legend) ? GridRankedScoring.LegendMaximum : 0) / 100),
                 group.Count(),
                 group.Count(x => x.Completed),
                 group.Count(x => x.Completed && x.Score == 100),

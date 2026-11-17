@@ -197,6 +197,9 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.Property<bool>("LeaderboardEligible")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("Ranked")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("Score")
                         .HasColumnType("integer");
 
@@ -217,12 +220,13 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.HasIndex("Date", "UserId")
                         .HasFilter("\"LeaderboardEligible\" AND \"UserId\" IS NOT NULL");
 
-                    b.HasIndex("GuestId", "Date")
-                        .IsUnique();
-
-                    b.HasIndex("UserId", "Date")
+                    b.HasIndex("GuestId", "Date", "ChallengeId")
                         .IsUnique()
-                        .HasFilter("\"UserId\" IS NOT NULL");
+                        .HasFilter("NOT \"Ranked\"");
+
+                    b.HasIndex("UserId", "Date", "ChallengeId")
+                        .IsUnique()
+                        .HasFilter("\"Ranked\" AND \"UserId\" IS NOT NULL");
 
                     b.ToTable("DailyGridAttempts");
                 });
@@ -247,12 +251,15 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<bool?>("Ranked")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("ScoringVersion")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Date", "Difficulty")
+                    b.HasIndex("Date", "Difficulty", "Ranked")
                         .IsUnique();
 
                     b.ToTable("DailyGridChallenges");
@@ -301,6 +308,22 @@ namespace EuroleagueQuiz.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("DataSyncRuns");
+                });
+
+            modelBuilder.Entity("EuroleagueQuiz.Domain.Entities.GridScoringSchedule", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly>("WeightedFromDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GridScoringSchedules", t =>
+                        {
+                            t.HasCheckConstraint("CK_GridScoringSchedules_Singleton", "\"Id\" = 1");
+                        });
                 });
 
             modelBuilder.Entity("EuroleagueQuiz.Domain.Entities.Player", b =>

@@ -17,6 +17,7 @@ public sealed class EuroleagueDbContext : IdentityDbContext<ApplicationUser, Ide
     public DbSet<DataSyncRun> DataSyncRuns => Set<DataSyncRun>();
     public DbSet<DailyGridChallenge> DailyGridChallenges => Set<DailyGridChallenge>();
     public DbSet<DailyGridAttempt> DailyGridAttempts => Set<DailyGridAttempt>();
+    public DbSet<GridScoringSchedule> GridScoringSchedules => Set<GridScoringSchedule>();
     public DbSet<DailyGameChallenge> DailyGameChallenges => Set<DailyGameChallenge>();
     public DbSet<DailyGameAttempt> DailyGameAttempts => Set<DailyGameAttempt>();
     public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
@@ -62,18 +63,24 @@ public sealed class EuroleagueDbContext : IdentityDbContext<ApplicationUser, Ide
             entity.HasOne(x => x.Challenge).WithMany().HasForeignKey(x => x.ChallengeId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
         });
+        modelBuilder.Entity<GridScoringSchedule>(entity =>
+        {
+            entity.ToTable(table => table.HasCheckConstraint("CK_GridScoringSchedules_Singleton", "\"Id\" = 1"));
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
+        });
         modelBuilder.Entity<DailyGridChallenge>(entity =>
         {
             entity.HasKey(x => x.Id);
-            entity.HasIndex(x => new { x.Date, x.Difficulty }).IsUnique();
+            entity.HasIndex(x => new { x.Date, x.Difficulty, x.Ranked }).IsUnique();
             entity.Property(x => x.Difficulty).HasMaxLength(20).IsRequired();
             entity.Property(x => x.DefinitionJson).HasColumnType("jsonb").IsRequired();
         });
         modelBuilder.Entity<DailyGridAttempt>(entity =>
         {
             entity.HasKey(x => x.Id);
-            entity.HasIndex(x => new { x.GuestId, x.Date }).IsUnique();
-            entity.HasIndex(x => new { x.UserId, x.Date }).IsUnique().HasFilter("\"UserId\" IS NOT NULL");
+            entity.HasIndex(x => new { x.GuestId, x.Date, x.ChallengeId }).IsUnique().HasFilter("NOT \"Ranked\"");
+            entity.HasIndex(x => new { x.UserId, x.Date, x.ChallengeId }).IsUnique().HasFilter("\"Ranked\" AND \"UserId\" IS NOT NULL");
             entity.HasIndex(x => new { x.Date, x.UserId }).HasFilter("\"LeaderboardEligible\" AND \"UserId\" IS NOT NULL");
             entity.Property(x => x.StateJson).HasColumnType("jsonb").IsRequired();
             entity.HasOne(x => x.Challenge).WithMany().HasForeignKey(x => x.ChallengeId).OnDelete(DeleteBehavior.Restrict);

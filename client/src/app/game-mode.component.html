@@ -9,9 +9,10 @@
     </a>
     <a class="mode-card ranked" [routerLink]="destination" [queryParams]="{ mode: 'ranked' }">
       <span class="mode-icon" aria-hidden="true">★</span><span class="mode-label">DAILY COMPETITION</span><h2>Ranked</h2>
-      <p>One challenge per UTC day. Your saved score is eligible for the leaderboard.</p>
+      <p>{{ game === 'grid' ? 'One ranked grid per difficulty each day. Your Grid total contributes up to 100 leaderboard points.' : 'One challenge per UTC day. Your saved score is eligible for the leaderboard.' }}</p>
       <strong>Play today’s challenge <span aria-hidden="true">→</span></strong>
     </a>
   </div>
-  <p class="mode-note">If you already viewed today’s challenge as a guest, it remains unranked until the next daily reset.</p>
+  <p class="mode-note" *ngIf="game === 'grid'; else otherDailyNote">Ranked has its own grid. You can play it today even if you played as a guest.</p>
+  <ng-template #otherDailyNote><p class="mode-note">If you already viewed today’s challenge as a guest, it remains unranked until the next daily reset.</p></ng-template>
 </main>

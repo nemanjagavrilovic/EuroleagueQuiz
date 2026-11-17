@@ -7,11 +7,12 @@ import { ConfirmationModalComponent } from './shared/confirmation-modal/confirma
 import { CookieConsentComponent } from './shared/cookie-consent/cookie-consent.component';
 import { CookieConsentService } from './shared/cookie-consent/cookie-consent.service';
 import { AnalyticsService } from './analytics.service';
+import { GridScoringNoticeComponent } from './shared/grid-scoring-notice/grid-scoring-notice.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [NgIf, RouterOutlet, RouterLink, RouterLinkActive, ConfirmationModalComponent, CookieConsentComponent],
+  imports: [NgIf, RouterOutlet, RouterLink, RouterLinkActive, ConfirmationModalComponent, CookieConsentComponent, GridScoringNoticeComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -13,6 +13,7 @@ public sealed record DailyAttemptIdentity(Guid GuestId, Guid? UserId, bool Ranke
     {
         attempt.GuestId = AttemptId;
         attempt.UserId = UserId;
+        attempt.Ranked = Ranked;
         attempt.LeaderboardEligible = EligibleForNewAttempt;
     }
 

@@ -24,7 +24,7 @@ export class HomeComponent {
   ];
   readonly levels = [
     { name: 'Easy', description: 'More familiar clubs and broader player pools.' },
-    { name: 'Normal', description: 'A balanced challenge.' },
+    { name: 'Normal', description: 'Familiar EuroLeague clubs with several possible answers.' },
     { name: 'Hard', description: 'Rarer club intersections and smaller answer pools.' },
     { name: 'Legend', description: 'The most demanding EuroLeague challenge.' }
   ];

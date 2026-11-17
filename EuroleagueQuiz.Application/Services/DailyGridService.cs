@@ -8,6 +8,16 @@ namespace EuroleagueQuiz.Application.Services;
 
 public sealed class DailyGridService(IDailyGridRepository repository, IGridService grids, IPlayerService players, TimeProvider clock) : IDailyGridService
 {
+    public async Task<GridScoringNoticeDto?> GetScoringNoticeAsync(CancellationToken ct)
+    {
+        var startDate = await repository.GetWeightedScoringStartDateAsync(ct);
+        var startsAtUtc = startDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var expiresAtUtc = startsAtUtc.AddDays(3);
+        return clock.GetUtcNow().UtcDateTime >= expiresAtUtc
+            ? null
+            : new GridScoringNoticeDto($"grid-scoring-v2-{startDate:yyyy-MM-dd}", startsAtUtc, expiresAtUtc);
+    }
+
     public Task<DailyGridAttemptDto> StartAsync(DailyAttemptIdentity identity, GridDifficulty difficulty, CancellationToken ct) =>
         ExecuteAsync(identity, difficulty, null, ct);
 
@@ -78,17 +88,20 @@ public sealed class DailyGridService(IDailyGridRepository repository, IGridServi
     private async Task<DailyGridAttemptDto> ExecuteAsync(DailyAttemptIdentity identity, GridDifficulty? difficulty, Func<AttemptState, Definition, Task>? action, CancellationToken ct, long? challengeId = null)
     {
         if (identity.GuestId == Guid.Empty) throw new ArgumentException("A guest identifier is required.");
+        if (identity.Ranked && !identity.EligibleForNewAttempt) throw new ArgumentException("Sign in to play Ranked mode.");
+        if (difficulty.HasValue && !Enum.IsDefined(difficulty.Value)) throw new ArgumentException("Unknown difficulty.");
         var date = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
-        return await repository.WithLockAsync($"grid-attempt:{date:yyyy-MM-dd}:{identity.AttemptId}", async () =>
+        return await repository.WithLockAsync($"grid-attempt:{date:yyyy-MM-dd}:{identity.AttemptId}:{identity.Ranked}", async () =>
         {
-            var attempt = await repository.FindOrClaimAsync(identity, date, ct);
+            var difficultyName = difficulty?.ToString();
+            var attempt = await repository.FindAttemptAsync(identity.AttemptId, date, identity.Ranked, difficultyName, challengeId, ct);
             if (attempt is null)
             {
-                if (difficulty is null) throw new ArgumentException("Start today's grid first.");
-                if (!Enum.IsDefined(difficulty.Value)) throw new ArgumentException("Unknown difficulty.");
-                var challenge = await repository.GetOrCreateChallengeAsync(date, difficulty.ToString()!, async () =>
+                if (difficulty is null) throw new ArgumentException("This challenge has changed. Refresh to load today's grid.");
+                var challenge = await repository.GetOrCreateChallengeAsync(date, difficultyName!, identity.Ranked, async existing =>
                 {
-                    var grid = await grids.CreateGridAsync(ct, difficulty: difficulty.Value);
+                    var playedGrids = existing.Select(x => JsonSerializer.Deserialize<Definition>(x.DefinitionJson)!.Grid).ToArray();
+                    var grid = await grids.CreateGridAsync(ct, difficulty: difficulty.Value, excludedGrids: playedGrids);
                     var candidates = new List<List<PlayerDto>>();
                     for (var row = 0; row < 3; row++)
                     for (var col = 0; col < 3; col++)
@@ -113,6 +126,11 @@ public sealed class DailyGridService(IDailyGridRepository repository, IGridServi
             if (action is not null) await action(state, definition);
             var correct = state.Answers.Count(x => !x.Revealed);
             var score = correct * 10 + (correct == 9 ? 10 : 0);
+            int? maximumPoints = attempt.LeaderboardEligible
+                ? attempt.Challenge.ScoringVersion >= GridRankedScoring.WeightedVersion
+                    ? GridRankedScoring.MaximumPoints(definition.Grid.Difficulty)
+                    : 100
+                : null;
             var now = clock.GetUtcNow().UtcDateTime;
             attempt.StateJson = JsonSerializer.Serialize(state);
             attempt.Score = score;
@@ -123,7 +141,12 @@ public sealed class DailyGridService(IDailyGridRepository repository, IGridServi
             await repository.SaveAsync(ct);
             return new DailyGridAttemptDto(attempt.ChallengeId, date, date.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc), definition.Grid,
                 score, state.GuessesUsed, state.Completed, state.Revealed, attempt.LeaderboardEligible,
-                state.Answers, state.PendingPlayer, state.PendingCells, state.UsedPlayerIds.ToList(), state.Feedback);
+                state.Answers, state.PendingPlayer, state.PendingCells, state.UsedPlayerIds.ToList(), state.Feedback)
+            {
+                ScoringVersion = attempt.Challenge.ScoringVersion,
+                LeaderboardPoints = score * maximumPoints / 100,
+                MaxLeaderboardPoints = maximumPoints
+            };
         }, ct);
     }
 

@@ -9,4 +9,12 @@ public sealed record DailyGridAttemptDto(
     int Score, int GuessesUsed, bool Completed, bool Revealed,
     bool LeaderboardEligible, IReadOnlyList<DailyGridAnswerDto> Answers,
     PlayerDto? PendingPlayer, IReadOnlyList<GridCellDto> PendingCells,
-    IReadOnlyList<long> UsedPlayerIds, string? Feedback);
+    IReadOnlyList<long> UsedPlayerIds, string? Feedback)
+{
+    public int ScoringVersion { get; init; } = 1;
+    public int? LeaderboardPoints { get; init; }
+    public int? MaxLeaderboardPoints { get; init; }
+}
+
+public sealed record GridScoringNoticeDto(
+    string Id, DateTime StartsAtUtc, DateTime ExpiresAtUtc);

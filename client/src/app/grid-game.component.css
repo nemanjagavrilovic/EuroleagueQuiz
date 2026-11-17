@@ -1,7 +1,9 @@
 :host { display: block; }
 .daily-status { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; margin-top: 16px; color: var(--muted); font-size: 11px; line-height: 1.6; }
 .daily-status > span:first-child { color: var(--accent-soft); font-weight: 700; }
-.daily-score { padding: 12px 0; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+.daily-score { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 12px; padding: 12px 0; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+.daily-score .ranked-points { text-align: right; }
+.daily-score .ranked-points strong { color: var(--accent); }
 .daily-score > div { display: flex; flex-direction: column; gap: 5px; }
 .daily-score span { color: var(--muted); font-size: 9px; letter-spacing: .1em; }
 .daily-score strong { color: var(--text); font-size: 24px; font-variant-numeric: tabular-nums; }

@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { NgIf } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 @Component({
-  selector: 'app-game-mode', standalone: true, imports: [RouterLink],
+  selector: 'app-game-mode', standalone: true, imports: [NgIf, RouterLink],
   templateUrl: './game-mode.component.html', styleUrl: './game-mode.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

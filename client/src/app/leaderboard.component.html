@@ -3,7 +3,7 @@
     <a class="back-link" routerLink="/">← All games</a>
     <p class="eyebrow">RANKED COMPETITION</p>
     <div class="header-row">
-      <div><h1>Leaderboard</h1><p>Six games. One daily score. See who knows EuroLeague best.</p></div>
+      <div><h1>Leaderboard</h1><p>{{ game === 'grid' ? 'Your ranked Grid results contribute up to 100 points each day.' : 'Six games. One daily score. See who knows EuroLeague best.' }}</p></div>
       <div class="maximum" *ngIf="board?.maximumScore as maximum"><span>MAXIMUM</span><strong>{{ maximum }}</strong><small>points</small></div>
     </div>
   </header>

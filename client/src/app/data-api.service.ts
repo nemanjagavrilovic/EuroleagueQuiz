@@ -47,6 +47,7 @@ export interface GridDefinition {
 }
 
 export interface DailyGridAttempt {
+  scoringVersion: number;
   challengeId: number;
   date: string;
   resetsAtUtc: string;
@@ -56,6 +57,8 @@ export interface DailyGridAttempt {
   completed: boolean;
   revealed: boolean;
   leaderboardEligible: boolean;
+  leaderboardPoints: number | null;
+  maxLeaderboardPoints: number | null;
   answers: { row: number; column: number; player: Player; revealed: boolean }[];
   pendingPlayer: Player | null;
   pendingCells: GridCell[];

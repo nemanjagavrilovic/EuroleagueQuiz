@@ -1,6 +1,6 @@
 import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Injector, ViewChild, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, finalize, map, switchMap } from 'rxjs/operators';
 import { DailyGridAttempt, DataApiService, GridCell, GridDefinition, Player } from './data-api.service';
@@ -23,7 +23,6 @@ export class GridGameComponent {
   private readonly api = inject(DataApiService);
   private readonly analytics = inject(AnalyticsService);
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly changeDetector = inject(ChangeDetectorRef);
   readonly playerSearch$ = new Subject<string>();
   grid: GridDefinition | null = null;
@@ -275,11 +274,6 @@ export class GridGameComponent {
     this.dailyAttempt = attempt;
     this.grid = attempt.grid;
     this.selectedDifficulty = attempt.grid.difficulty;
-    if (this.route.snapshot.paramMap.get('difficulty')?.toLowerCase() !== this.selectedDifficulty.toLowerCase()) {
-      void this.router.navigate(['/grid', this.selectedDifficulty.toLowerCase()], {
-        replaceUrl: true, queryParamsHandling: 'preserve'
-      });
-    }
     this.gridRevealed = attempt.revealed;
     this.answers = Array(9).fill(null);
     this.revealedAnswers = Array(9).fill(null);

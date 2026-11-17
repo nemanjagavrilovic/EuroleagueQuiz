@@ -1,0 +1,7 @@
+<aside class="scoring-notice" *ngIf="visible()" aria-label="Grid scoring update">
+  <div class="notice-content">
+    <strong>New Grid scoring</strong>
+    <p>All four ranked levels now contribute points. Easy earns up to 10, Normal 20, Hard 30, and Legend 40. Scores from previous days are kept.</p>
+  </div>
+  <button type="button" (click)="dismiss()" aria-label="Dismiss Grid scoring announcement"><span aria-hidden="true">×</span></button>
+</aside>

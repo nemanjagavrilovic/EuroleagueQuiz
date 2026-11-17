@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using EuroleagueQuiz.Application.Services;
 using EuroleagueQuiz.Domain.Entities;
 using EuroleagueQuiz.Domain.Repositories;
 using EuroleagueQuiz.Infrastructure.Persistence;
@@ -9,6 +10,9 @@ namespace EuroleagueQuiz.Infrastructure.Repositories;
 
 public sealed class DailyGridRepository(EuroleagueDbContext db) : IDailyGridRepository
 {
+    public Task<DateOnly> GetWeightedScoringStartDateAsync(CancellationToken cancellationToken) =>
+        db.GridScoringSchedules.AsNoTracking().Select(x => x.WeightedFromDate).SingleAsync(cancellationToken);
+
     public async Task<T> WithLockAsync<T>(string key, Func<Task<T>> action, CancellationToken cancellationToken)
     {
         // PostgreSQL transaction locks also serialize requests from different API instances.
@@ -23,24 +27,40 @@ public sealed class DailyGridRepository(EuroleagueDbContext db) : IDailyGridRepo
         });
     }
 
-    public Task<DailyGridAttempt?> FindAttemptAsync(Guid guestId, DateOnly date, CancellationToken cancellationToken) =>
-        db.DailyGridAttempts.Include(x => x.Challenge).SingleOrDefaultAsync(x => x.GuestId == guestId && x.Date == date, cancellationToken);
-
-    public async Task<DailyGridChallenge> GetOrCreateChallengeAsync(DateOnly date, string difficulty, Func<Task<string>> createDefinition, CancellationToken cancellationToken)
+    public Task<DailyGridAttempt?> FindAttemptAsync(
+        Guid attemptId, DateOnly date, bool ranked, string? difficulty, long? challengeId, CancellationToken cancellationToken)
     {
-        var challenge = await FindChallengeAsync(date, difficulty, cancellationToken);
+        var attempts = db.DailyGridAttempts.Include(x => x.Challenge)
+            .Where(x => x.Date == date && x.Ranked == ranked);
+        attempts = ranked
+            ? attempts.Where(x => x.UserId == attemptId)
+            : attempts.Where(x => x.GuestId == attemptId);
+        attempts = challengeId.HasValue
+            ? attempts.Where(x => x.ChallengeId == challengeId)
+            : attempts.Where(x => x.Challenge.Difficulty == difficulty);
+        return attempts.SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<DailyGridChallenge> GetOrCreateChallengeAsync(
+        DateOnly date, string difficulty, bool ranked, Func<IReadOnlyList<DailyGridChallenge>, Task<string>> createDefinition, CancellationToken cancellationToken)
+    {
+        var challenge = await db.DailyGridChallenges.SingleOrDefaultAsync(
+            x => x.Date == date && x.Difficulty == difficulty && x.Ranked == ranked, cancellationToken);
         if (challenge is not null) return challenge;
-        await LockAsync($"grid-challenge:{date:yyyy-MM-dd}:{difficulty}", cancellationToken);
-        challenge = await FindChallengeAsync(date, difficulty, cancellationToken);
+        // Creation across levels and modes must see every layout already used today.
+        await LockAsync($"grid-challenge:{date:yyyy-MM-dd}", cancellationToken);
+        var today = await db.DailyGridChallenges.Where(x => x.Date == date).ToListAsync(cancellationToken);
+        challenge = today.SingleOrDefault(x => x.Difficulty == difficulty && x.Ranked == ranked);
         if (challenge is not null) return challenge;
-        challenge = new DailyGridChallenge { Date = date, Difficulty = difficulty, DefinitionJson = await createDefinition() };
+        challenge = new DailyGridChallenge
+        {
+            Date = date, Difficulty = difficulty, Ranked = ranked, DefinitionJson = await createDefinition(today),
+            ScoringVersion = GridRankedScoring.WeightedVersion
+        };
         db.DailyGridChallenges.Add(challenge);
         await SaveAsync(cancellationToken);
         return challenge;
     }
-
-    private Task<DailyGridChallenge?> FindChallengeAsync(DateOnly date, string difficulty, CancellationToken cancellationToken) =>
-        db.DailyGridChallenges.SingleOrDefaultAsync(x => x.Date == date && x.Difficulty == difficulty, cancellationToken);
 
     private Task<int> LockAsync(string key, CancellationToken cancellationToken)
     {

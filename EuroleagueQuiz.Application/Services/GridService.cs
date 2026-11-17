@@ -22,57 +22,23 @@ public sealed class GridService : IGridService
     public async Task<GridDefinitionDto> CreateGridAsync(
         CancellationToken cancellationToken,
         bool forceNew = false,
-        GridDifficulty difficulty = GridDifficulty.Normal)
+        GridDifficulty difficulty = GridDifficulty.Normal,
+        IReadOnlyCollection<GridDefinitionDto>? excludedGrids = null)
     {
         var catalog = await GetCatalogAsync(cancellationToken);
-        var teams = catalog.Teams;
-        var relationships = catalog.Relationships;
-        var playersByTeam = relationships
-            .GroupBy(x => x.TeamId)
-            .ToDictionary(x => x.Key, x => x.Select(relationship => relationship.PlayerId).ToHashSet());
-
-        var playerProfiles = relationships
-            .GroupBy(x => x.PlayerId)
-            .ToDictionary(
-                x => x.Key,
-                x => (Teams: x.Select(relationship => relationship.TeamId).Distinct().Count(),
-                      Seasons: x.Select(relationship => relationship.SeasonId).Distinct().Count()));
-
-        var candidates = teams.Where(team => playersByTeam.ContainsKey(team.Id)).ToList();
-        if (candidates.Count < 6)
+        if (catalog.Teams.Count < 6)
             throw new InvalidOperationException("At least six clubs with player data are required to create a grid.");
 
-        // A fresh grid is generated for every request. Daily seeding is intentionally disabled.
-        var random = Random.Shared;
+        var excluded = excludedGrids?.Select(grid => LayoutKey(
+            grid.RowTeams.Select(team => team.Id), grid.ColumnTeams.Select(team => team.Id))).ToHashSet() ?? [];
         GridCandidate? best = null;
-
-        for (var attempt = 0; attempt < 10000; attempt++)
+        if (difficulty == GridDifficulty.Normal)
         {
-            var rows = candidates.OrderBy(_ => random.Next()).Take(3).ToList();
-            var columns = candidates
-                .Where(column => !rows.Contains(column) && rows.All(row => HasCommonPlayer(playersByTeam, row.Id, column.Id)))
-                .OrderBy(_ => random.Next())
-                .Take(3)
-                .ToList();
-
-            if (columns.Count != 3) continue;
-
-            var counts = new List<int>(9);
-            var fameScores = new List<double>(9);
-            for (var row = 0; row < 3; row++)
-            for (var column = 0; column < 3; column++)
-            {
-                var commonPlayers = playersByTeam[rows[row].Id].Intersect(playersByTeam[columns[column].Id]).ToList();
-                counts.Add(commonPlayers.Count);
-                fameScores.Add(commonPlayers.Count == 0
-                    ? 0
-                    : commonPlayers.Max(playerId => PlayerVisibilityScore(playerProfiles[playerId])));
-            }
-
-            var score = Score(difficulty, counts, fameScores);
-            if (best is null || score < best.Score)
-                best = new GridCandidate(rows, columns, score);
+            var establishedClubs = catalog.Teams.Where(team => catalog.ClubProfiles[team.Id].IsFamiliar).ToArray();
+            if (establishedClubs.Length >= 6 && establishedClubs.Length < catalog.Teams.Count)
+                best = FindGrid(catalog, establishedClubs, difficulty, excluded, cancellationToken);
         }
+        best ??= FindGrid(catalog, catalog.Teams, difficulty, excluded, cancellationToken);
 
         if (best is null)
             throw new InvalidOperationException("Could not create a complete grid for this difficulty. Import more player and club data first.");
@@ -81,6 +47,81 @@ public sealed class GridService : IGridService
             best.Rows.Select(TeamDto.FromEntity).ToList(),
             best.Columns.Select(TeamDto.FromEntity).ToList(),
             difficulty.ToString());
+    }
+
+    private static GridCandidate? FindGrid(GridCatalog catalog, IReadOnlyList<Team> teams,
+        GridDifficulty difficulty, HashSet<string> excluded, CancellationToken cancellationToken)
+    {
+        var random = Random.Shared;
+        GridCandidate? best = null;
+        var rowPool = teams.ToArray();
+        var columnPool = new List<Team>(teams.Count);
+        var counts = new int[9];
+        var fameScores = new double[9];
+        for (var attempt = 0; attempt < 10_000; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            for (var i = 0; i < 3; i++)
+            {
+                var other = random.Next(i, rowPool.Length);
+                (rowPool[i], rowPool[other]) = (rowPool[other], rowPool[i]);
+            }
+            var first = rowPool[0];
+            var second = rowPool[1];
+            var third = rowPool[2];
+            columnPool.Clear();
+            foreach (var team in teams)
+            {
+                if (catalog.Pairs.ContainsKey(ClubPair(first.Id, team.Id)) &&
+                    catalog.Pairs.ContainsKey(ClubPair(second.Id, team.Id)) &&
+                    catalog.Pairs.ContainsKey(ClubPair(third.Id, team.Id)))
+                    columnPool.Add(team);
+            }
+            if (columnPool.Count < 3) continue;
+
+            for (var i = 0; i < 3; i++)
+            {
+                var other = random.Next(i, columnPool.Count);
+                (columnPool[i], columnPool[other]) = (columnPool[other], columnPool[i]);
+            }
+            var rows = rowPool[..3];
+            var columns = columnPool.GetRange(0, 3);
+            if (excluded.Count > 0 && excluded.Contains(LayoutKey(rows.Select(x => x.Id), columns.Select(x => x.Id))))
+                continue;
+
+            for (var row = 0; row < 3; row++)
+            for (var column = 0; column < 3; column++)
+            {
+                var pair = catalog.Pairs[ClubPair(rows[row].Id, columns[column].Id)];
+                counts[row * 3 + column] = pair.PlayerCount;
+                fameScores[row * 3 + column] = pair.BestVisibility;
+            }
+
+            var score = Score(difficulty, counts, fameScores);
+            var unfamiliarClubs = 0;
+            if (difficulty == GridDifficulty.Normal)
+            {
+                var profiles = rows.Concat(columns).Select(x => catalog.ClubProfiles[x.Id]).ToArray();
+                unfamiliarClubs = profiles.Count(x => !x.IsFamiliar);
+                score -= profiles.Average(x => x.Visibility) * 0.25;
+            }
+            if (best is null || unfamiliarClubs < best.UnfamiliarClubs ||
+                (unfamiliarClubs == best.UnfamiliarClubs && score < best.Score))
+                best = new GridCandidate(rows, columns, score, unfamiliarClubs);
+        }
+
+        return best;
+    }
+
+    private static (long, long) ClubPair(long first, long second) => first < second ? (first, second) : (second, first);
+
+    private static string LayoutKey(IEnumerable<long> rowIds, IEnumerable<long> columnIds)
+    {
+        var rows = rowIds.Order().ToArray();
+        var columns = columnIds.Order().ToArray();
+        // Reordering or swapping the axes creates the same nine intersections.
+        if (rows[0] > columns[0]) (rows, columns) = (columns, rows);
+        return string.Join(",", rows) + "|" + string.Join(",", columns);
     }
 
     private async Task<GridCatalog> GetCatalogAsync(CancellationToken cancellationToken)
@@ -96,7 +137,28 @@ public sealed class GridService : IGridService
 
             var teams = (await _teams.GetAllAsync(cancellationToken)).ToList();
             var relationships = await _relationships.GetAllAsync(cancellationToken);
-            Catalog = new GridCatalog(teams, relationships, DateTime.UtcNow);
+            var rosters = relationships.GroupBy(x => x.TeamId).ToDictionary(x => x.Key, x => x.ToList());
+            var candidates = teams.Where(team => rosters.ContainsKey(team.Id)).ToArray();
+            var seasons = relationships.Select(x => x.Season.StartYear).Distinct().OrderDescending().Take(4).ToHashSet();
+            var clubProfiles = rosters.ToDictionary(x => x.Key, x =>
+            {
+                var clubSeasons = x.Value.Select(relationship => relationship.Season.StartYear).Distinct().ToArray();
+                return new ClubProfile(clubSeasons.Length, clubSeasons.Count(seasons.Contains));
+            });
+            var pairs = new Dictionary<(long, long), ClubIntersection>();
+            foreach (var career in relationships.GroupBy(x => x.PlayerId))
+            {
+                var clubs = career.Select(x => x.TeamId).Distinct().Order().ToArray();
+                var visibility = clubs.Length * 3 + career.Select(x => x.SeasonId).Distinct().Count();
+                for (var first = 0; first < clubs.Length; first++)
+                for (var second = first + 1; second < clubs.Length; second++)
+                {
+                    var key = (clubs[first], clubs[second]);
+                    var pair = pairs.GetValueOrDefault(key);
+                    pairs[key] = new ClubIntersection(pair.PlayerCount + 1, Math.Max(pair.BestVisibility, visibility));
+                }
+            }
+            Catalog = new GridCatalog(candidates, clubProfiles, pairs, DateTime.UtcNow);
             return Catalog;
         }
         finally
@@ -156,33 +218,34 @@ public sealed class GridService : IGridService
         return false;
     }
 
-    private static bool HasCommonPlayer(IReadOnlyDictionary<long, HashSet<long>> playersByTeam, long firstTeamId, long secondTeamId) =>
-        playersByTeam[firstTeamId].Overlaps(playersByTeam[secondTeamId]);
-
-    private static double PlayerVisibilityScore((int Teams, int Seasons) profile) =>
-        profile.Teams * 3 + profile.Seasons;
-
     private static double Score(GridDifficulty difficulty, IReadOnlyList<int> counts, IReadOnlyList<double> fameScores)
     {
         var average = counts.Average();
-        var maximum = counts.Max();
         var uniqueCells = counts.Count(count => count == 1);
         var averageVisibility = fameScores.Average();
 
         return difficulty switch
         {
             GridDifficulty.Easy => -average * 5 - averageVisibility * 2 + uniqueCells * 20,
-            GridDifficulty.Normal => Math.Abs(average - 5) * 3 + Math.Abs(maximum - 10) * 0.25,
+            GridDifficulty.Normal => Math.Abs(average - 7) * 2 - averageVisibility * 0.5
+                + counts.Sum(count => Math.Max(0, 3 - count)) * 8,
             GridDifficulty.Hard => Math.Abs(average - 2.5) * 5 + averageVisibility * 0.5,
             GridDifficulty.Legend => counts.Sum(count => Math.Max(0, count - 1)) * 8 + averageVisibility,
             _ => average
         };
     }
 
-    private sealed record GridCandidate(IReadOnlyList<Domain.Entities.Team> Rows, IReadOnlyList<Domain.Entities.Team> Columns, double Score);
+    private sealed record GridCandidate(IReadOnlyList<Team> Rows, IReadOnlyList<Team> Columns, double Score, int UnfamiliarClubs);
+    private readonly record struct ClubProfile(int Seasons, int RecentSeasons)
+    {
+        public bool IsFamiliar => Seasons >= 5 || RecentSeasons >= 2;
+        public int Visibility => Math.Min(Seasons, 10) + RecentSeasons * 2;
+    }
+    private readonly record struct ClubIntersection(int PlayerCount, int BestVisibility);
     private sealed record GridCatalog(
-        IReadOnlyList<Domain.Entities.Team> Teams,
-        IReadOnlyList<Domain.Entities.PlayerTeamSeason> Relationships,
+        IReadOnlyList<Team> Teams,
+        IReadOnlyDictionary<long, ClubProfile> ClubProfiles,
+        IReadOnlyDictionary<(long, long), ClubIntersection> Pairs,
         DateTime CreatedAtUtc);
     private sealed record RevealCandidateCell(int Row, int Column, IReadOnlyList<Domain.Entities.Player> Players)
     {
