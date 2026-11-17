@@ -1,6 +1,7 @@
 # Daily Mystery Player
 
 - One shared player and five fixed clues per UTC date, with independent progress for each guest and each game.
+- New rounds open with nationality and a club connection, followed by two more clubs, the surname initial, and finally the first name. Clubs with more recorded players appear earlier. Missing nationality is omitted, with all five clues still available.
 - A correct guess with 1/2/3/4/5 visible clues earns 100/80/60/40/20 points. Revealing another clue is free to submit but reduces the points available. Earned score remains zero until a correct guess.
 - A wrong guess reveals the next clue. At the fifth clue, a wrong guess or Reveal player ends the attempt, reveals the answer, and earns zero points.
 - Refreshes and API restarts restore progress and final score. Completed attempts cannot be replayed. Reset: 00:00 UTC. Guest scores are displayed and saved but excluded from the leaderboard.
@@ -9,6 +10,8 @@
 ## Persistence and endpoints
 
 The existing `DailyGameChallenges` and `DailyGameAttempts` tables are reused with game key `mystery-player`. The player, clues, order and scoring version are snapshotted on the server. Unrevealed clues and the answer are not returned to the client before they become available. PostgreSQL transaction locks protect shared challenge creation and individual progress across API instances.
+
+The clue generator is shared by practice and new daily rounds for both the web and mobile clients. Existing daily challenges use their saved clue snapshots.
 
 The frontend uses the shared `X-Guest-Id` browser UUID. Clearing storage or switching browsers can bypass guest limits; authenticated rankings remain a later feature.
 

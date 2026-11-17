@@ -98,20 +98,16 @@ public sealed class CareerGamesService : ICareerGamesService
 
     public async Task<MysteryPlayerChallengeDto> CreateMysteryPlayerChallengeAsync(CancellationToken cancellationToken)
     {
-        var candidates = (await GetCatalogAsync(cancellationToken)).Where(x => x.Teams.Count >= 3).ToList();
+        var catalog = await GetCatalogAsync(cancellationToken);
+        var candidates = catalog.Where(x => x.Teams.Count >= 3 && !string.IsNullOrWhiteSpace(x.Player.DisplayName)).ToList();
         EnsureCandidates(candidates);
         var career = candidates[Random.Shared.Next(candidates.Count)];
-        var first = career.Teams.OrderBy(x => x.StartYear).First();
-        var last = career.Teams.OrderByDescending(x => x.EndYear).First();
-        var clues = new[]
-        {
-            $"Played for {career.Teams.Count} EuroLeague clubs in the database.",
-            $"First club in this record: {first.Team.Name}.",
-            $"Nationality: {career.Player.Nationality ?? "Unknown"}.",
-            $"Career record starts in {career.Teams.Min(x => x.StartYear)}.",
-            $"Most recent club in this record: {last.Team.Name}."
-        };
-        return new(career.Player, clues);
+        var clubPopularity = catalog.SelectMany(x => x.Teams)
+            .GroupBy(x => x.Team.Id).ToDictionary(x => x.Key, x => x.Count());
+        var clubs = career.Teams.OrderByDescending(x => clubPopularity[x.Team.Id])
+            .ThenByDescending(x => x.EndYear)
+            .Take(3).Select(x => x.Team).ToList();
+        return new(career.Player, MysteryPlayerClues.Create(career.Player, clubs));
     }
 
     public Task<MysteryPlayerRoundDto> GuessMysteryPlayerAsync(MysteryPlayerGuessRequest request, CancellationToken cancellationToken)
