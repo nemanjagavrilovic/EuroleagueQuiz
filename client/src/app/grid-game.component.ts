@@ -2,7 +2,7 @@ import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component,
 import { NgFor, NgIf } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, of } from 'rxjs';
-import { catchError, debounceTime, finalize, map, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, finalize, map, retry, switchMap } from 'rxjs/operators';
 import { DailyGridAttempt, DataApiService, GridCell, GridDefinition, Player } from './data-api.service';
 import { BasketballLoaderComponent } from './basketball-loader.component';
 import { createGuestUuid } from './guest-identity';
@@ -47,6 +47,7 @@ export class GridGameComponent {
   gridRevealed = false;
   dailyAttempt: DailyGridAttempt | null = null;
   private practiceStarted = false;
+  private practiceCompletionReported = false;
   get attemptCompleted(): boolean { return this.dailyAttempt?.completed ?? (this.practice && (this.isGridComplete() || this.gridRevealed)); }
 
   get guessedCount(): number { return this.answers.filter(player => player !== null).length; }
@@ -80,6 +81,7 @@ export class GridGameComponent {
       this.api.changeGrid(this.selectedDifficulty).subscribe({
         next: grid => {
           this.practiceStarted = false;
+          this.practiceCompletionReported = false;
           this.grid = grid; this.gridLoading = false; this.clearSearch(); this.changeDetector.markForCheck();
         },
         error: () => { this.gridError = 'The practice grid could not be loaded.'; this.gridLoading = false; this.changeDetector.markForCheck(); }
@@ -151,7 +153,7 @@ export class GridGameComponent {
     this.searchError = '';
     this.playerSearch$.next('');
     if (this.practice) {
-      this.api.getGridPlayerMatch(player.id, this.grid.rowTeams.map(x => x.id), this.grid.columnTeams.map(x => x.id)).pipe(
+      this.api.getGridPlayerMatch(player.id, this.grid.rowTeams.map(x => x.id), this.grid.columnTeams.map(x => x.id), this.grid.practiceSessionId).pipe(
         finalize(() => { this.checkingPlayer = false; this.focusSearch(); this.changeDetector.markForCheck(); })
       ).subscribe({
         next: match => {
@@ -199,7 +201,7 @@ export class GridGameComponent {
     this.revealing = true;
     this.searchError = '';
     if (this.practice) {
-      this.api.revealGrid(this.grid.rowTeams.map(x => x.id), this.grid.columnTeams.map(x => x.id)).pipe(
+      this.api.revealGrid(this.grid.rowTeams.map(x => x.id), this.grid.columnTeams.map(x => x.id), this.grid.practiceSessionId).pipe(
         finalize(() => { this.revealing = false; this.changeDetector.markForCheck(); })
       ).subscribe({
         next: result => {
@@ -249,7 +251,15 @@ export class GridGameComponent {
   }
 
   private trackPracticeCompletion(): void {
-    if (this.isGridComplete()) this.analytics.grid('complete', 'practice', this.selectedDifficulty);
+    if (!this.isGridComplete()) return;
+    this.analytics.grid('complete', 'practice', this.selectedDifficulty);
+    const sessionId = this.grid?.practiceSessionId;
+    if (!sessionId || this.practiceCompletionReported) return;
+    this.practiceCompletionReported = true;
+    const answers = this.answers.map((player, index) => ({ row: Math.floor(index / 3), column: index % 3, playerId: player!.id }));
+    this.api.completePracticeGrid(sessionId, answers).pipe(retry({ count: 2, delay: 500 })).subscribe({
+      error: () => { if (this.grid?.practiceSessionId === sessionId) this.practiceCompletionReported = false; }
+    });
   }
 
   private applyActionResult(result: DailyGridAttempt, action: 'guess' | 'place' | 'reveal'): void {

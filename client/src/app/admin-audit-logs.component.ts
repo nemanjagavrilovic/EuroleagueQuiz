@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
-import { AdminAuditLog, AdminAuditLogPage, AdminAuditLogsService } from './admin-audit-logs.service';
+import { catchError, finalize, forkJoin, of, Subscription } from 'rxjs';
+import { AdminAuditLog, AdminAuditLogPage, AdminAuditLogsService, GuestActivity } from './admin-audit-logs.service';
 
 @Component({
   selector: 'app-admin-audit-logs',
@@ -14,11 +14,14 @@ import { AdminAuditLog, AdminAuditLogPage, AdminAuditLogsService } from './admin
   styleUrl: './admin-audit-logs.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AdminAuditLogsComponent {
+export class AdminAuditLogsComponent implements OnDestroy {
   private readonly api = inject(AdminAuditLogsService);
   readonly result = signal<AdminAuditLogPage | null>(null);
   readonly loading = signal(false);
   readonly error = signal('');
+  readonly guestActivity = signal<GuestActivity | null>(null);
+  readonly activityError = signal('');
+  private request?: Subscription;
   readonly actions = [
     'User.Registered', 'User.ProfileUpdated',
     'Auth.LoginSucceeded', 'Auth.LoginFailed', 'Auth.Logout', 'Auth.GoogleLoginSucceeded',
@@ -29,12 +32,14 @@ export class AdminAuditLogsComponent {
     'Import.SeasonStarted', 'Import.SeasonCompleted', 'Import.SeasonFailed',
     'Import.AllSeasonsStarted', 'Import.AllSeasonsCompleted', 'Import.AllSeasonsFailed',
     'Contact.VerificationFailed', 'Contact.MessageSent', 'Contact.ValidationFailed', 'Contact.DeliveryFailed',
-    'Game.GridRankedCompleted', 'Game.TeamHistoryRankedCompleted', 'Game.MissingClubRankedCompleted',
-    'Game.CareerOrderRankedCompleted', 'Game.MysteryPlayerRankedCompleted', 'Game.StartingFiveRankedCompleted'
+    ...['Grid', 'TeamHistory', 'MissingClub', 'CareerOrder', 'MysteryPlayer', 'StartingFive']
+      .flatMap(game => ['Guest', 'Ranked', 'Practice', 'Daily']
+        .flatMap(mode => [`Game.${game}${mode}Started`, `Game.${game}${mode}Completed`]))
   ];
   search = '';
   action = '';
   resultFilter = '';
+  actorType = '';
   fromDate = '';
   toDate = '';
   page = 1;
@@ -43,16 +48,28 @@ export class AdminAuditLogsComponent {
   constructor() { this.load(); }
 
   load(): void {
+    this.request?.unsubscribe();
     this.loading.set(true);
     this.error.set('');
-    this.api.getPage({
+    this.activityError.set('');
+    this.result.set(null);
+    this.guestActivity.set(null);
+    const filters = {
       search: this.search.trim(),
       action: this.action,
       result: this.resultFilter,
+      actorType: this.actorType,
       fromUtc: this.dateBoundary(this.fromDate, false),
       toUtc: this.dateBoundary(this.toDate, true)
-    }, this.page, this.pageSize).pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: result => { this.result.set(result); this.page = result.page; },
+    };
+    this.request = forkJoin({
+      page: this.api.getPage(filters, this.page, this.pageSize),
+      activity: this.api.getGuestActivity(filters.fromUtc, filters.toUtc).pipe(catchError(() => {
+        this.activityError.set('Guest activity could not be loaded. Apply the filters to try again.');
+        return of(null);
+      }))
+    }).pipe(finalize(() => this.loading.set(false))).subscribe({
+      next: ({ page, activity }) => { this.result.set(page); this.page = page.page; this.guestActivity.set(activity); },
       error: (error: HttpErrorResponse) => this.error.set(
         (error.error as { message?: string } | null)?.message || 'Audit logs could not be loaded.')
     });
@@ -60,11 +77,12 @@ export class AdminAuditLogsComponent {
 
   applyFilters(): void { this.page = 1; this.load(); }
   clearFilters(): void {
-    this.search = ''; this.action = ''; this.resultFilter = ''; this.fromDate = ''; this.toDate = '';
+    this.search = ''; this.action = ''; this.resultFilter = ''; this.actorType = ''; this.fromDate = ''; this.toDate = '';
     this.page = 1; this.load();
   }
   previous(): void { if (this.page > 1) { this.page--; this.load(); } }
   next(): void { if (this.page < (this.result()?.totalPages ?? 1)) { this.page++; this.load(); } }
+  ngOnDestroy(): void { this.request?.unsubscribe(); }
 
   target(entry: AdminAuditLog): string {
     return entry.entityType ? `${entry.entityType}${entry.entityId ? ` · ${entry.entityId}` : ''}` : '—';
@@ -77,6 +95,7 @@ export class AdminAuditLogsComponent {
       catch { data['details'] = 'Details could not be displayed.'; }
     }
     if (entry.correlationId) data['correlationId'] = entry.correlationId;
+    if (entry.actorGuestId) data['guestId'] = entry.actorGuestId;
     return JSON.stringify(data, null, 2);
   }
 

@@ -1,13 +1,35 @@
 <main class="audit-shell">
   <nav class="admin-nav" aria-label="Administration"><a routerLink="/admin/users">User management</a><a routerLink="/admin/audit-logs" class="active">Audit logs</a></nav>
   <header class="audit-header">
-    <div><p class="eyebrow">ADMINISTRATION</p><h1>Audit logs</h1><p>Review security, account, administration and data-import events. Entries are append-only.</p></div>
+    <div><p class="eyebrow">ADMINISTRATION</p><h1>Audit logs</h1><p>Review guest gameplay, security, account, administration and data-import events. Entries are append-only.</p></div>
     <span class="count" *ngIf="result() as data">{{ data.totalCount }} events</span>
   </header>
 
+  <section class="guest-activity" aria-labelledby="guest-activity-title" [attr.aria-busy]="loading()">
+    <div class="activity-heading"><h2 id="guest-activity-title">Guest gameplay</h2><span>{{ fromDate || toDate ? 'Selected dates' : 'All recorded activity' }}</span></div>
+    <ng-container *ngIf="guestActivity() as activity">
+      <div class="activity-metrics">
+        <article><span>Unique guests</span><strong>{{ activity.uniqueGuests | number }}</strong><small>Browser/app identities</small></article>
+        <article><span>Games played</span><strong>{{ activity.gamesPlayed | number }}</strong><small>Refreshes count once</small></article>
+        <article><span>Completed games</span><strong>{{ activity.completedGames | number }}</strong><small>Includes revealed answers</small></article>
+        <article><span>Completion rate</span><strong>{{ activity.completionRate | number:'1.0-1' }}%</strong><small>Completed / games played</small></article>
+      </div>
+      <details class="guest-breakdown">
+        <summary>Guest activity by game</summary>
+        <div class="breakdown-scroll"><table><caption class="sr-only">Guest activity for the selected dates</caption><thead><tr><th scope="col">Game</th><th scope="col">Unique guests</th><th scope="col">Played</th><th scope="col">Completed</th></tr></thead><tbody><tr *ngFor="let game of activity.games"><th scope="row">{{ game.name }}</th><td>{{ game.uniqueGuests | number }}</td><td>{{ game.gamesPlayed | number }}</td><td>{{ game.completedGames | number }}</td></tr></tbody></table></div>
+      </details>
+      <p class="activity-note">Date filters apply to these totals. Other filters apply to the events below. The same guest playing several games counts once; grid levels count as separate games.</p>
+      <p class="activity-note" *ngIf="activity.trackingStartedAtUtc; else noGuestActivity">First recorded guest activity: {{ activity.trackingStartedAtUtc | date:'medium' }}. Earlier games are not backfilled.</p>
+      <ng-template #noGuestActivity><p class="activity-note">Guest tracking starts with this update. Totals appear after a guest starts or completes a daily game.</p></ng-template>
+    </ng-container>
+    <p class="activity-note" *ngIf="loading()">Loading guest activity…</p>
+    <p class="notice error" *ngIf="activityError() && !loading()" role="alert">{{ activityError() }}</p>
+  </section>
+
   <form class="filters" (ngSubmit)="applyFilters()">
-    <label>Search<input name="search" [(ngModel)]="search" placeholder="Action, entity or correlation ID" autocomplete="off"></label>
+    <label>Search<input name="search" [(ngModel)]="search" placeholder="Player name, user/guest ID or action" autocomplete="off"></label>
     <label>Action<select name="action" [(ngModel)]="action"><option value="">All actions</option><option *ngFor="let item of actions" [value]="item">{{ item }}</option></select></label>
+    <label>Actor<select name="actorType" [(ngModel)]="actorType"><option value="">All actors</option><option>Guest</option><option>User</option><option>Admin</option><option>Anonymous</option></select></label>
     <label>Result<select name="result" [(ngModel)]="resultFilter"><option value="">All results</option><option>Success</option><option>Failed</option><option>Denied</option><option>Started</option></select></label>
     <label>From<input name="fromDate" type="date" [(ngModel)]="fromDate"></label>
     <label>To<input name="toDate" type="date" [(ngModel)]="toDate"></label>

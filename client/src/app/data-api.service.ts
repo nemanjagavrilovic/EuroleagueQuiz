@@ -44,6 +44,7 @@ export interface GridDefinition {
   rowTeams: Team[];
   columnTeams: Team[];
   difficulty: string;
+  practiceSessionId?: string | null;
 }
 
 export interface DailyGridAttempt {
@@ -260,19 +261,24 @@ export class DataApiService {
     return this.http.post<GridDefinition>(`${this.baseUrl}/grid/change`, {}, { params: { difficulty } });
   }
 
-  revealGrid(rowTeamIds: number[], columnTeamIds: number[]): Observable<GridRevealResponse> {
-    return this.http.post<GridRevealResponse>(`${this.baseUrl}/grid/reveal`, { rowTeamIds, columnTeamIds });
+  revealGrid(rowTeamIds: number[], columnTeamIds: number[], practiceSessionId?: string | null): Observable<GridRevealResponse> {
+    return this.http.post<GridRevealResponse>(`${this.baseUrl}/grid/reveal`, { rowTeamIds, columnTeamIds, practiceSessionId });
+  }
+
+  completePracticeGrid(sessionId: string, answers: { row: number; column: number; playerId: number }[]): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/grid/practice/${encodeURIComponent(sessionId)}/complete`, { answers });
   }
 
   searchPlayers(term: string): Observable<Player[]> {
     return this.http.get<Player[]>(`${this.baseUrl}/players/search`, { params: { term } });
   }
 
-  getGridPlayerMatch(playerId: number, rowTeamIds: number[], columnTeamIds: number[]): Observable<GridPlayerMatch> {
+  getGridPlayerMatch(playerId: number, rowTeamIds: number[], columnTeamIds: number[], practiceSessionId?: string | null): Observable<GridPlayerMatch> {
     return this.http.post<GridPlayerMatch>(`${this.baseUrl}/players/grid-match`, {
       playerId,
       rowTeamIds,
-      columnTeamIds
+      columnTeamIds,
+      practiceSessionId
     });
   }
 

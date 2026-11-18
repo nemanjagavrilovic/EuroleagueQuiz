@@ -1,6 +1,7 @@
 using EuroleagueQuiz.Application.Interfaces;
 using EuroleagueQuiz.Application.DTOs;
 using Microsoft.AspNetCore.Mvc;
+using EuroleagueQuiz.Api.Auditing;
 
 namespace EuroleagueQuiz.Api.Controllers;
 
@@ -9,7 +10,8 @@ namespace EuroleagueQuiz.Api.Controllers;
 public sealed class PlayersController : ControllerBase
 {
     private readonly IPlayerService _service;
-    public PlayersController(IPlayerService service) => _service = service;
+    private readonly PracticeGameAuditor _audit;
+    public PlayersController(IPlayerService service, PracticeGameAuditor audit) { _service = service; _audit = audit; }
 
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken) => Ok(await _service.GetAllAsync(cancellationToken));
@@ -37,12 +39,18 @@ public sealed class PlayersController : ControllerBase
     {
         try
         {
+            if (request.PracticeSessionId is Guid id)
+                _audit.ValidateGrid(HttpContext, id, request.RowTeamIds, request.ColumnTeamIds);
             var result = await _service.GetGridPlayerMatchAsync(request, cancellationToken);
+            if (result is not null && request.PracticeSessionId is Guid sessionId)
+                await _audit.RememberGridMatchAsync(HttpContext, sessionId, result);
             return result is null ? NotFound() : Ok(result);
         }
         catch (ArgumentException exception)
         {
             return BadRequest(exception.Message);
         }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (KeyNotFoundException exception) { return NotFound(new { message = exception.Message }); }
     }
 }

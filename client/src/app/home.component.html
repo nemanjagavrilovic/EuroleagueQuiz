@@ -6,6 +6,10 @@
   </header>
   <section class="games-section" aria-labelledby="games-title">
     <div class="section-heading"><h2 id="games-title">Choose your game</h2></div>
+    <aside *ngIf="!auth.user()" class="account-invitation" aria-labelledby="account-invitation-title">
+      <div class="invitation-copy"><span class="invitation-eyebrow">FREE PICK &amp; ROLL ACCOUNT</span><h2 id="account-invitation-title">Want another round?</h2><p>Practice without limits and earn daily ranked points for the leaderboard.</p><ul aria-label="Account benefits"><li>Unlimited practice</li><li>Daily ranked games</li><li>Your place on the leaderboard</li></ul></div>
+      <div class="invitation-actions"><a class="invitation-register" routerLink="/register">Create free account <span aria-hidden="true">→</span></a><span>Google or email · No payment required</span><a class="invitation-login" routerLink="/login">Already registered? Sign in</a></div>
+    </aside>
     <div class="games-grid">
       <article class="game-card" *ngFor="let game of games" [class.featured]="game.art === 'grid'">
         <div class="game-visual"><app-game-art [game]="game.art"></app-game-art></div>

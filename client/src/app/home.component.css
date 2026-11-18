@@ -14,6 +14,33 @@ h1 span { display: inline-block; margin-left: .15em; color: #ff8a32; }
 .section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 20px; }
 .section-heading h2 { font-size: 26px; letter-spacing: -.03em; margin: 0; }
 .section-heading > span { color: #8fa3b6; font-size: 12px; }
+.account-invitation { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: 0 0 22px; padding: 22px 24px; border: 1px solid #8f582f; border-radius: 12px; background: linear-gradient(115deg, #30271f, #112331 70%); }
+.invitation-copy { min-width: 0; }
+.invitation-eyebrow { color: var(--accent-soft); font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.invitation-copy h2 { margin: 6px 0 8px; color: var(--text); font-size: 24px; line-height: 1.2; letter-spacing: -.035em; }
+.invitation-copy p { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.65; }
+.invitation-copy ul { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 12px 0 0; padding: 0; list-style: none; }
+.invitation-copy li { display: flex; align-items: center; gap: 7px; color: var(--accent-soft); font-size: 11px; font-weight: 700; line-height: 1.6; }
+.invitation-copy li::before { content: ''; flex: 0 0 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
+.invitation-actions { display: grid; gap: 8px; flex: 0 0 auto; text-align: center; }
+.invitation-register { display: inline-flex; align-items: center; justify-content: center; gap: 18px; min-height: 44px; padding: 12px 20px; border: 1px solid var(--accent); border-radius: 8px; background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 800; text-decoration: none; }
+.invitation-register:hover { border-color: var(--accent-soft); background: var(--accent-soft); }
+.invitation-actions > span { color: var(--muted); font-size: 10px; line-height: 1.5; }
+.invitation-login { padding: 3px 0; color: var(--text-secondary); font-size: 11px; text-underline-offset: 3px; }
+.invitation-login:hover { color: var(--accent-soft); }
+@media (max-width: 760px) {
+  .account-invitation { flex-direction: column; align-items: stretch; gap: 12px; padding: 16px; }
+  .invitation-eyebrow, .invitation-copy ul { display: none; }
+  .invitation-copy h2 { margin: 0 0 6px; font-size: 22px; }
+  .invitation-copy p { font-size: 12px; line-height: 1.5; }
+  .invitation-actions { justify-items: start; text-align: left; gap: 6px; }
+  .invitation-actions > span { font-size: 9px; }
+  .invitation-login { padding: 0; font-size: 10px; }
+}
+@media (max-width: 420px) {
+  .invitation-actions { justify-items: stretch; text-align: center; }
+  .invitation-copy li { font-size: 10px; }
+}
 .games-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .game-card { min-width: 0; display: flex; flex-direction: column; background: linear-gradient(145deg, #0f2030, #0b1825); border: 1px solid #263b4d; border-radius: 12px; overflow: hidden; transition: border-color .18s ease, transform .18s ease; }
 .game-card.featured { border-color: #d9752d; }

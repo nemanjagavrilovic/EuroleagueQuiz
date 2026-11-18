@@ -40,7 +40,7 @@ export const privacyPolicy: LegalDocument = {
         'Game information: guest or account identifiers, daily challenges, submitted answers, progress, timing, results and scores needed to run games and calculate rankings.',
         'Messages: your name, email address, subject and message when you use the contact form or email us.',
         'Technical information: requests, timestamps, device and browser information, IP addresses processed by our servers or security providers, and diagnostic information needed to deliver and protect the service.',
-        'Audit information: records of account, administrator and game actions, including identifiers, action, outcome and time.',
+        'Audit information: records of account, administrator and game actions, including identifiers, action, outcome and time. Guest daily game starts, completions and scores use the existing guest browser identifier for administrator activity reports. Registered players’ Ranked and Practice game starts and completions are linked to their account. Game audit entries do not contain IP addresses or submitted answer contents.',
         'Optional measurement information: page visits, browser or device signals, cookie identifiers, campaign information and supported quiz interactions when you allow the relevant tracking category.'
       ]
     },

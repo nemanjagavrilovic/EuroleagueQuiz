@@ -3,7 +3,8 @@ namespace EuroleagueQuiz.Application.DTOs;
 public sealed record GridPlayerMatchRequest(
     long PlayerId,
     IReadOnlyList<long> RowTeamIds,
-    IReadOnlyList<long> ColumnTeamIds);
+    IReadOnlyList<long> ColumnTeamIds,
+    Guid? PracticeSessionId = null);
 
 public sealed record GridCellDto(
     int Row,

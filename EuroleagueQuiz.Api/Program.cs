@@ -59,6 +59,9 @@ builder.Services.AddScoped<PasswordSetupService>();
 builder.Services.AddScoped<AdminUserService>();
 builder.Services.AddScoped<AdminAuditLogService>();
 builder.Services.AddScoped<AuditLogWriter>();
+builder.Services.AddScoped<IAuditLogWriter>(services => services.GetRequiredService<AuditLogWriter>());
+builder.Services.AddSingleton<PracticeAuditSessions>();
+builder.Services.AddScoped<PracticeGameAuditor>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddOptions<TurnstileOptions>()
     .Bind(builder.Configuration.GetSection(TurnstileOptions.SectionName))

@@ -10,7 +10,7 @@ public sealed class AuditLogWriter(
     IHttpContextAccessor httpContextAccessor,
     IServiceScopeFactory scopeFactory,
     TimeProvider timeProvider,
-    ILogger<AuditLogWriter> logger)
+    ILogger<AuditLogWriter> logger) : IAuditLogWriter
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 

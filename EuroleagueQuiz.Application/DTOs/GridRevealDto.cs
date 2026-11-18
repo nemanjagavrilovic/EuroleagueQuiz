@@ -2,7 +2,8 @@ namespace EuroleagueQuiz.Application.DTOs;
 
 public sealed record GridRevealRequest(
     IReadOnlyList<long> RowTeamIds,
-    IReadOnlyList<long> ColumnTeamIds);
+    IReadOnlyList<long> ColumnTeamIds,
+    Guid? PracticeSessionId = null);
 
 public sealed record GridRevealCellDto(
     int Row,
