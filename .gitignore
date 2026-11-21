@@ -91,3 +91,8 @@ Desktop.ini
 _ReSharper*/
 *.DotSettings.user
 
+# Portable load-testing tools and generated reports
+.tools/k6/
+load-test-results/
+load-test-summary.json
+

@@ -1,0 +1,18 @@
+<section *ngIf="!auth.user()" class="invitation" aria-label="Keep playing with a free account">
+  <div class="invitation-content">
+    <div class="invitation-heading">
+      <span class="invitation-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.6 5.6c5.3 2.3 7.5 7.4 12.8 12.8M18.4 5.6C13.1 7.9 10.9 13 5.6 18.4"/></svg></span>
+      <h3>Keep the game going.</h3>
+    </div>
+    <ul aria-label="Free account benefits">
+      <li><strong>Unlimited practice</strong></li>
+      <li><strong>Daily ranked games</strong></li>
+    </ul>
+  </div>
+  <div class="invitation-actions">
+    <a class="invitation-register" routerLink="/register" [queryParams]="{ returnUrl: returnUrl }" (click)="register()">Create free account <span aria-hidden="true">→</span></a>
+    <p class="invitation-methods">Google or email · No payment required</p>
+    <p class="invitation-signin">Already registered? <a routerLink="/login" [queryParams]="{ returnUrl: returnUrl }">Sign in</a></p>
+  </div>
+  <p class="invitation-note">Today’s guest result stays unranked.</p>
+</section>

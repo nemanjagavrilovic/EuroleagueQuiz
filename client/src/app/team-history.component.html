@@ -2,6 +2,7 @@
   <header class="game-header"><a class="back-link" routerLink="/">← All games</a><p class="eyebrow">FOLLOW THE JOURNEY</p><h1>Team History</h1><p class="intro">Four clubs. One player. How soon can you make the connection?</p><div class="history-daily-status" *ngIf="practice; else historyDaily"><span>PRACTICE MODE</span><span>Unlimited random careers</span></div><ng-template #historyDaily><div class="history-daily-status" *ngIf="dailyAttempt as attempt"><span>{{ ranked ? 'RANKED' : 'GUEST' }} DAILY TEAM HISTORY · {{ attempt.date }}</span><span>Resets at 00:00 UTC</span></div></ng-template></header>
   <app-basketball-loader *ngIf="loading && !round" message="Loading ..." [overlay]="true"></app-basketball-loader>
   <p *ngIf="errorMessage && !round" class="error" role="alert">{{ errorMessage }}</p>
+  <app-guest-game-invitation *ngIf="round?.completed && !practice && !ranked" game="team-history"></app-guest-game-invitation>
   <div class="history-layout" *ngIf="round">
     <section class="history-card" aria-label="Team History game">
       <div class="round-heading"><div><strong>{{ round.revealedTeamCount }} <span>/ {{ round.totalTeams }}</span></strong><span>clubs revealed</span></div><span class="round-label">{{ round.completed ? 'Round complete' : 'Who played here?' }}</span></div>

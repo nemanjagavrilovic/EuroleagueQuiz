@@ -6,11 +6,12 @@ import { DailyTeamHistoryAttempt, DataApiService, Player, TeamHistoryRound } fro
 import { createGuestUuid } from './guest-identity';
 import { BasketballLoaderComponent } from './basketball-loader.component';
 import { AnalyticsService } from './analytics.service';
+import { GuestGameInvitationComponent } from './shared/guest-game-invitation/guest-game-invitation.component';
 
 @Component({
   selector: 'app-team-history',
   standalone: true,
-  imports: [NgFor, NgIf, RouterLink, BasketballLoaderComponent],
+  imports: [NgFor, NgIf, RouterLink, BasketballLoaderComponent, GuestGameInvitationComponent],
   templateUrl: './team-history.component.html',
   styleUrl: './team-history.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

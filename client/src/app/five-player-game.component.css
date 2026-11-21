@@ -159,8 +159,9 @@ button:disabled { opacity: .5; cursor: default; }
   .five-guide li + li { padding-top: 0; border: 0; }
 }
 @media (max-width: 900px) {
-  .five-layout { grid-template-columns: minmax(0, 1fr); max-width: 600px; margin: auto; }
-  .five-header { max-width: 600px; margin-left: auto; margin-right: auto; }
+  .five-page { --game-content-max-width: 600px; }
+  .five-layout { grid-template-columns: minmax(0, 1fr); max-width: var(--game-content-max-width); margin: auto; }
+  .five-header { max-width: var(--game-content-max-width); margin-left: auto; margin-right: auto; }
   .five-guide { grid-column: auto; }
   .five-guide ol { grid-template-columns: minmax(0, 1fr); }
   .five-guide li + li { padding-top: 18px; border-top: 1px solid var(--border); }

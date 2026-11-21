@@ -26,6 +26,7 @@
   <header class="five-header"><a class="back-link" routerLink="/">← All games</a><p class="eyebrow">BEAT THE CLOCK</p><h1>Starting Five</h1><p class="intro">One club. Five names. Make every second count.</p><div class="five-daily-status"><span>{{ practice ? 'PRACTICE · UNLIMITED GAMES' : ranked ? 'RANKED DAILY STARTING FIVE' : 'GUEST DAILY STARTING FIVE' }}<ng-container *ngIf="dailyAttempt as attempt"> · {{ attempt.date }}</ng-container></span><span>{{ practice ? 'Not counted on the leaderboard' : 'Resets at 00:00 UTC' }}</span></div></header>
   <app-basketball-loader *ngIf="loading && !round" message="Loading ..." [overlay]="true"></app-basketball-loader>
   <p *ngIf="errorMessage && !round" class="error" role="alert">{{ errorMessage }}</p>
+  <app-guest-game-invitation *ngIf="round?.gameCompleted && !practice && !ranked" game="five-player"></app-guest-game-invitation>
   <div class="five-layout" *ngIf="round">
     <section class="game-card five-card" aria-label="Starting Five game">
       <div class="scoreboard"><div><span>ROUND</span><strong>{{ round.roundNumber }} <small>/ {{ round.totalRounds }}</small></strong></div><div><span>{{ practice ? 'CORRECT PLAYERS' : 'TOTAL POINTS' }}</span><strong class="points-score">{{ practice ? round.score : dailyAttempt?.score }}<small>{{ practice ? '/ 25' : '/ 100' }}</small></strong></div><div class="timer" [class.warning]="secondsRemaining <= 8 && !round.completed"><span>TIME LEFT</span><app-shot-clock [seconds]="secondsRemaining"></app-shot-clock></div></div>

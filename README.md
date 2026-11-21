@@ -21,6 +21,10 @@ EuroleagueQuiz.Tests            Automated tests
 client                         Angular application
 ```
 
+## Review and load testing
+
+See [the local-first testing guide](docs/testing-and-load-testing.md) for correctness checks, portable k6 setup, isolated-database gameplay tests, monitoring and a bounded production smoke test. Test scripts never apply database migrations.
+
 ## Database setup
 
 The application uses PostgreSQL. Create the database in PostgreSQL or let the EF Core migration create it, then configure `ConnectionStrings:Postgres` in `EuroleagueQuiz.Api/appsettings.json` or through user-secrets/environment configuration.

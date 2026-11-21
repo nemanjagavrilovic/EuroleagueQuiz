@@ -224,8 +224,9 @@ h2 { margin-top: 28px; }
   .missing-page .missing-guide li + li { padding-top: 0; border: 0; }
 }
 @media (max-width: 900px) {
-  .missing-page .missing-layout { grid-template-columns: minmax(0, 1fr); max-width: 600px; margin: auto; }
-  .missing-page .missing-header { max-width: 600px; margin-left: auto; margin-right: auto; }
+  .missing-page { --game-content-max-width: 600px; }
+  .missing-page .missing-layout { grid-template-columns: minmax(0, 1fr); max-width: var(--game-content-max-width); margin: auto; }
+  .missing-page .missing-header { max-width: var(--game-content-max-width); margin-left: auto; margin-right: auto; }
   .missing-page .missing-guide { grid-column: auto; }
   .missing-page .missing-guide ol { grid-template-columns: minmax(0, 1fr); }
   .missing-page .missing-guide li + li { padding-top: 18px; border-top: 1px solid var(--border); }
@@ -288,8 +289,9 @@ h2 { margin-top: 28px; }
   .order-page .timeline-controls { grid-column: 2 / -1; justify-content: flex-end; }
 }
 @media (max-width: 900px) {
-  .order-page .missing-layout { grid-template-columns: minmax(0, 1fr); max-width: 680px; margin: auto; }
-  .order-page .missing-header { max-width: 680px; margin-left: auto; margin-right: auto; }
+  .order-page { --game-content-max-width: 680px; }
+  .order-page .missing-layout { grid-template-columns: minmax(0, 1fr); max-width: var(--game-content-max-width); margin: auto; }
+  .order-page .missing-header { max-width: var(--game-content-max-width); margin-left: auto; margin-right: auto; }
 }
 @media (max-width: 600px) {
   .game-shell.order-page { padding: 20px 12px 28px; }
@@ -360,8 +362,9 @@ h2 { margin-top: 28px; }
   .mystery-page .missing-guide li + li { padding-top: 0; border: 0; }
 }
 @media (max-width: 900px) {
-  .mystery-page .missing-layout { grid-template-columns: minmax(0, 1fr); max-width: 600px; margin: auto; }
-  .mystery-page .missing-header { max-width: 600px; margin-left: auto; margin-right: auto; }
+  .mystery-page { --game-content-max-width: 600px; }
+  .mystery-page .missing-layout { grid-template-columns: minmax(0, 1fr); max-width: var(--game-content-max-width); margin: auto; }
+  .mystery-page .missing-header { max-width: var(--game-content-max-width); margin-left: auto; margin-right: auto; }
   .mystery-page .missing-guide { grid-column: auto; }
   .mystery-page .missing-guide ol { grid-template-columns: minmax(0, 1fr); }
   .mystery-page .missing-guide li + li { padding-top: 18px; border-top: 1px solid var(--border); }

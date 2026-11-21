@@ -7,11 +7,12 @@ import { CareerOrderClub, CareerOrderRound, DailyCareerOrderAttempt, DailyMissin
 import { createGuestUuid } from './guest-identity';
 import { BasketballLoaderComponent } from './basketball-loader.component';
 import { AnalyticsService } from './analytics.service';
+import { GuestGameInvitationComponent } from './shared/guest-game-invitation/guest-game-invitation.component';
 
 type GameType = 'missing-club' | 'career-order' | 'mystery-player';
 
 @Component({
-  selector: 'app-career-games', standalone: true, imports: [NgFor, NgIf, RouterLink, BasketballLoaderComponent],
+  selector: 'app-career-games', standalone: true, imports: [NgFor, NgIf, RouterLink, BasketballLoaderComponent, GuestGameInvitationComponent],
   templateUrl: './career-games.component.html', styleUrl: './career-games.component.css', changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CareerGamesComponent implements OnInit {

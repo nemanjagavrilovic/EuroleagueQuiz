@@ -7,11 +7,12 @@ import { DailyGridAttempt, DataApiService, GridCell, GridDefinition, Player } fr
 import { BasketballLoaderComponent } from './basketball-loader.component';
 import { createGuestUuid } from './guest-identity';
 import { AnalyticsService } from './analytics.service';
+import { GuestGameInvitationComponent } from './shared/guest-game-invitation/guest-game-invitation.component';
 
 @Component({
   selector: 'app-grid-game',
   standalone: true,
-  imports: [NgFor, NgIf, RouterLink, BasketballLoaderComponent],
+  imports: [NgFor, NgIf, RouterLink, BasketballLoaderComponent, GuestGameInvitationComponent],
   templateUrl: './grid-game.component.html',
   styleUrl: './grid-game.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

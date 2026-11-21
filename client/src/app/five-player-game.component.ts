@@ -7,13 +7,14 @@ import { createGuestUuid } from './guest-identity';
 import { BasketballLoaderComponent } from './basketball-loader.component';
 import { ShotClockComponent } from './shot-clock.component';
 import { AnalyticsService } from './analytics.service';
+import { GuestGameInvitationComponent } from './shared/guest-game-invitation/guest-game-invitation.component';
 
 type TrackingSource = 'restore' | 'start' | 'guess' | 'reveal' | 'timeout' | 'next' | 'sync';
 
 @Component({
   selector: 'app-five-player-game',
   standalone: true,
-  imports: [NgFor, NgIf, RouterLink, BasketballLoaderComponent, ShotClockComponent],
+  imports: [NgFor, NgIf, RouterLink, BasketballLoaderComponent, ShotClockComponent, GuestGameInvitationComponent],
   templateUrl: './five-player-game.component.html',
   styleUrl: './five-player-game.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

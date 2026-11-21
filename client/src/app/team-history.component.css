@@ -129,8 +129,9 @@ button:disabled { opacity: .5; cursor: default; }
   .history-guide li + li { border: 0; padding-top: 0; }
 }
 @media (max-width: 900px) {
-  .history-layout { grid-template-columns: minmax(0, 1fr); max-width: 600px; margin: auto; }
-  .game-header { max-width: 600px; margin-left: auto; margin-right: auto; }
+  .history-page { --game-content-max-width: 600px; }
+  .history-layout { grid-template-columns: minmax(0, 1fr); max-width: var(--game-content-max-width); margin: auto; }
+  .game-header { max-width: var(--game-content-max-width); margin-left: auto; margin-right: auto; }
   .history-guide { grid-column: auto; }
   .history-guide ol { grid-template-columns: minmax(0, 1fr); }
   .history-guide li + li { padding-top: 18px; border-top: 1px solid var(--border); }

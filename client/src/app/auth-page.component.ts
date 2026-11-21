@@ -25,6 +25,7 @@ export class AuthPageComponent implements OnInit {
   readonly error = signal('');
   readonly showResend = signal(false);
   readonly invalidSetupLink = signal(false);
+  readonly returnUrl = this.safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
   readonly form = this.fb.nonNullable.group({
     firstName: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/\S/)]],
     lastName: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/\S/)]],
@@ -82,7 +83,7 @@ export class AuthPageComponent implements OnInit {
       : this.auth.resetPassword(email, this.route.snapshot.queryParamMap.get('token') || '', password);
     request.pipe(finalize(() => this.loading.set(false))).subscribe({
       next: (response: unknown) => {
-        if (mode === 'login') void this.router.navigateByUrl(this.safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl')));
+        if (mode === 'login') void this.router.navigateByUrl(this.returnUrl);
         else {
           this.message.set(this.responseMessage(response));
           if (mode === 'register') this.showResend.set(true);
@@ -112,7 +113,7 @@ export class AuthPageComponent implements OnInit {
     });
   }
 
-  google(): void { this.auth.beginGoogleLogin(this.safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'))); }
+  google(): void { this.auth.beginGoogleLogin(this.returnUrl); }
   resend(): void {
     const email = this.form.controls.email.value;
     if (!email || this.form.controls.email.invalid) return;

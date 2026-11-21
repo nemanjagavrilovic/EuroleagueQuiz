@@ -9,6 +9,7 @@
   <app-basketball-loader *ngIf="gridLoading" message="Loading ..." [overlay]="true"></app-basketball-loader>
   <p class="error" *ngIf="gridError" role="alert">{{ gridError }}</p>
 
+  <app-guest-game-invitation *ngIf="attemptCompleted && !practice && !ranked" game="grid" [difficulty]="selectedDifficulty"></app-guest-game-invitation>
   <div class="play-layout" *ngIf="grid as currentGrid">
     <section class="panel grid-panel" aria-label="Player Grid game">
       <div class="panel-heading">

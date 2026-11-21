@@ -32,7 +32,9 @@ const quizEvents = {
   answer: ['quiz_answer', 'QuizAnswer'],
   clue: ['quiz_clue_reveal', 'QuizClueReveal'],
   round_start: ['quiz_round_start', 'QuizRoundStart'],
-  round_complete: ['quiz_round_complete', 'QuizRoundComplete']
+  round_complete: ['quiz_round_complete', 'QuizRoundComplete'],
+  signup_prompt_view: ['guest_signup_prompt_view', 'GuestSignupPromptView'],
+  signup_prompt_click: ['guest_signup_prompt_click', 'GuestSignupPromptClick']
 } as const;
 export type QuizGame = 'grid' | 'team-history' | 'missing-club' | 'career-order' | 'mystery-player' | 'five-player';
 export type QuizMode = 'daily' | 'ranked' | 'practice';

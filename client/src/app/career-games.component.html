@@ -4,6 +4,7 @@
     <header class="missing-header"><p class="eyebrow">THE MISSING PIECE</p><h1>Missing Club</h1><p>One player. Three clues. Find the club that completes the story.</p><div class="missing-daily-status" *ngIf="practice; else missingDaily"><span>PRACTICE MODE</span><span>Unlimited random challenges</span></div><ng-template #missingDaily><div class="missing-daily-status" *ngIf="dailyMissing as attempt"><span>{{ ranked ? 'RANKED' : 'GUEST' }} DAILY MISSING CLUB · {{ attempt.date }}</span><span>Resets at 00:00 UTC</span></div></ng-template></header>
     <app-basketball-loader *ngIf="loading && !missing" message="Loading ..." [overlay]="true"></app-basketball-loader>
     <p class="error" *ngIf="errorMessage && !missing" role="alert">{{ errorMessage }}</p>
+    <app-guest-game-invitation *ngIf="missing?.completed && !practice && !ranked" game="missing-club"></app-guest-game-invitation>
     <div class="missing-layout" *ngIf="missing">
       <section class="game-card missing-card" aria-label="Missing Club game">
         <div class="missing-daily-score" *ngIf="dailyMissing as attempt" aria-live="polite"><div><span>YOUR SCORE</span><strong>{{ attempt.score }} <small>/ 100</small></strong></div><div *ngIf="!missing.completed"><span>CORRECT ANSWER EARNS</span><strong>100 <small>points</small></strong></div></div>
@@ -30,6 +31,7 @@
     <header class="missing-header"><p class="eyebrow">EVERY CAREER HAS A STORY</p><h1>Career Order</h1><p>Know the clubs? Now put them in the right order.</p><div class="order-daily-status" *ngIf="practice; else orderDaily"><span>PRACTICE MODE</span><span>Unlimited random careers</span></div><ng-template #orderDaily><div class="order-daily-status" *ngIf="dailyOrder as attempt"><span>{{ ranked ? 'RANKED' : 'GUEST' }} DAILY CAREER ORDER · {{ attempt.date }}</span><span>Resets at 00:00 UTC</span></div></ng-template></header>
     <app-basketball-loader *ngIf="loading && !order" message="Loading ..." [overlay]="true"></app-basketball-loader>
     <p class="error" *ngIf="errorMessage && !order" role="alert">{{ errorMessage }}</p>
+    <app-guest-game-invitation *ngIf="order?.completed && !practice && !ranked" game="career-order"></app-guest-game-invitation>
     <div class="missing-layout" *ngIf="order">
       <section class="game-card order-card" aria-label="Career Order game">
         <div class="order-daily-score" *ngIf="dailyOrder as attempt" aria-live="polite"><div><span>YOUR SCORE</span><strong>{{ attempt.score }} <small>/ 100</small></strong></div><div *ngIf="attempt.scoringVersion >= 2"><span>{{ order.completed ? 'CORRECT TRANSFERS' : 'TRANSFERS TO ORDER' }}</span><strong>{{ order.completed ? attempt.correctTransfers : attempt.totalTransfers }} <small>{{ order.completed ? '/ ' + attempt.totalTransfers : 'moves' }}</small></strong></div></div>
@@ -58,6 +60,7 @@
     <header class="missing-header"><p class="eyebrow">SOLVE THE CLUES</p><h1>Mystery Player</h1><p>Every clue tells a story. How soon will you know the name?</p><div class="mystery-daily-status" *ngIf="practice; else mysteryDaily"><span>PRACTICE MODE</span><span>Unlimited random mysteries</span></div><ng-template #mysteryDaily><div class="mystery-daily-status" *ngIf="dailyMystery as attempt"><span>{{ ranked ? 'RANKED' : 'GUEST' }} DAILY MYSTERY PLAYER · {{ attempt.date }}</span><span>Resets at 00:00 UTC</span></div></ng-template></header>
     <app-basketball-loader *ngIf="loading && !mystery" message="Loading ..." [overlay]="true"></app-basketball-loader>
     <p *ngIf="errorMessage && !mystery" class="error" role="alert">{{ errorMessage }}</p>
+    <app-guest-game-invitation *ngIf="mystery?.completed && !practice && !ranked" game="mystery-player"></app-guest-game-invitation>
     <div class="missing-layout" *ngIf="mystery">
       <section class="game-card mystery-card" aria-label="Mystery Player game">
         <div class="mystery-heading"><div><strong>{{ mystery.revealedClueCount }} <span>/ {{ mystery.totalClues }}</span></strong><span>clues revealed</span></div><span class="mystery-tag">{{ mystery.completed ? 'Case closed' : 'Who am I?' }}</span></div>

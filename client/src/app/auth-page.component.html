@@ -13,7 +13,7 @@
     <p class="intro" *ngIf="mode() === 'temporary'">Choose a private password before continuing to your account. Your temporary password will stop working.</p>
     <p class="intro" *ngIf="mode() === 'forgot'">We'll email a reset link, or a password creation link if you currently sign in only with Google.</p>
     <p class="intro" *ngIf="mode() === 'login'">Sign in to play ranked daily challenges and appear on the leaderboard.</p>
-    <p class="intro" *ngIf="mode() === 'register'">Your guest attempts remain visible but unranked. Ranked play starts with a fresh daily challenge.</p>
+    <p class="intro" *ngIf="mode() === 'register'">Create a free account for unlimited practice, daily ranked games and your place on the leaderboard. Guest results stay unranked.</p>
 
     <button *ngIf="mode() === 'login' || mode() === 'register'" class="google" type="button" (click)="google()">
       <span aria-hidden="true">G</span> Continue with Google
@@ -49,9 +49,9 @@
     <div class="auth-links">
       <a *ngIf="mode() === 'login'" routerLink="/forgot-password">Forgot password?</a>
       <a *ngIf="mode() === 'login'" routerLink="/resend-confirmation">Resend confirmation</a>
-      <span *ngIf="mode() === 'login'">New here? <a routerLink="/register">Create account</a></span>
-      <span *ngIf="mode() === 'register'">Already registered? <a routerLink="/login">Sign in</a></span>
-      <a *ngIf="mode() === 'forgot' || mode() === 'reset' || mode() === 'resend' || mode() === 'setup' || mode() === 'temporary'" routerLink="/login">{{ (mode() === 'setup' || mode() === 'temporary') && message() ? 'Sign in to your account' : 'Back to sign in' }}</a>
+      <span *ngIf="mode() === 'login'">New here? <a routerLink="/register" [queryParams]="{ returnUrl: returnUrl }">Create account</a></span>
+      <span *ngIf="mode() === 'register'">Already registered? <a routerLink="/login" [queryParams]="{ returnUrl: returnUrl }">Sign in</a></span>
+      <a *ngIf="mode() === 'forgot' || mode() === 'reset' || mode() === 'resend' || mode() === 'setup' || mode() === 'temporary'" routerLink="/login" [queryParams]="{ returnUrl: returnUrl }">{{ (mode() === 'setup' || mode() === 'temporary') && message() ? 'Sign in to your account' : 'Back to sign in' }}</a>
       <a *ngIf="mode() === 'setup'" routerLink="/forgot-password">Request a new password email</a>
     </div>
   </section>
